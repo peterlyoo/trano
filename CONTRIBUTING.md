@@ -21,11 +21,11 @@ Run these checks before opening a pull request:
 4. Run update and publication checks:
    ```sh
    python3 experiments/check-updates.py
-   python3 Tests/Integrations/test_publication.py
+   python3 -m unittest discover -s Tests/Integrations -v
    python3 scripts/check-publication.py
    ```
 
-Fixture scripts in `experiments/check-accounts.py`, `experiments/check-native.py`, `experiments/check-recovery.py`, and `experiments/check-remote-ssh.py` exercise specific subsystems; some require `orjson` and a dedicated SSH fixture.
+The Python integration suite requires `orjson`. Fixture scripts in `experiments/check-accounts.py`, `experiments/check-native.py`, `experiments/check-recovery.py`, and `experiments/check-remote-ssh.py` exercise specific subsystems; some also require a dedicated SSH fixture.
 
 ## Development and Isolation Rules
 

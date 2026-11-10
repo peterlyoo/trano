@@ -1,7 +1,7 @@
 {
-  "status": "local_automated_checks_passed_external_qualification_pending",
-  "sourceRevision": null,
-  "buildID": "6e195bd2966a854fa7fcdc5e7e6b193cabe7229441e2dc75097ba1b3cc3f47f0",
+  "status": "implemented_with_qualification_failures_and_pending_gates",
+  "sourceRevision": "1e027ceb132287756f056bee11ea663fde76db1f",
+  "buildID": "4b9e94cd26a0a0aa95bd52b3594bef04ca7fb7d923a92763399733d3b129b339",
   "checks": {
     "swift": {
       "status": "passed",
@@ -42,28 +42,67 @@
       "remoteRefreshSeconds": 15
     },
     "remote_ssh": {
-      "status": "latest_revision_runtime_not_run",
-      "previousLinuxTests": 26,
+      "status": "linux_runtime_ci_passed_ssh_end_to_end_pending",
+      "linuxRaceSuite": "passed",
+      "linuxCIJobURL": "https://github.com/peterlyoo/trano/actions/runs/42869346614/job/130016099447",
       "currentDarwinRaceAndPTY": "passed",
       "linuxAmd64AndArm64CrossCompilation": "passed",
-      "limitation": "Isolated Linux SSH fixture is unavailable at the final revision."
+      "limitation": "Latest revision Linux SSH end-to-end recovery is not rerun; local fixture images are unavailable.",
+      "linuxRaceDurationSeconds": 28.714
     },
     "updates": {
       "status": "local_signature_and_policy_tests_passed",
       "tests": 4,
       "productionFeed": "not_configured",
-      "developerIDNotarization": "not_configured"
+      "developerIDNotarization": "not_configured",
+      "sameVersionServiceReplacement": {
+        "status": "passed_with_ad_hoc_bundles",
+        "tests": 1,
+        "durationSeconds": 3.356,
+        "preservedShellPID": true,
+        "replacementLoop": false
+      }
     },
     "performance": {
       "status": "not_qualified",
       "contract": "performance-contract.json",
-      "note": "Controlled hardware cold-start and physical keyboard-to-render gates remain unmeasured; warm-cache headless metrics do not substitute for them."
+      "observations": "performance-observations.json",
+      "idleCPUCorePercent": 0.033107082360379056,
+      "idleProductRSSMiBMax": 251.484375,
+      "idleMemoryTarget": "failed",
+      "outputLoadSeconds": 600.434856334,
+      "note": "The completed ten-visible-pane run exceeded the idle maximum RSS target. Cold readiness, native warm attach and physical keyboard-to-render gates remain unmeasured; warm-cache headless metrics do not substitute for them."
     },
     "publication": {
-      "status": "privacy_and_license_checks_passed",
+      "status": "public_source_published_clean_ci_privacy_and_license_checks_passed",
       "license": "MIT",
       "repositoryTarget": "peterlyoo/trano",
-      "repositoryURL": "https://github.com/peterlyoo/trano"
+      "repositoryURL": "https://github.com/peterlyoo/trano",
+      "sourceCommit": "1e027ceb132287756f056bee11ea663fde76db1f",
+      "ciURL": "https://github.com/peterlyoo/trano/actions/runs/42869346614",
+      "ciStatus": "passed",
+      "ciJobs": {
+        "macos": "passed",
+        "remote": "passed"
+      }
+    },
+    "benchmark_tooling": {
+      "status": "local_regressions_and_ten_visible_pane_smoke_passed",
+      "regressionTests": 18,
+      "pythonIntegrationTests": 24,
+      "smoke": {
+        "nativeLaunches": 2,
+        "visibleNativePanesPerLaunch": [
+          10,
+          10
+        ],
+        "idleSeconds": 2,
+        "outputSeconds": 3,
+        "outputProducerPanes": 1,
+        "sampledFixturePIDsGone": 23,
+        "cleanupError": null
+      },
+      "scope": "Short test-harness validation; the previous 30-launch / 60-second idle / 600-second output measurement is unchanged and U17 remains unqualified."
     }
   },
   "externalQualification": {
@@ -75,5 +114,6 @@
     "live_glass_launcher": "not_run",
     "developer_id_notarized_release": "not_configured"
   },
-  "verificationScope": "Local pre-publication build snapshot; external qualification remains pending."
+  "verificationScope": "Published product source and local rebuilt bundle; later benchmark-only regressions and short native smoke; separately identified full performance snapshot. External qualification remains pending.",
+  "sourceRevisionScope": "Unchanged product code and its successful clean-checkout CI. The benchmark-only repair is validated locally in the source published alongside this record."
 }

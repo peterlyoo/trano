@@ -11,3 +11,6 @@
 - Preserve exact UTF-8 arguments and shell quoting for Korean NFC/NFD, spaces, quotes, and trailing semicolons. tmux parses command separators separately from the shell. Do not set `LC_ALL=C` to localize diagnostics.
 - Keep runtime and configuration mutation under the shared transaction and ownership checks. Publish no credentials, transcript content, private hostnames, local personal paths, or unreviewed generated data.
 - SwiftPM's background XCTest helper cannot acquire a key window. Keep hover owner-key state deterministic in native unit tests, exercise real panels and focus state, and record physical pointer/activation qualification separately rather than weakening production activation guards.
+- Account-transfer rollback must validate every backup and prove that installed files and database rows still match the receipt before restoring them. Refuse rollback when newer target work exists; never treat a missing receipt as proof of success.
+- SSH recovery must run outside the shared local state transaction. Revalidate pane identity before committing results, and test local state mutation while SSH is deliberately blocked.
+- Native benchmarks must verify both the selected tab layout and the reported terminal view count. Preserve raw samples and partial reports across failures, and label backend-only measurements separately.

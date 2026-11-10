@@ -1,0 +1,159 @@
+{
+  "schema_version": 1,
+  "requirement": "U17",
+  "run_status": "completed",
+  "qualification_status": "not_qualified",
+  "build_id": "9ce0fa0712616fbed9af0359ee94da000d56afc960eb072c766f58349148465a",
+  "app_binary_sha256": "80704a614728eb75d5d7711db19455731321440ddc581c22d9dc7977731c4bc8",
+  "configuration": {
+    "idle_seconds": 60.0,
+    "load_seconds": 600.0,
+    "panes": 10,
+    "rounds": 30,
+    "visible_native_panes": 10,
+    "output_producer_panes": 1
+  },
+  "machine": {
+    "architecture": "arm64",
+    "cpu": "Apple M4 Pro",
+    "load_average_at_end": [
+      14.9345703125,
+      8.677734375,
+      14.20068359375
+    ],
+    "load_average_at_start": [
+      6.78466796875,
+      9.1767578125,
+      22.0146484375
+    ],
+    "logical_cpus": 14,
+    "memory_gib": 48.0,
+    "os": "26.7.2"
+  },
+  "gates": {
+    "cold_app_ready_p95_ms": {
+      "reason": "Thirty process launches used warm filesystem caches and a headless draw; OS-presented cold readiness was not instrumented.",
+      "status": "not_run",
+      "target": 500
+    },
+    "idle_cpu_core_percent": {
+      "duration_seconds": 60.410034875,
+      "observed": 0.033107082360379056,
+      "status": "pass",
+      "target": 1
+    },
+    "idle_product_rss_mib": {
+      "aggregation": "maximum observed resident process RSS sum",
+      "distribution": {
+        "count": 43,
+        "max": 251.484375,
+        "median": 248.953125,
+        "p95": 251.171875
+      },
+      "observed": 251.484375,
+      "status": "fail",
+      "target": 250
+    },
+    "physical_keyboard_to_render_p95_ms": {
+      "reason": "API send-to-capture and headless draw timings exclude physical keyboard dispatch and display presentation.",
+      "status": "not_run",
+      "target": 16.7
+    },
+    "ten_minute_output_bounded_rss": {
+      "reason": "A finite 600-second window was measured. The current contract gives no output-load RSS bound or steady-state threshold; no general bound is claimed.",
+      "rss_growth_mib": 2.890625,
+      "rss_mib": {
+        "count": 112,
+        "max": 260.59375,
+        "median": 259.984375,
+        "p95": 260.484375
+      },
+      "status": "observed"
+    },
+    "ten_minute_output_duration": {
+      "observed_seconds": 600.434856334,
+      "status": "pass",
+      "target_seconds": 600,
+      "visible_native_panes": 10
+    },
+    "user_zsh_configuration_cost": {
+      "reason": "Only an owned minimal prompt was loaded. User shell configuration was not accessed.",
+      "status": "not_run"
+    },
+    "warm_attach_p95_ms": {
+      "reason": "In-process native warm attachment was not timed separately.",
+      "status": "not_run",
+      "target": 200
+    }
+  },
+  "limitations": [
+    "Native readiness includes headless drawing, not macOS presentation or physical keyboard latency.",
+    "CPU covers resident owned product processes; short-lived helpers between samples are not included.",
+    "Shells and workload processes are excluded. RSS is the sum of resident process RSS, including shared pages.",
+    "Process launches use warm filesystem caches; no privileged cache purge is performed.",
+    "Host background load is not controlled; concurrent work may affect wall-clock latency.",
+    "create_ms includes actions.perform layout-split transactions after the first session."
+  ],
+  "optimization_delta": {
+    "reason": "The earlier five-round backend-only short baseline is not comparable to the final thirty-round ten-native-pane qualification.",
+    "status": "not_established"
+  },
+  "cleanup": {
+    "sampled_product_pids_gone": 23,
+    "status": "pass"
+  },
+  "measured_bundle_scope": "Immutable local release bundle before final generated icon packaging and source EOF normalization; not a measurement of the current published binary.",
+  "observations": {
+    "native_warm_cache_launch_to_headless_ready_ms": {
+      "count": 30,
+      "max": 539.7865420000007,
+      "median": 392.37856250000027,
+      "p95": 433.49283399999996
+    },
+    "native_initial_headless_draw_ms": {
+      "count": 30,
+      "max": 14.546875001542503,
+      "median": 9.049083333593444,
+      "p95": 9.407833334989846
+    },
+    "idle_api_to_capture_ms": {
+      "count": 30,
+      "max": 121.52658299999075,
+      "median": 88.94300000000044,
+      "p95": 103.25737499999832
+    },
+    "load_api_to_scrollback_ms": {
+      "count": 30,
+      "max": 68.59170799999958,
+      "median": 58.53345799999943,
+      "p95": 67.34708300000136
+    },
+    "idle": {
+      "duration_seconds": 60.410034875,
+      "observed_product_processes": 23,
+      "resident_process_cpu_core_percent": 0.033107082360379056,
+      "rss_growth_mib": -2.5,
+      "rss_mib": {
+        "count": 43,
+        "max": 251.484375,
+        "median": 248.953125,
+        "p95": 251.171875
+      },
+      "sample_count": 43
+    },
+    "output_load": {
+      "duration_seconds": 600.434856334,
+      "observed_product_processes": 23,
+      "resident_process_cpu_core_percent": 11.007022544213614,
+      "rss_growth_mib": 2.890625,
+      "rss_mib": {
+        "count": 112,
+        "max": 260.59375,
+        "median": 259.984375,
+        "p95": 260.484375
+      },
+      "sample_count": 112
+    }
+  },
+  "unavailable_breakdown": "Resident native GUI RSS was measured separately. Helper, tmux and per-pane monitor role labels were not persisted, so no further process-role attribution is established."
+}
