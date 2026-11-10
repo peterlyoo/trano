@@ -1,0 +1,79 @@
+{
+  "status": "local_automated_checks_passed_external_qualification_pending",
+  "sourceRevision": null,
+  "buildID": "6e195bd2966a854fa7fcdc5e7e6b193cabe7229441e2dc75097ba1b3cc3f47f0",
+  "checks": {
+    "swift": {
+      "status": "passed",
+      "coreTests": 92,
+      "uiTests": 17,
+      "cliTests": 6,
+      "failures": 0,
+      "optionalProviderChecksSkipped": 2,
+      "installedProviderCompatibility": {
+        "tests": 9,
+        "skipped": 0,
+        "failures": 0
+      }
+    },
+    "native_bundle": {
+      "status": "passed",
+      "configuration": "release",
+      "signature": "ad_hoc_verified",
+      "icon": "Trano.icns",
+      "sbom": "CycloneDX_1.6"
+    },
+    "account_handoff": {
+      "status": "passed_with_synthetic_providers",
+      "ptySignalRegressions": 3,
+      "handoffTests": 3,
+      "isolationTests": 3
+    },
+    "recovery": {
+      "status": "passed_with_synthetic_providers",
+      "exactConversationIDs": true,
+      "nativeClientCrashPersistence": true,
+      "sshRecoveryReleasesLocalLock": true
+    },
+    "tab_hover": {
+      "status": "passed_with_test_owner_key_state",
+      "tests": 7,
+      "physicalPointer": "not_run",
+      "remoteRefreshSeconds": 15
+    },
+    "remote_ssh": {
+      "status": "latest_revision_runtime_not_run",
+      "previousLinuxTests": 26,
+      "currentDarwinRaceAndPTY": "passed",
+      "linuxAmd64AndArm64CrossCompilation": "passed",
+      "limitation": "Isolated Linux SSH fixture is unavailable at the final revision."
+    },
+    "updates": {
+      "status": "local_signature_and_policy_tests_passed",
+      "tests": 4,
+      "productionFeed": "not_configured",
+      "developerIDNotarization": "not_configured"
+    },
+    "performance": {
+      "status": "not_qualified",
+      "contract": "performance-contract.json",
+      "note": "Controlled hardware cold-start and physical keyboard-to-render gates remain unmeasured; warm-cache headless metrics do not substitute for them."
+    },
+    "publication": {
+      "status": "privacy_and_license_checks_passed",
+      "license": "MIT",
+      "repositoryTarget": "peterlyoo/trano",
+      "repositoryURL": "https://github.com/peterlyoo/trano"
+    }
+  },
+  "externalQualification": {
+    "authenticated_provider_quota_handoff": "not_run",
+    "physical_korean_ime": "not_run",
+    "physical_pointer_drag_and_voiceover": "not_run",
+    "microphone_and_os_notifications": "not_run",
+    "actual_os_reboot": "not_run",
+    "live_glass_launcher": "not_run",
+    "developer_id_notarized_release": "not_configured"
+  },
+  "verificationScope": "Local pre-publication build snapshot; external qualification remains pending."
+}

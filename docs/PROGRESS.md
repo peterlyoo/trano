@@ -1,0 +1,96 @@
+---
+state: implementing
+---
+
+# Trano Engineering Progress
+
+> **Summary**: As of 2026-11-11, Trano implements core contracts across `U01`–`U21` in [docs/PRD.md](PRD.md) , [docs/NAVIGATION.md](NAVIGATION.md) , [docs/RECOVERY.md](RECOVERY.md) , [docs/TAB-ACTIVITY.md](TAB-ACTIVITY.md) , and [docs/RELEASING.md](RELEASING.md) , with current evidence governed by [docs/RTM.md](RTM.md) and [docs/verification.json](verification.json) rather than historical `M1`/`M2`/`M3` milestone snapshots. Local Swift suites, installed-provider compatibility checks, isolated PTY probes, and refreshed `build/Trano.app` bundle integrations pass, while Linux SSH runtime reruns at the latest revision, authenticated live provider workflows, physical OS/input gates, full 600s performance qualification, and Developer ID notarization remain open. The whole product is not yet complete, and there is no public release yet.
+
+## Scope & Architecture
+
+Trano is a standalone native macOS 14+ application built with full Xcode, AppKit, and SwiftUI. [../Package.swift](../Package.swift) pins `SwiftTerm` `1.99.1` and `Sparkle` `2.10.1`. It produces the `TranoApp` GUI, `trano` CLI, `build/Trano.app` bundle, and `Trano Service.app` background helper. Local sessions run on an isolated `tmux` socket under `TRANO_DATA_DIR`, keeping PTYs independent of the UI. Remote sessions use a Linux Go helper over SSH stdio (`remote/recovery.go`, `agent.go`, `hooks.go`, `shell.go`, `scrollback.go`).
+
+```mermaid
+flowchart TD
+    UI["TranoApp GUI / trano CLI / Trano Service.app"]
+    Local["Local isolated tmux + PTY / Provider"]
+    Remote["Linux Go Helper + Remote tmux / PTY"]
+    UI -->|"TRANO_DATA_DIR"| Local
+    UI -->|"SSH stdio"| Remote
+```
+
+- **No Private/Global Leakage**: No private harness or transcripts are copied, and no global user credentials are modified.
+- **OSS Preparation**: The standalone Git repository uses `main`; its public source target is [peterlyoo/trano](https://github.com/peterlyoo/trano). MIT licensing (`LICENSE`, `THIRD_PARTY_NOTICES.md`, `licenses/`), `README.md`, `CONTRIBUTING.md`, `SECURITY.md`, [sbom.json](sbom.json) , [publication-boundary.yaml](publication-boundary.yaml) , [../scripts/check-publication.py](../scripts/check-publication.py) , [../scripts/generate-sbom.py](../scripts/generate-sbom.py) , and `.github/workflows/{ci,release}.yml` are implemented.
+
+## Implemented Capabilities
+
+### Workspace, Appearance, Input & Tab Activity
+- **Appearance & Profiles**: Fonts, fallback, line spacing, color, opacity, background images, themes, and per-pane profiles in `Appearance.swift`, `AppearanceProfiles.swift`, `AppearanceSettings.swift`, `ProfileAppearanceView.swift`, and `TerminalBackgroundImage.swift`.
+- **Keymaps, Voice & Glyphs**: Exact-modifier keymaps (`KeyBindings.swift`, `KeyboardShortcutRecorder.swift`), `ko-KR`/`en-US` voice preview and PTT controls (`VoiceInput.swift`), and custom provider glyphs (`AgentLogo.swift`, not final official trademark-qualified assets).
+- **Tab Activity (`FR-HOVER-1..4`)**: Contract in [docs/TAB-ACTIVITY.md](TAB-ACTIVITY.md) . Shows every pane root and up to 64 structured child rows per pane from `agentTasks` without per-hover polling or network I/O (100ms local debounce, 15s remote refresh). Child activity never mutates root supervision; missing `agentTasks` metadata means no reported children, not proof of no children.
+
+### Account Isolation, Extensions, Quota & Same-Provider Switch
+- **Managed Profiles**: Implemented across `Accounts.swift`, `AccountAuthentication.swift`, `AccountUsage.swift`, `AgentSupervision.swift`, `AccountSwitch.swift`, `AccountDatabaseTransfer.swift`, `AccountHistoryReset.swift`, `AccountRollbackRows.swift`, `TranoCLI/ProviderSupervisor.swift`, `ProviderSignalRelay.swift`, `TranoCLI/main.swift`, and `TranoApp/AccountsView.swift` using isolated `CLAUDE_CONFIG_DIR`/`CODEX_HOME` and sanitized child environments (`--no-daemon` remains in `Sources/TerminalCore/Accounts.swift:133` and `Sources/TerminalCore/Extensions.swift:238`).
+- **Extensions Manager**: `Extensions.swift` and `ExtensionsView.swift` implement shared skill symlinks, hooks/MCP translation, previews, receipts, backups, ownership conflict checks, rollback, and provider-native plugin install flows (authenticated provider plugin compatibility remains unqualified).
+- **Usage Snapshots**: `accounts.usage` reads structured Claude statusline `rate_limits` (`accounts.usage.refresh` returns existing snapshot) and Codex `account/rateLimits/read`. In `AccountUsage.swift`, only `available` snapshots older than 300s downgrade to `unknown`; quota is never inferred from reset times or output silence.
+- **Safe Boundary Switch & Rollback**: `automaticAccountSwitching` defaults to `false`. Queued switches occur only at root safe turn boundaries with no tools in flight, same provider, and exact conversation without prompt/tool replay. It copies only exact conversation files/metadata with receipts/backups while preserving target credentials. Rollback preflights backups/digests/conflicts, guards attached SQLite state/history changes, and refuses newer target work, **but is not crash-atomic across filesystem and database**.
+
+### Local/Remote Recovery, Scrollback & Bundled Installer
+- **Session Recovery**: `Recovery.swift`, `ProcessIdentity.swift`, `ShellIntegration.swift`, `TranoCLI/main.swift`, `TranoApp/Store.swift`, `TerminalPane.swift`, and `WorkspaceView.swift` track exact trusted conversation IDs, launch generations, and root-provider ancestry (`providerPID` recorded under suspended spawn before hooks; `SessionStart` may replace an existing bound conversation ID only for verified root `clear`/`fork`, not arbitrary `SessionStart` events). Root `Stop` is turn completion; normal exits are excluded. `automaticRestore` (default `true`, controlled alone by `recovery.settings`) exposes `live`, `restoring`, `restored`, `needs_attention`, and `failed` across CLI `recovery list/run [PANE_ID]` and API `recovery.{list,run,retry,settings}`. Native `Retry` targets dead panes only and reattaches the renderer after PID replacement. No system login auto-launch registration is implemented.
+- **Remote Installer & Recovery**: Bundled offline Linux `arm64`/`amd64` SSH installer (`RemoteInstaller.swift`, `RemoteHostsView.swift`, [../scripts/bundle-remote.sh](../scripts/bundle-remote.sh) , [../scripts/build-remote.sh](../scripts/build-remote.sh) , [../scripts/install-remote.sh](../scripts/install-remote.sh) ) verifies SHA256, check/dry-run, conflict refusal, and force+backup (`tmux` prerequisite, no root package install). `Remote.swift` and `remote/recovery.go` recover exact-ID remote conversations after reboot/lost `tmux` and reconnect to the same live remote PID without `--last` guessing or prompt replay. SSH work runs outside the shared local state transaction (`RecoveryLockTests`, `RecoveryEntryTests`).
+- **Bounded Scrollback**: `ScrollbackStore.swift`, `ScrollbackRuntime.swift`, `TranoCLI/ScrollbackMonitoring.swift`, and `remote/scrollback.go` persist sanitized UTF-8 display archives (default `persistScrollback = true`, max 4MiB / 10,000 lines per pane, 5s dirty snapshot interval, no command replay). `scrollback.settings(enabled: boolean)` controls local runtime `persistScrollback`, while native Settings separately propagates the preference to configured remote helpers. Disabling stops collection and removes archives.
+
+### Updater & Release Tooling
+- **Fail-Closed Sparkle**: `UpdateController.swift` and `UpdatePolicy.swift` require a valid HTTPS feed, 32-byte non-zero Ed25519 key, numeric `CFBundleVersion`, `SURequireSignedFeed=true`, and `SUVerifyUpdateBeforeExtraction=true` for GUI only (excluding service/snapshot), backed by [../scripts/configure-updates.py](../scripts/configure-updates.py) , [../scripts/release-update.sh](../scripts/release-update.sh) , `experiments/check-updates.py`, and `experiments/check-service-update.py`.
+
+## Latest Verification Evidence
+
+Latest verification supersedes older milestone baselines:
+
+| Evidence Artifact | Scope & Exact Result |
+| :--- | :--- |
+| `.local/review-repair-final-swift.log` | 92 core tests executed (2 optional installed-provider tests skipped, 0 failures), 17 UI tests passed, 6 CLI tests passed (includes 13 `AccountRollbackTests`, 12 `AgentTaskTests`, 7 `TabActivityHoverTests`, 1 `RecoveryEntryTests`). |
+| `.local/review-repair-provider-compat.log` | 9 installed-provider compatibility tests passed, 0 skipped, 0 failures (empty managed profile Claude auth; Codex transferred conversation read without model request). |
+| `.local/provider-signals-green.log` | 3 isolated PTY fake-provider signal relay/cancellation tests passed in `12.315s`. |
+| `.local/provider-account-switch-green.log` | 3 fake-provider switch tests passed in `20.008s` (safe tool boundary, reaped old process, exact resume, preserved credentials, no duplicate launch). |
+| `.local/provider-account-isolation-green.log` | 3 fake-provider isolation tests passed in `6.605s`. |
+| `.local/review-repair-bundle-recovery.log` | 1 refreshed bundle recovery check passed in `6.066s` (exact Claude/Codex IDs, `cwd`, unchanged pane/tab/split layout, normal-exit exclusion, concurrent/repeated deduplication). |
+| `.local/review-repair-bundle-native.log` | 1 refreshed bundle native check passed in `3.756s` (native client `SIGKILL` keeps same shell PID, detached completion collected, API stays alive). |
+| `.local/review-repair-bundle-updates.log` | 4 refreshed bundle update/service compatibility checks passed in `0.868s` (local ad-hoc checks, not Developer ID notarized feed deployment). |
+| `.local/tab-hover-evidence.json` | 7 real `NSPanel`+`NSHostingView` hover tests with deterministic owner-key state. |
+| `.local/remote-lifecycle-race.log` | Saved transcription of captured `go test -race -count=1 -v ./...` tool output (exit `0`, full verbose `PASS` in `41.042s`, includes empty-conversation-ID confirmation guard). |
+| `.local/remote-lifecycle-vet-linux-compile.log` | Saved transcription receipt for `go vet ./...`, `GOOS=linux GOARCH=amd64 go test -c`, and `GOOS=linux GOARCH=arm64 go test -c` (no output, observed aggregate exit `0`). |
+| `.local/remote-lifecycle-pty.log` | Saved captured macOS PTY harness `PASS` in `0.76s` (exit `0`; `0x03` Ctrl-C interrupt, exit `42`, active retry metadata, original foreground group restored; captured before later empty-ID guard while terminal/process-group code remained unchanged). |
+| `.local/review-repair-release.log` | Release `Build complete! (81.96s)`, ad-hoc signing and plist checks OK. |
+| `.local/review-repair-packaging-tests.log` | 6 packaging/OSS boundary tests passed in `1.243s`. |
+| `.local/review-repair-privacy.log` | Candidate publication privacy check passed across 185 files. |
+| `.local/performance-baseline.json` | Short 5-round, 10-pane `BACKEND_ONLY` baseline via `experiments/benchmark-trano.py` and [performance-contract.json](performance-contract.json) . |
+
+*Historical Integration Context*: Earlier bundle revisions passed isolated local/remote checks (`.local/recovery-reviewed-bundle.log`, `.local/accounts-reviewed-bundle.log`, `.local/native-reviewed-bundle.log`, and `.local/remote-final-bundle.log` Linux SSH in `12.263s`) alongside pre-fix Go/Linux runs (`.local/tab-hover-go-final-2.log`, `.local/tab-hover-linux.log` with 26 tests, and `.local/remote-final-linux.log` with 16 tests). These are historical revision proofs, not latest-revision Linux runtime qualification.
+
+## Remaining Qualification Gates
+
+- **Linux Runtime & SSH Rerun**: Latest Linux runtime/SSH rerun after the latest parser and lifecycle fixes is **NOT RUN** because the Linux container fixture/images are unavailable.
+- **Authenticated Live Providers**: Real paid/authenticated quota telemetry, live conversation handoff, trusted hooks, plugins, and live subagents are not qualified by fake-provider or read-only compatibility probes.
+- **Physical OS & Hardware**: Physical pointer/hover activation, IME, keyboard/render latency, drag, clipboard, microphone, OS notifications, VoiceOver, 1x/2x display matrix, actual physical OS reboot, and live Glass adapter connection remain unqualified.
+- **Performance SLO (`U17`)**: Full 30-round, 60s-idle, 600s-load qualification is ongoing; native headless runs, cold-cache startup, physical input latency, and loaded-host SLO targets are not yet proven.
+- **Distribution & Public CI**: Developer ID signing, notarization, live signed Sparkle feeds, clean public CI execution and signed binary release qualification remain open.
+
+## Runnable Commands
+
+Require full Xcode (`xcode-select -p`). Serialize Swift builds; never run concurrent `swift build`/`swift test` against the same `.build` directory or against live user roots.
+
+```bash
+swift test
+scripts/build-app.sh
+scripts/build-remote.sh
+scripts/bundle-remote.sh
+(cd remote && go test -race -count=1 -v ./...)
+TRANO_TEST_CLI="$PWD/build/Trano.app/Contents/MacOS/trano" python3 experiments/check-recovery.py
+python3 experiments/check-native.py
+python3 experiments/check-updates.py
+python3 experiments/check-service-update.py
+python3 scripts/check-publication.py
+python3 scripts/generate-sbom.py
+python3 experiments/benchmark-trano.py --output .local/performance-qualification.json
+```

@@ -1,0 +1,9 @@
+.build/
+.local/
+.DS_Store
+build/
+*.xcuserstate
+.env
+design/
+__pycache__/
+*.pyc

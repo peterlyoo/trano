@@ -1,0 +1,41 @@
+version: 1
+product: Trano
+include:
+  - Sources/
+  - Tests/
+  - scripts/
+  - remote/
+  - integrations/
+  - experiments/
+  - docs/
+  - .github/
+  - licenses/
+  - Package.swift
+  - Package.resolved
+  - .gitignore
+  - AGENTS.md
+  - README.md
+  - LICENSE
+  - THIRD_PARTY_NOTICES.md
+  - CONTRIBUTING.md
+  - SECURITY.md
+exclude:
+  - .local/
+  - .build/
+  - build/
+  - .git/
+  - design/
+  - __pycache__/
+  - .DS_Store
+never_publish:
+  - Runtime state, session transcripts, credentials, signing private keys, SSH private keys.
+  - Private agent harnesses, private provider source, local workflow state, personal absolute paths.
+  - Dependency caches, Dollup wrapper or binary, unreviewed screenshots and terminal captures.
+ownership:
+  product: MIT; original Trano code and project-local scripts.
+  dependencies: Preserve upstream licenses and notices; never relabel dependencies as MIT.
+  provider_marks: Names identify compatible providers; no affiliation or trademark grant.
+verification:
+  - python3 scripts/check-publication.py
+  - python3 scripts/check-publication.py --staged
+  - python3 Tests/Integrations/test_publication.py

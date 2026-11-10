@@ -1,0 +1,63 @@
+name: Verify
+on:
+  push:
+  pull_request:
+permissions:
+  contents: read
+concurrency:
+  group: verify-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  macos:
+    runs-on: macos-26
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
+        with:
+          go-version: '1.24.10'
+          cache: false
+      - name: Check toolchain and publication boundary
+        run: |
+          xcode-select -p
+          swift --version
+          python3 scripts/check-publication.py
+          python3 Tests/Integrations/test_publication.py
+          python3 Tests/Integrations/test_build_identity.py
+          python3 Tests/Integrations/test_sbom.py
+          python3 scripts/generate-sbom.py --check
+      - name: Build pinned tmux in the workspace
+        run: |
+          scripts/bootstrap-ci-tools.sh
+          echo "$PWD/build/ci-tools/bin" >> "$GITHUB_PATH"
+      - name: Test native core and renderer
+        run: swift test
+      - name: Build and verify app bundle
+        run: |
+          scripts/build-app.sh
+          python3 experiments/check-updates.py
+          ditto -c -k --sequesterRsrc --keepParent build/Trano.app build/Trano-development.zip
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: trano-development-build
+          path: build/Trano-development.zip
+          retention-days: 7
+  remote:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
+        with:
+          go-version: '1.24.10'
+          cache: false
+      - name: Build pinned tmux for Linux runtime tests
+        run: |
+          scripts/bootstrap-ci-tools.sh
+          echo "$PWD/build/ci-tools/bin" >> "$GITHUB_PATH"
+      - name: Test and cross-compile remote helper
+        run: |
+          cd remote
+          go test -race ./...
+          cd ..
+          scripts/build-remote.sh

@@ -1,0 +1,25 @@
+{
+  "requirement": "U17",
+  "benchmark": "experiments/benchmark-trano.py",
+  "qualification": {"rounds": 30, "panes": 10, "idle_seconds": 60, "load_seconds": 600},
+  "targets": {
+    "cold_app_ready_p95_ms": 500,
+    "warm_attach_p95_ms": 200,
+    "idle_cpu_core_percent": 1,
+    "idle_product_rss_mib": 250,
+    "physical_keyboard_to_render_p95_ms": 16.7
+  },
+  "metrics": {
+    "native_launch_to_ready_ms": "Process spawn to attached terminal viewport plus one native headless draw. Filesystem caches are warm.",
+    "native_initial_draw_ms": "Native view cache/display duration after the viewport is available.",
+    "idle_api_to_capture_ms": "Unix API send to shell output observed through capture; excludes physical keyboard and display presentation.",
+    "load_api_to_scrollback_ms": "API send to owned tmux capture of 10000 scrollback lines during sustained colored Unicode output; includes capture process spawn.",
+    "resident_process_cpu_core_percent": "Cumulative CPU delta of owned resident app, helper, tmux and collector processes. Short-lived helpers can be missed.",
+    "rss_mib": "Sum of product resident process RSS. User shells and generated workload processes are excluded."
+  },
+  "not_equivalent": [
+    "Headless native readiness does not establish an OS-presented frame or a cold filesystem launch.",
+    "API roundtrip does not establish physical-keyboard-to-render latency.",
+    "A short smoke run does not qualify the 60-second idle or 600-second load gates."
+  ]
+}

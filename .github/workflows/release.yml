@@ -1,0 +1,102 @@
+name: Prepare signed release
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: App version, such as 0.1.0
+        required: true
+        type: string
+      build:
+        description: Increasing numeric build version
+        required: true
+        type: string
+permissions:
+  contents: write
+concurrency:
+  group: signed-release
+  cancel-in-progress: false
+jobs:
+  release:
+    runs-on: macos-26
+    timeout-minutes: 45
+    environment: release
+    env:
+      TRANO_APP_VERSION: ${{ inputs.version }}
+      TRANO_BUILD_VERSION: ${{ inputs.build }}
+      TRANO_SIGNING_IDENTITY: ${{ secrets.TRANO_SIGNING_IDENTITY }}
+      TRANO_UPDATE_FEED_URL: ${{ vars.TRANO_UPDATE_FEED_URL }}
+      TRANO_UPDATE_PUBLIC_KEY: ${{ vars.TRANO_UPDATE_PUBLIC_KEY }}
+      TRANO_UPDATE_DOWNLOAD_URL: https://github.com/${{ github.repository }}/releases/download/v${{ inputs.version }}
+      TRANO_UPDATE_KEY_ACCOUNT: dev.trano.updates
+      TRANO_NOTARY_PROFILE: trano-ci-notary
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
+        with:
+          go-version: '1.24.10'
+          cache: false
+      - name: Verify source
+        run: |
+          python3 scripts/check-publication.py
+          python3 scripts/configure-updates.py --check
+          scripts/bootstrap-ci-tools.sh
+          echo "$PWD/build/ci-tools/bin" >> "$GITHUB_PATH"
+          swift package resolve
+      - name: Test
+        run: |
+          swift test
+          (cd remote && go test -race ./...)
+      - name: Configure temporary signing keychain
+        env:
+          TRANO_CERTIFICATE_BASE64: ${{ secrets.TRANO_CERTIFICATE_BASE64 }}
+          TRANO_CERTIFICATE_PASSWORD: ${{ secrets.TRANO_CERTIFICATE_PASSWORD }}
+          TRANO_SPARKLE_PRIVATE_KEY: ${{ secrets.TRANO_SPARKLE_PRIVATE_KEY }}
+          TRANO_APPLE_ID: ${{ secrets.TRANO_APPLE_ID }}
+          TRANO_APPLE_TEAM_ID: ${{ secrets.TRANO_APPLE_TEAM_ID }}
+          TRANO_APP_SPECIFIC_PASSWORD: ${{ secrets.TRANO_APP_SPECIFIC_PASSWORD }}
+        run: |
+          set -euo pipefail
+          umask 077
+          keychain="$RUNNER_TEMP/trano-release.keychain-db"
+          password=$(openssl rand -hex 24)
+          echo "::add-mask::$password"
+          security create-keychain -p "$password" "$keychain"
+          security set-keychain-settings -lut 21600 "$keychain"
+          security unlock-keychain -p "$password" "$keychain"
+          security list-keychains -d user -s "$keychain" "$HOME/Library/Keychains/login.keychain-db"
+          security default-keychain -d user -s "$keychain"
+          python3 - <<'PY'
+          import base64, os, pathlib
+          root = pathlib.Path(os.environ["RUNNER_TEMP"])
+          (root / "trano-certificate.p12").write_bytes(base64.b64decode(os.environ["TRANO_CERTIFICATE_BASE64"], validate=True))
+          key = os.environ["TRANO_SPARKLE_PRIVATE_KEY"].strip()
+          try:
+              valid = len(base64.b64decode(key, validate=True)) in (32, 96)
+          except ValueError:
+              valid = False
+          if not valid:
+              raise ValueError("Invalid update signing key format")
+          (root / "trano-update-key").write_text(key)
+          PY
+          security import "$RUNNER_TEMP/trano-certificate.p12" -k "$keychain" -P "$TRANO_CERTIFICATE_PASSWORD" -T /usr/bin/codesign
+          security set-key-partition-list -S apple-tool:,apple: -k "$password" "$keychain" >/dev/null
+          .build/artifacts/sparkle/Sparkle/bin/generate_keys --account "$TRANO_UPDATE_KEY_ACCOUNT" -f "$RUNNER_TEMP/trano-update-key"
+          xcrun notarytool store-credentials "$TRANO_NOTARY_PROFILE" --apple-id "$TRANO_APPLE_ID" --team-id "$TRANO_APPLE_TEAM_ID" --password "$TRANO_APP_SPECIFIC_PASSWORD"
+          rm "$RUNNER_TEMP/trano-certificate.p12" "$RUNNER_TEMP/trano-update-key"
+      - name: Build signed and notarized update
+        run: |
+          scripts/release-update.sh --build
+          python3 experiments/check-updates.py
+      - name: Create draft release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          printf 'Trano %s\n\nSigned and notarized macOS app with Linux remote helpers.\n' "$TRANO_APP_VERSION" > "$RUNNER_TEMP/release-notes.md"
+          release_dir="build/releases/$TRANO_APP_VERSION-$TRANO_BUILD_VERSION"
+          gh release create "v$TRANO_APP_VERSION" "$release_dir/Trano-$TRANO_APP_VERSION.zip" "$release_dir/appcast.xml" "$release_dir/SHA256SUMS" --target "$GITHUB_SHA" --draft --title "Trano $TRANO_APP_VERSION" --notes-file "$RUNNER_TEMP/release-notes.md"
+      - name: Remove temporary signing material
+        if: always()
+        run: |
+          rm -f "$RUNNER_TEMP/trano-certificate.p12" "$RUNNER_TEMP/trano-update-key"
+          security default-keychain -d user -s "$HOME/Library/Keychains/login.keychain-db"
+          if [[ -f "$RUNNER_TEMP/trano-release.keychain-db" ]]; then security delete-keychain "$RUNNER_TEMP/trano-release.keychain-db"; fi

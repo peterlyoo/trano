@@ -1,0 +1,42 @@
+checked_at: 2026-11-11
+minimum_age_days: 14
+swift_packages:
+  sparkle:
+    version: 2.10.1
+    source: https://github.com/sparkle-project/Sparkle/releases/tag/2.10.1
+    published_at: 2026-10-25T14:36:36Z
+    archive_sha256: 4c2e48a3e50ebcc2c88a58a4c7264a1a99c3c31857ce754357afb9cdb323022a
+    license: MIT and bundled notices
+  existing_pins:
+    source: Package.resolved
+    policy: Existing exact pins retained; licenses documented in THIRD_PARTY_NOTICES.md.
+ci_tools:
+  tmux:
+    version: 3.6a
+    source: https://github.com/tmux/tmux/releases/tag/3.6a
+    published_at: 2025-12-05T05:50:50Z
+    archive_sha256: b6d8d9c76585db8ef5fa00d4931902fa4b8cbe8166f528f44fc403961a3f3759
+    selection: Matches the product's qualified local tmux version.
+  libevent:
+    version: 2.1.13-stable
+    source: https://github.com/libevent/libevent/releases/tag/release-2.1.13-stable
+    published_at: 2026-07-01T12:25:09Z
+    archive_sha256: f7e9383b8c0baa81b687e5b5eecc01beefaf1b19b64151d95ed61647fe7a315c
+  utf8proc:
+    version: 2.12.0
+    source: https://github.com/JuliaStrings/utf8proc/releases/tag/v2.12.0
+    published_at: 2026-09-25T06:00:55Z
+    archive_sha256: a393fbef160835fb315bc3e91ba8d86f7a73a7cec9e6198b6c60b848b498bfeb
+actions:
+  checkout:
+    source: https://github.com/actions/checkout/releases/tag/v7.0.1
+    published_at: 2026-07-20T15:10:05Z
+    revision: 3d3c42e5aac5ba805825da76410c181273ba90b1
+  setup_go:
+    source: https://github.com/actions/setup-go/releases/tag/v7.0.0
+    published_at: 2026-07-16T02:50:50Z
+    revision: b7ad1dad31e06c5925ef5d2fc7ad053ef454303e
+  upload_artifact:
+    source: https://github.com/actions/upload-artifact/releases/tag/v7.0.2
+    published_at: 2026-10-07T10:08:14Z
+    revision: cf430e030ddbb5b0abf93d22962f4752f3646cd9

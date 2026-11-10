@@ -1,0 +1,462 @@
+{
+  "$schema" : "http:\/\/cyclonedx.org\/schema\/bom-1.6.schema.json",
+  "bomFormat" : "CycloneDX",
+  "components" : [
+    {
+      "bom-ref" : "pkg:github\/ordo-one\/dollup@1.3.0",
+      "externalReferences" : [
+        {
+          "type" : "vcs",
+          "url" : "https:\/\/github.com\/ordo-one\/dollup\/tree\/b42fccc2b7ed2d4bffd99642bf7bb8e2a56c1c46"
+        },
+        {
+          "type" : "documentation",
+          "url" : "https:\/\/github.com\/rarestype\/dollup\/tree\/1.3.0"
+        }
+      ],
+      "licenses" : [
+        {
+          "license" : {
+            "name" : "Unspecified in formatter wrapper"
+          }
+        }
+      ],
+      "name" : "dollup",
+      "properties" : [
+        {
+          "name" : "trano:role",
+          "value" : "resolved-formatter-not-distributed"
+        },
+        {
+          "name" : "trano:vcsRevision",
+          "value" : "b42fccc2b7ed2d4bffd99642bf7bb8e2a56c1c46"
+        }
+      ],
+      "purl" : "pkg:github\/ordo-one\/dollup@1.3.0",
+      "scope" : "excluded",
+      "type" : "library",
+      "version" : "1.3.0"
+    },
+    {
+      "bom-ref" : "pkg:github\/rarestype\/h@1.0.1",
+      "externalReferences" : [
+        {
+          "type" : "vcs",
+          "url" : "https:\/\/github.com\/rarestype\/h\/tree\/aa3626829160917d4378330617971977cbd78f5b"
+        },
+        {
+          "type" : "license",
+          "url" : "https:\/\/github.com\/rarestype\/h\/blob\/aa3626829160917d4378330617971977cbd78f5b\/LICENSE"
+        }
+      ],
+      "licenses" : [
+        {
+          "license" : {
+            "id" : "Apache-2.0"
+          }
+        }
+      ],
+      "name" : "h",
+      "properties" : [
+        {
+          "name" : "trano:role",
+          "value" : "resolved-non-Apple-graphics"
+        },
+        {
+          "name" : "trano:vcsRevision",
+          "value" : "aa3626829160917d4378330617971977cbd78f5b"
+        }
+      ],
+      "purl" : "pkg:github\/rarestype\/h@1.0.1",
+      "scope" : "excluded",
+      "type" : "library",
+      "version" : "1.0.1"
+    },
+    {
+      "bom-ref" : "pkg:github\/sparkle-project\/Sparkle@2.10.1",
+      "externalReferences" : [
+        {
+          "type" : "vcs",
+          "url" : "https:\/\/github.com\/sparkle-project\/Sparkle\/tree\/ab7d71291238df6e0492143b120c9b696a35f603"
+        },
+        {
+          "type" : "license",
+          "url" : "https:\/\/github.com\/sparkle-project\/Sparkle\/blob\/ab7d71291238df6e0492143b120c9b696a35f603\/LICENSE"
+        }
+      ],
+      "licenses" : [
+        {
+          "license" : {
+            "name" : "MIT and bundled BSD\/zlib notices"
+          }
+        }
+      ],
+      "name" : "sparkle",
+      "properties" : [
+        {
+          "name" : "trano:role",
+          "value" : "runtime"
+        },
+        {
+          "name" : "trano:vcsRevision",
+          "value" : "ab7d71291238df6e0492143b120c9b696a35f603"
+        }
+      ],
+      "purl" : "pkg:github\/sparkle-project\/Sparkle@2.10.1",
+      "scope" : "required",
+      "type" : "library",
+      "version" : "2.10.1"
+    },
+    {
+      "bom-ref" : "pkg:github\/apple\/swift-argument-parser@1.8.2",
+      "externalReferences" : [
+        {
+          "type" : "vcs",
+          "url" : "https:\/\/github.com\/apple\/swift-argument-parser\/tree\/6a52f3251125d74daf04fcbd5e6f08a75d074382"
+        },
+        {
+          "type" : "license",
+          "url" : "https:\/\/github.com\/apple\/swift-argument-parser\/blob\/6a52f3251125d74daf04fcbd5e6f08a75d074382\/LICENSE.txt"
+        }
+      ],
+      "licenses" : [
+        {
+          "expression" : "Apache-2.0 WITH Swift-exception"
+        }
+      ],
+      "name" : "swift-argument-parser",
+      "properties" : [
+        {
+          "name" : "trano:role",
+          "value" : "resolved-tool"
+        },
+        {
+          "name" : "trano:vcsRevision",
+          "value" : "6a52f3251125d74daf04fcbd5e6f08a75d074382"
+        }
+      ],
+      "purl" : "pkg:github\/apple\/swift-argument-parser@1.8.2",
+      "scope" : "excluded",
+      "type" : "library",
+      "version" : "1.8.2"
+    },
+    {
+      "bom-ref" : "pkg:github\/apple\/swift-docc-plugin@1.5.0",
+      "externalReferences" : [
+        {
+          "type" : "vcs",
+          "url" : "https:\/\/github.com\/apple\/swift-docc-plugin\/tree\/647c708be89f834fa6a6d4945442793a77ddf5b6"
+        },
+        {
+          "type" : "license",
+          "url" : "https:\/\/github.com\/apple\/swift-docc-plugin\/blob\/647c708be89f834fa6a6d4945442793a77ddf5b6\/LICENSE.txt"
+        }
+      ],
+      "licenses" : [
+        {
+          "expression" : "Apache-2.0 WITH Swift-exception"
+        }
+      ],
+      "name" : "swift-docc-plugin",
+      "properties" : [
+        {
+          "name" : "trano:role",
+          "value" : "resolved-documentation"
+        },
+        {
+          "name" : "trano:vcsRevision",
+          "value" : "647c708be89f834fa6a6d4945442793a77ddf5b6"
+        }
+      ],
+      "purl" : "pkg:github\/apple\/swift-docc-plugin@1.5.0",
+      "scope" : "excluded",
+      "type" : "library",
+      "version" : "1.5.0"
+    },
+    {
+      "bom-ref" : "pkg:github\/swiftlang\/swift-docc-symbolkit@1.0.0",
+      "externalReferences" : [
+        {
+          "type" : "vcs",
+          "url" : "https:\/\/github.com\/swiftlang\/swift-docc-symbolkit\/tree\/b45d1f2ed151d057b54504d653e0da5552844e34"
+        },
+        {
+          "type" : "license",
+          "url" : "https:\/\/github.com\/swiftlang\/swift-docc-symbolkit\/blob\/b45d1f2ed151d057b54504d653e0da5552844e34\/LICENSE.txt"
+        }
+      ],
+      "licenses" : [
+        {
+          "expression" : "Apache-2.0 WITH Swift-exception"
+        }
+      ],
+      "name" : "swift-docc-symbolkit",
+      "properties" : [
+        {
+          "name" : "trano:role",
+          "value" : "resolved-documentation"
+        },
+        {
+          "name" : "trano:vcsRevision",
+          "value" : "b45d1f2ed151d057b54504d653e0da5552844e34"
+        }
+      ],
+      "purl" : "pkg:github\/swiftlang\/swift-docc-symbolkit@1.0.0",
+      "scope" : "excluded",
+      "type" : "library",
+      "version" : "1.0.0"
+    },
+    {
+      "bom-ref" : "pkg:github\/tayloraswift\/swift-png@4.5.2",
+      "externalReferences" : [
+        {
+          "type" : "vcs",
+          "url" : "https:\/\/github.com\/tayloraswift\/swift-png\/tree\/2d17c6c51c098628574c0383f1119892655a73a2"
+        },
+        {
+          "type" : "license",
+          "url" : "https:\/\/github.com\/tayloraswift\/swift-png\/blob\/2d17c6c51c098628574c0383f1119892655a73a2\/LICENSE"
+        }
+      ],
+      "licenses" : [
+        {
+          "license" : {
+            "id" : "Apache-2.0"
+          }
+        }
+      ],
+      "name" : "swift-png",
+      "properties" : [
+        {
+          "name" : "trano:role",
+          "value" : "resolved-non-Apple-graphics"
+        },
+        {
+          "name" : "trano:vcsRevision",
+          "value" : "2d17c6c51c098628574c0383f1119892655a73a2"
+        }
+      ],
+      "purl" : "pkg:github\/tayloraswift\/swift-png@4.5.2",
+      "scope" : "excluded",
+      "type" : "library",
+      "version" : "4.5.2"
+    },
+    {
+      "bom-ref" : "pkg:github\/migueldeicaza\/SwiftTerm@1.99.1",
+      "externalReferences" : [
+        {
+          "type" : "vcs",
+          "url" : "https:\/\/github.com\/migueldeicaza\/SwiftTerm\/tree\/2f573f73af5e768d90847dce20c97fa9535d7164"
+        },
+        {
+          "type" : "license",
+          "url" : "https:\/\/github.com\/migueldeicaza\/SwiftTerm\/blob\/2f573f73af5e768d90847dce20c97fa9535d7164\/LICENSE"
+        }
+      ],
+      "licenses" : [
+        {
+          "license" : {
+            "id" : "MIT"
+          }
+        }
+      ],
+      "name" : "swiftterm",
+      "properties" : [
+        {
+          "name" : "trano:role",
+          "value" : "runtime"
+        },
+        {
+          "name" : "trano:vcsRevision",
+          "value" : "2f573f73af5e768d90847dce20c97fa9535d7164"
+        }
+      ],
+      "purl" : "pkg:github\/migueldeicaza\/SwiftTerm@1.99.1",
+      "scope" : "required",
+      "type" : "library",
+      "version" : "1.99.1"
+    },
+    {
+      "bom-ref" : "pkg:github\/tmux\/tmux@3.6a",
+      "externalReferences" : [
+        {
+          "type" : "vcs",
+          "url" : "https:\/\/github.com\/tmux\/tmux\/tree\/3.6a"
+        },
+        {
+          "type" : "license",
+          "url" : "https:\/\/github.com\/tmux\/tmux\/blob\/3.6a\/COPYING"
+        }
+      ],
+      "hashes" : [
+        {
+          "alg" : "SHA-256",
+          "content" : "b6d8d9c76585db8ef5fa00d4931902fa4b8cbe8166f528f44fc403961a3f3759"
+        }
+      ],
+      "licenses" : [
+        {
+          "license" : {
+            "name" : "ISC and individual source-file notices"
+          }
+        }
+      ],
+      "name" : "tmux",
+      "properties" : [
+        {
+          "name" : "trano:role",
+          "value" : "external-runtime-and-ci"
+        },
+        {
+          "name" : "trano:bundled",
+          "value" : "false"
+        },
+        {
+          "name" : "trano:hashSubject",
+          "value" : "pinned upstream source release archive"
+        }
+      ],
+      "purl" : "pkg:github\/tmux\/tmux@3.6a",
+      "scope" : "required",
+      "type" : "application",
+      "version" : "3.6a"
+    },
+    {
+      "bom-ref" : "pkg:github\/libevent\/libevent@release-2.1.13-stable",
+      "externalReferences" : [
+        {
+          "type" : "vcs",
+          "url" : "https:\/\/github.com\/libevent\/libevent\/tree\/release-2.1.13-stable"
+        },
+        {
+          "type" : "license",
+          "url" : "https:\/\/github.com\/libevent\/libevent\/blob\/release-2.1.13-stable\/LICENSE"
+        }
+      ],
+      "hashes" : [
+        {
+          "alg" : "SHA-256",
+          "content" : "f7e9383b8c0baa81b687e5b5eecc01beefaf1b19b64151d95ed61647fe7a315c"
+        }
+      ],
+      "licenses" : [
+        {
+          "license" : {
+            "id" : "BSD-3-Clause"
+          }
+        }
+      ],
+      "name" : "libevent",
+      "properties" : [
+        {
+          "name" : "trano:role",
+          "value" : "ci-build"
+        },
+        {
+          "name" : "trano:bundled",
+          "value" : "false"
+        },
+        {
+          "name" : "trano:hashSubject",
+          "value" : "pinned upstream source release archive"
+        }
+      ],
+      "purl" : "pkg:github\/libevent\/libevent@release-2.1.13-stable",
+      "scope" : "optional",
+      "type" : "library",
+      "version" : "2.1.13-stable"
+    },
+    {
+      "bom-ref" : "pkg:github\/JuliaStrings\/utf8proc@v2.12.0",
+      "externalReferences" : [
+        {
+          "type" : "vcs",
+          "url" : "https:\/\/github.com\/JuliaStrings\/utf8proc\/tree\/v2.12.0"
+        },
+        {
+          "type" : "license",
+          "url" : "https:\/\/github.com\/JuliaStrings\/utf8proc\/blob\/v2.12.0\/LICENSE.md"
+        }
+      ],
+      "hashes" : [
+        {
+          "alg" : "SHA-256",
+          "content" : "a393fbef160835fb315bc3e91ba8d86f7a73a7cec9e6198b6c60b848b498bfeb"
+        }
+      ],
+      "licenses" : [
+        {
+          "license" : {
+            "name" : "MIT and Unicode data license"
+          }
+        }
+      ],
+      "name" : "utf8proc",
+      "properties" : [
+        {
+          "name" : "trano:role",
+          "value" : "ci-build"
+        },
+        {
+          "name" : "trano:bundled",
+          "value" : "false"
+        },
+        {
+          "name" : "trano:hashSubject",
+          "value" : "pinned upstream source release archive"
+        }
+      ],
+      "purl" : "pkg:github\/JuliaStrings\/utf8proc@v2.12.0",
+      "scope" : "optional",
+      "type" : "library",
+      "version" : "2.12.0"
+    },
+    {
+      "bom-ref" : "pkg:golang\/go@1.24.10",
+      "externalReferences" : [
+        {
+          "type" : "license",
+          "url" : "https:\/\/github.com\/golang\/go\/blob\/go1.24.10\/LICENSE"
+        }
+      ],
+      "licenses" : [
+        {
+          "license" : {
+            "id" : "BSD-3-Clause"
+          }
+        }
+      ],
+      "name" : "Go",
+      "properties" : [
+        {
+          "name" : "trano:role",
+          "value" : "remote-helper-runtime-and-build-toolchain"
+        }
+      ],
+      "type" : "platform",
+      "version" : "1.24.10"
+    }
+  ],
+  "metadata" : {
+    "component" : {
+      "bom-ref" : "trano",
+      "licenses" : [
+        {
+          "license" : {
+            "id" : "MIT"
+          }
+        }
+      ],
+      "name" : "Trano",
+      "type" : "application",
+      "version" : "0.1.0"
+    },
+    "lifecycles" : [
+      {
+        "phase" : "build"
+      }
+    ]
+  },
+  "specVersion" : "1.6",
+  "version" : 1
+}

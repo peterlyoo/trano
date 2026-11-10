@@ -1,0 +1,13 @@
+# Trano development
+
+- Start with `docs/PROGRESS.md`, `docs/RTM.md`, `docs/RECOVERY.md`, and `docs/NAVIGATION.md`. The original requirements are `U01` through `U21` in `docs/PRD.md`. Preserve them when continuing work; milestone documents are planning baselines, not current completion evidence.
+- This is a native macOS app with a Linux SSH helper. Keep the public product independent of private agent harnesses and private provider integrations.
+- Run `swift test` with full Xcode. Build with `scripts/build-app.sh`; the result is `build/Trano.app`. Do not run concurrent Swift builds in the same `.build` directory or overwrite an executing binary in place.
+- Use isolated temporary `TRANO_DATA_DIR`, `HOME`, `ZDOTDIR`, and provider profile roots for experiments. Never point destructive tests at a user's runtime or the default tmux server. Generated state, credentials, caches, and logs stay ignored under `.local`, `.build`, or `build`.
+- Capture test results and remaining limits in `docs/PROGRESS.md`. Real PTY/renderer tests do not establish real OS IME behavior; fake provider tests do not establish authenticated Claude/Codex compatibility or quota handoff.
+- Recovery identity must include a fresh launch generation and the actual provider process ancestry. A child SDK probe can inherit pane IDs and fire its hook before the parent. Test that order explicitly. Record the provider PID before it starts running; never infer identity from UUID timestamps, inherited pane IDs alone, or `--last`.
+- Keep `Stop` (turn completion) distinct from process exit. Recovery preserves live processes, layout IDs, account roots, and working directories; it must not replay original prompts or commands. Missing mappings produce diagnostics.
+- Test the bundled CLI and native app with `experiments/check-recovery.py` and `experiments/check-native.py` after recovery changes. `TRANO_TEST_CLI` selects the CLI for the recovery/account/remote experiments. Keep an isolated SSH fixture for `experiments/check-remote-ssh.py`.
+- Preserve exact UTF-8 arguments and shell quoting for Korean NFC/NFD, spaces, quotes, and trailing semicolons. tmux parses command separators separately from the shell. Do not set `LC_ALL=C` to localize diagnostics.
+- Keep runtime and configuration mutation under the shared transaction and ownership checks. Publish no credentials, transcript content, private hostnames, local personal paths, or unreviewed generated data.
+- SwiftPM's background XCTest helper cannot acquire a key window. Keep hover owner-key state deterministic in native unit tests, exercise real panels and focus state, and record physical pointer/activation qualification separately rather than weakening production activation guards.
