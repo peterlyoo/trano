@@ -1,12 +1,12 @@
 {
   "status": "implemented_with_qualification_failures_and_pending_gates",
   "sourceRevision": null,
-  "buildID": "04c6b221a155a493b41af366be736a93c1aa025f58dd971bf5b034a619faf620",
+  "buildID": "0c1df512eda54550b151dc9e6e63b9f1f89a64d55fa9caaf584b73432d9ef48b",
   "checks": {
     "swift": {
       "status": "passed",
       "coreTests": 92,
-      "uiTests": 22,
+      "uiTests": 27,
       "cliTests": 6,
       "failures": 0,
       "optionalProviderChecksSkipped": 2,
@@ -16,7 +16,12 @@
         "failures": 0,
         "scope": "Earlier product revision; provider/core code is unchanged in this UI correction."
       },
-      "totalExecuted": 120
+      "totalExecuted": 125,
+      "latestUIRerun": {
+        "tests": 27,
+        "failures": 0,
+        "scope": "Accessibility/help metadata changes after the full suite; no core or CLI changes."
+      }
     },
     "native_bundle": {
       "status": "passed",
@@ -118,21 +123,30 @@
     },
     "native_ui": {
       "titlebar": {
-        "status": "native_frame_render_passed",
-        "titlebarAlphaBefore": 0,
-        "titlebarAlphaAfter": 1,
+        "status": "native_frame_render_and_hit_tests_passed",
+        "presentation": "single_opaque_header_with_full_size_content",
+        "heightPoints": 32,
+        "titleVisible": false,
+        "trafficLightHitTargets": true,
+        "nativeBlankDragRegions": true,
         "terminalContentAlphaUnchanged": true,
         "physicalDrag": "not_run"
       },
       "activity": {
-        "presentation": "native_transient_popover",
-        "viewportGeometryTests": 1,
+        "presentation": "same_window_clipped_workspace_overlay",
+        "geometryTests": 6,
         "testedContentWidths": [
           1280,
           900
         ],
-        "priorWidthReductionPoints": 261,
-        "viewportSizeUnchanged": true
+        "sidebarStatesTested": [
+          "hidden",
+          "shown"
+        ],
+        "owningWindowAndWorkspaceContainment": true,
+        "viewportSizeUnchanged": true,
+        "escapeDismissalBeforeTerminalDispatch": true,
+        "activityBeforeCommandPalette": true
       },
       "settings": {
         "status": "draft_runtime_contracts_passed",
@@ -146,9 +160,15 @@
       "nativeClientCrashPersistence": {
         "status": "passed",
         "tests": 1,
-        "durationSeconds": 4.396
+        "durationSeconds": 4.115
       },
-      "scope": "Native geometry/render and draft-model tests plus installed process verification. Physical pointer, keyboard and OS permission qualification remain separate."
+      "scope": "Native geometry/render and draft-model tests plus installed process verification. Physical pointer, keyboard and OS permission qualification remain separate.",
+      "workspaceNavigation": {
+        "compactWorkspaceLeadingControl": true,
+        "sidebarVisibleByDefault": false,
+        "sidebarReclaimedWidthPoints": 217,
+        "sidebarTogglePreservesLayout": true
+      }
     },
     "claude_organization": {
       "status": "partial_profile_isolation_only",
@@ -170,5 +190,5 @@
   },
   "verificationScope": "Current local UI correction identified by product buildID, full local Swift tests, Apple Development installation and process/session continuity; earlier performance and CI snapshots remain explicitly separate.",
   "sourceRevisionScope": "UI correction source is published alongside this record and pinned by buildID. The listed public CI run applies to the earlier source revision; current CI status is tracked by GitHub Actions.",
-  "baseSourceRevision": "c0b2faca86167446c9479deb995fd6956b61902b"
+  "baseSourceRevision": "fab707716db10bd8bbcb58651d75acdc07afd40b"
 }

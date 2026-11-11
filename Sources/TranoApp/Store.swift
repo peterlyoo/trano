@@ -9,6 +9,7 @@ import UserNotifications
     @Published var message: String?
     @Published var picker: PickerKind?
     @Published var showActivity = false
+    @Published var showSessionsSidebar = false
     @Published var showSettings = false
     @Published var showVoice = false
     @Published var showRemoteHosts = false

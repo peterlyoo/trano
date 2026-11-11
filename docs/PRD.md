@@ -6,7 +6,7 @@ state: implementing
 traceability_to: []
 version: 2
 authors: [codex]
-last_updated: 2026-11-10
+last_updated: 2026-11-11
 ---
 
 # Trano PRD: 백그라운드 유지와 에이전트 관리를 결합한 오픈소스 터미널 기획
@@ -66,6 +66,8 @@ last_updated: 2026-11-10
   * 미완료 게이트(전체 제품 및 M1 미완료 사유): 실제 OS 한글 IME 입력/음성 입력/알림 권한 검증, 실제 원격 Linux/SSH 환경 검증, 실제 계정 페일오버(failover) 검증, 서명된 업데이트 및 공개 릴리스 검증은 아직 남아 있습니다.
 
 ## Goals
+
+The 2026-11-11 U03/U21 layout amendment requires one compact title/header/tab row, a leading current-workspace selector, an optional collapsed Sessions sidebar, and trailing Activity and Command Palette controls. Activity must overlay the existing terminal inside the same window without changing its viewport; native bounds, ordering and available terminal area are acceptance criteria under FR-NAV-6 in [NAVIGATION.md](NAVIGATION.md).
 
 U01부터 U21까지의 모든 요구사항을 제품 범위 내에 유지하며, 구현 및 검증 순서만 M0~M4 단계로 나누어 제공합니다.
 

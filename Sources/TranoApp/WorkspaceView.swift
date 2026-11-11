@@ -20,37 +20,20 @@ func activityColor(_ activity: ActivityState) -> Color {
 struct WorkspaceView: View {
     @ObservedObject var store: AppStore
     @State private var showAppearanceProfiles = false
+    private var workspaceTitle: String {
+        store.state.layout.workspaces.first { $0.id == store.state.layout.selectedWorkspaceID }?.title ?? "Workspace"
+    }
 
     var body: some View {
         VStack(spacing: 0) {
-            HStack(spacing: 12) {
-                Image(systemName: "terminal").foregroundStyle(accent)
-                Text("Trano").font(.system(size: 13, weight: .semibold))
-                Text("DEVELOPMENT").font(.system(size: 9, weight: .medium)).foregroundStyle(.secondary)
-                Spacer()
-                Button { store.showRemoteHosts = true } label: {
-                    HStack { Image(systemName: "network"); Text(store.sessions.first { $0.id == store.focusedID }?.host ?? "Local") }.font(.system(size: 11)).foregroundStyle(.secondary)
-                }.help("Remote hosts")
-                Divider().frame(height: 14)
-                Button { store.picker = .sessions } label: { Image(systemName: "magnifyingglass") }.help("Switch Session · ⌘K").accessibilityLabel("Switch Session")
-                Button { store.showActivity.toggle() } label: { Image(systemName: "waveform.path") }
-                    .help("Show Activity").accessibilityLabel("Show Activity")
-                    .popover(isPresented: $store.showActivity, arrowEdge: .top) {
-                        activity.frame(width: 320, height: 420).preferredColorScheme(.dark)
-                    }
-                Button { store.showAccounts = true } label: { Image(systemName: "person.crop.circle") }.help("Agent accounts").accessibilityLabel("Agent accounts")
-                Button { store.showExtensions = true } label: { Image(systemName: "puzzlepiece.extension") }.help("Agent extensions").accessibilityLabel("Agent extensions")
-                Button { store.showVoice = true } label: { Image(systemName: "mic") }.help("Voice Input").accessibilityLabel("Voice Input").disabled(store.focusedID == nil)
-                Button { store.showSettings = true } label: { Image(systemName: "gearshape") }.help("Settings · ⌘,").accessibilityLabel("Settings")
-            }
-            .buttonStyle(.plain).padding(.horizontal, 18).frame(height: 43).background(surface)
+            tabs
             Rectangle().fill(separatorColor).frame(height: 1)
             HStack(spacing: 0) {
-                sidebar.frame(width: 216)
-                Rectangle().fill(separatorColor).frame(width: 1)
+                if store.showSessionsSidebar {
+                    sidebar.frame(width: 216)
+                    Rectangle().fill(separatorColor).frame(width: 1)
+                }
                 VStack(spacing: 0) {
-                    tabs
-                    Rectangle().fill(separatorColor).frame(height: 1)
                     if let tab = store.selectedTab {
                         panes(tab)
                     } else {
@@ -62,6 +45,24 @@ struct WorkspaceView: View {
                             Button("New Terminal", action: store.newTab).keyboardShortcut("t", modifiers: .command)
                                 .buttonStyle(.borderedProminent).tint(accent).foregroundStyle(.black)
                         }.frame(maxWidth: .infinity, maxHeight: .infinity)
+                    }
+                }
+                .background(WorkspaceRegion("terminal-workspace"))
+                .overlay {
+                    if store.showActivity {
+                        GeometryReader { geometry in
+                            ZStack(alignment: .topTrailing) {
+                                Color.black.opacity(0.12).contentShape(Rectangle())
+                                    .onTapGesture { store.showActivity = false }
+                                activity
+                                    .frame(width: min(320, max(0, geometry.size.width - 24)), height: min(420, max(0, geometry.size.height - 24)))
+                                    .clipShape(RoundedRectangle(cornerRadius: 8))
+                                    .overlay { RoundedRectangle(cornerRadius: 8).stroke(separatorColor, lineWidth: 1).allowsHitTesting(false) }
+                                    .background(WorkspaceRegion("activity-panel"))
+                                    .shadow(color: .black.opacity(0.35), radius: 12, y: 4)
+                                    .padding(12)
+                            }.frame(width: geometry.size.width, height: geometry.size.height)
+                        }.clipped()
                     }
                 }
             }
@@ -79,6 +80,7 @@ struct WorkspaceView: View {
         .foregroundStyle(Color(NSColor(hex: "#ECECEE")))
         .preferredColorScheme(.dark)
         .frame(minWidth: 900, minHeight: 580)
+        .ignoresSafeArea(.container, edges: .top)
         .sheet(item: $store.picker) { kind in PickerView(store: store, kind: kind) }
         .sheet(isPresented: $store.showSettings) { SettingsView(store: store) }
         .sheet(isPresented: $showAppearanceProfiles) { ProfileAppearanceView(store: store) }
@@ -154,8 +156,20 @@ struct WorkspaceView: View {
     }
 
     private var tabs: some View {
-        HStack(spacing: 0) {
-            ScrollView(.horizontal, showsIndicators: false) {
+        HStack(spacing: 4) {
+            Button { store.showActivity = false; store.picker = .sessions } label: {
+                HStack(spacing: 7) {
+                    Image(systemName: "square.stack.3d.up").font(.system(size: 11)).foregroundStyle(accent)
+                    Text(workspaceTitle)
+                        .font(.system(size: 11, weight: .semibold)).lineLimit(1)
+                    Image(systemName: "chevron.down").font(.system(size: 8)).foregroundStyle(.secondary)
+                }.padding(.horizontal, 10).frame(maxWidth: 160, minHeight: 32)
+                    .contentShape(Rectangle())
+            }.accessibilityLabel("Switch Workspace").accessibilityValue(workspaceTitle).help("\(workspaceTitle) · Switch Workspace · ⌘K")
+                .background(WorkspaceRegion("workspace-switcher"))
+            Rectangle().fill(separatorColor).frame(width: 1, height: 16)
+            GeometryReader { geometry in
+              ScrollView(.horizontal, showsIndicators: false) {
                 HStack(spacing: 0) {
                     ForEach(store.state.layout.currentTabs) { tab in
                         let session = store.sessions.first { $0.id == tab.panes.first }
@@ -164,10 +178,10 @@ struct WorkspaceView: View {
                             Text(tab.title == "Terminal" ? session?.title ?? "Terminal" : tab.title).font(.system(size: 11)).lineLimit(1)
                             if tab.panes.count > 1 { Text("\(tab.panes.count)").font(.system(size: 9)).foregroundStyle(.secondary) }
                             Button { store.perform { try $0.update { $0.layout.closeTab(tab.id) } } } label: { Image(systemName: "xmark").font(.system(size: 8)).foregroundStyle(.tertiary) }.buttonStyle(.plain).help("Close Tab · keep running")
-                        }.padding(.horizontal, 16).frame(height: 37)
+                        }.padding(.horizontal, 12).frame(height: 32)
                             .background(tab.id == store.state.layout.selectedTabID ? Color.white.opacity(0.045) : .clear)
                             .overlay(alignment: .bottom) { if tab.id == store.state.layout.selectedTabID { Rectangle().fill(accent).frame(height: 1) } }
-                            .contentShape(Rectangle()).onTapGesture { store.selectTab(tab.id) }
+                            .contentShape(Rectangle()).onTapGesture { store.showActivity = false; store.selectTab(tab.id) }
                             .modifier(TabActivityHover(snapshot: TabActivitySnapshot(tab: tab, sessions: store.sessions), placement: .below))
                             .modifier(PaneDropTarget(store: store, tabID: tab.id))
                             .contextMenu {
@@ -177,10 +191,35 @@ struct WorkspaceView: View {
                                 Button("Close Tab · keep running") { store.perform { try $0.update { $0.layout.closeTab(tab.id) } } }
                             }
                     }
-                }
+                    WindowDragRegion().frame(minWidth: 24, maxWidth: .infinity, minHeight: 32, maxHeight: 32)
+                }.frame(minWidth: geometry.size.width, minHeight: 32)
+              }
             }
-            Button(action: store.newTab) { Image(systemName: "plus").font(.system(size: 12)) }.buttonStyle(.plain).padding(.horizontal, 13).help("New Tab · ⌘T")
-        }.background(surface)
+            Button(action: store.newTab) { Image(systemName: "plus").font(.system(size: 11)).frame(width: 24, height: 24) }.help("New Tab · ⌘T")
+            WindowDragRegion().frame(width: 12, height: 32)
+            Menu {
+                Button("New Workspace") { store.showActivity = false; store.execute(.newSession) }
+                Divider()
+                Button(store.showSessionsSidebar ? "Hide Sessions Sidebar" : "Show Sessions Sidebar") { store.showSessionsSidebar.toggle() }
+                Divider()
+                Button("Remote Hosts…") { store.showActivity = false; store.showRemoteHosts = true }
+                Button("Agent Accounts…") { store.showActivity = false; store.showAccounts = true }
+                Button("Agent Extensions…") { store.showActivity = false; store.showExtensions = true }
+                Button("Voice Input…") { store.showActivity = false; store.showVoice = true }.disabled(store.focusedID == nil)
+                Divider()
+                Button("Settings…") { store.showActivity = false; store.showSettings = true }
+            } label: { Image(systemName: "ellipsis").frame(width: 24, height: 24) }
+                .menuStyle(.borderlessButton).frame(width: 24).help("Workspace Actions").accessibilityLabel("Workspace Actions")
+            Button { store.showActivity.toggle() } label: { Image(systemName: "waveform.path").frame(width: 24, height: 24) }
+                .foregroundStyle(store.showActivity ? accent : Color.primary)
+                .help(store.showActivity ? "Hide Activity" : "Show Activity").accessibilityLabel("Show Activity")
+                .accessibilityValue(store.showActivity ? "Shown" : "Hidden")
+                .background(WorkspaceRegion("activity-button"))
+            Button { store.showActivity = false; store.picker = .commands } label: { Image(systemName: "command").frame(width: 24, height: 24) }
+                .help("Command Palette · ⇧⌘P").accessibilityLabel("Command Palette")
+                .background(WorkspaceRegion("command-palette-button"))
+        }.buttonStyle(.plain).padding(.leading, 80).padding(.trailing, 8).frame(height: 32)
+            .background(surface).background(WorkspaceRegion("workspace-header"))
     }
 
     @ViewBuilder private func panes(_ tab: TerminalTab) -> some View {
@@ -259,6 +298,20 @@ struct WorkspaceView: View {
                 }
             }
         }.padding(16).background(surface)
+    }
+}
+
+private struct WorkspaceRegion: NSViewRepresentable {
+    let id: String
+    init(_ id: String) { self.id = id }
+    func makeNSView(context: Context) -> NSView {
+        let view = RegionView()
+        view.identifier = NSUserInterfaceItemIdentifier(rawValue: id)
+        return view
+    }
+    func updateNSView(_ nsView: NSView, context: Context) { nsView.identifier = NSUserInterfaceItemIdentifier(rawValue: id) }
+    private final class RegionView: NSView {
+        override func hitTest(_ point: NSPoint) -> NSView? { nil }
     }
 }
 

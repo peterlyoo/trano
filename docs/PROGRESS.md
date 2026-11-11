@@ -26,13 +26,11 @@ flowchart TD
 
 ### Local Installation & Native UI Corrections
 
-Release build `04c6b221a155a493b41af366be736a93c1aa025f58dd971bf5b034a619faf620` is signed with the installed Apple Development identity and installed to `/Applications/Trano.app` without distribution notarization. The installed helper replaced the old helper while preserving 1 live shell PID and exact workspace, tab, and pane layout.
+Local installation and native UI layout corrections are verified at product buildID `0c1df512eda54550b151dc9e6e63b9f1f89a64d55fa9caaf584b73432d9ef48b`. Release `scripts/build-app.sh` built `build/Trano.app` in 106.29 seconds, and a separate step installed the Apple Development signed `/Applications/Trano.app` verified by deep strict codesign. Installed GUI and helper paths and helper buildID matched, replacing the old helper while preserving one live shell PID and exact workspace/tab/pane layout. PRD U03/U21 and FR-NAV-6 were amended with no dependency or schema changes; earlier Settings draft staging and UUID-separated `CLAUDE_CONFIG_DIR` limits remain unchanged.
 
-- **Window Chrome**: First and additional windows use nontransparent native titlebars (alpha `0` to `1`, content alpha `0.45098`, global background-drag `false`).
-- **Activity Popover**: Moved to a transient `320x420` popover, preventing the `261pt` viewport shrinkage at `1280` and `900` widths.
-- **Settings & Font**: Shared draft stages embedded profiles and update toggles until outer Save or Cancel. `SFMono-Regular` uses the system monospaced fallback. Modal `Done` labels are now `Close`.
-
-**Limits**: Verified via 120 tests executed, 2 optional skipped, 0 failures, and frame renders, not physical GUI clicks or dragging. Profiles isolate `CLAUDE_CONFIG_DIR` by UUID, but organization-aware support is unimplemented.
+- Windows merge title, header, and tabs into one opaque 32pt header with workspace selector first, Activity before Command Palette, blank drag regions, traffic-light hit targets, and 0.45098 terminal alpha.
+- The Sessions sidebar hides by default to reclaim 217pt; Activity is a workspace-clipped overlay up to 320x420 with 12pt margins, tested Escape dismissal, and Close/outside-click wiring.
+- Verification ran 125 Swift tests (0 failures), a 27-test UI rerun, and a 4.115s crash persistence test; physical pointer actions were not run, and product gates remain open.
 
 ### Workspace, Appearance, Input & Tab Activity
 - **Appearance & Profiles**: Fonts, fallback, line spacing, color, opacity, background images, themes, and per-pane profiles in `Appearance.swift`, `AppearanceProfiles.swift`, `AppearanceSettings.swift`, `ProfileAppearanceView.swift`, and `TerminalBackgroundImage.swift`.
@@ -59,7 +57,8 @@ Latest verification supersedes older milestone baselines:
 
 | Evidence Artifact | Scope & Exact Result |
 | :--- | :--- |
-| `.local/native-ui-final-swift.log` | 92 core tests executed (2 optional installed-provider tests skipped, 0 failures), 22 UI tests passed, 6 CLI tests passed; includes the native Activity viewport case and 4 Settings draft/runtime contracts. |
+| `.local/unified-layout-final-swift.log`, `.local/unified-layout-final-ui.log` | Full run: 92 core (2 optional skipped), 27 UI, 6 CLI; 125 executed, 0 failures. Includes 6 native geometry and 4 Settings draft contracts. UI rerun: 27 passed. |
+| `.local/unified-layout-signed-build.log`, `.local/native-ui-installed-receipt.json`, `.local/unified-layout-persistence.log` | Signed release build in 106.29s; installed GUI/helper identity, same shell PID and layout verified. Isolated native crash persistence: 1 passed in 4.115s. |
 | `.local/review-repair-provider-compat.log` | 9 installed-provider compatibility tests passed, 0 skipped, 0 failures (empty managed profile Claude auth; Codex transferred conversation read without model request). |
 | `.local/provider-signals-green.log` | 3 isolated PTY fake-provider signal relay/cancellation tests passed in `12.315s`. |
 | `.local/provider-account-switch-green.log` | 3 fake-provider switch tests passed in `20.008s` (safe tool boundary, reaped old process, exact resume, preserved credentials, no duplicate launch). |

@@ -41,9 +41,11 @@ import TerminalCore
             let dimensions = argument("--snapshot-size")?.split(separator: "x").compactMap { Double($0) }.filter(\.isFinite) ?? []
             let width = snapshot && dimensions.count == 2 ? min(4096, max(900, dimensions[0])) : 1280
             let height = snapshot && dimensions.count == 2 ? min(2160, max(620, dimensions[1])) : 800
-            let window = NSWindow(contentRect: NSRect(x: 0, y: 0, width: width, height: height), styleMask: [.titled, .closable, .miniaturizable, .resizable], backing: .buffered, defer: false)
+            let window = NSWindow(contentRect: NSRect(x: 0, y: 0, width: width, height: height), styleMask: [.titled, .closable, .miniaturizable, .resizable, .fullSizeContentView], backing: .buffered, defer: false)
             window.title = "Trano"
-            window.titlebarAppearsTransparent = false
+            window.titleVisibility = .hidden
+            window.titlebarAppearsTransparent = true
+            window.isMovableByWindowBackground = false
             window.backgroundColor = .clear
             window.isOpaque = false
             window.appearance = NSAppearance(named: .darkAqua)
@@ -127,9 +129,11 @@ import TerminalCore
     func newWindow() {
         guard let runtime = store?.runtime else { return }
         let model = AppStore(runtime: runtime)
-        let window = NSWindow(contentRect: NSRect(x: 0, y: 0, width: 1280, height: 800), styleMask: [.titled, .closable, .miniaturizable, .resizable], backing: .buffered, defer: false)
+        let window = NSWindow(contentRect: NSRect(x: 0, y: 0, width: 1280, height: 800), styleMask: [.titled, .closable, .miniaturizable, .resizable, .fullSizeContentView], backing: .buffered, defer: false)
         window.title = "Trano"
-        window.titlebarAppearsTransparent = false
+        window.titleVisibility = .hidden
+        window.titlebarAppearsTransparent = true
+        window.isMovableByWindowBackground = false
         window.backgroundColor = .clear
         window.isOpaque = false
         window.appearance = NSAppearance(named: .darkAqua)
@@ -254,6 +258,13 @@ import TerminalCore
 
     func handle(_ event: NSEvent) -> Bool {
         guard let eventWindow = event.window, let store = windows[eventWindow] else { return false }
+        if store.showActivity {
+            if event.type == .keyDown, event.keyCode == 53 {
+                store.showActivity = false
+                return true
+            }
+            if event.type == .leftMouseDown { return false }
+        }
         if event.type == .leftMouseDown {
             for (id, view) in store.terminalViews where view.window === event.window {
                 if view.bounds.contains(view.convert(event.locationInWindow, from: nil)) { store.focus(id); break }

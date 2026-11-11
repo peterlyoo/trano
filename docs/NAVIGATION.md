@@ -4,7 +4,7 @@ artifact_type: sdlc-srs
 parent_id: artifact-2026-11-10-agent-terminal-m2
 state: implementing
 version: 1
-last_updated: 2026-11-10
+last_updated: 2026-11-11
 traceability_to:
   - artifact-2026-11-10-agent-terminal-m2
 ---
@@ -51,7 +51,9 @@ Supports renaming workspace/tab/pane, reordering tabs, closing view/tab/others w
 `actions.list` documents all supported operations; `actions.perform` executes shared core commands using explicit target IDs or persisted focus. Actions requiring a native file panel return `requiresUI` / `noActiveWindow` when invoked headlessly rather than pretending a picker opened. GlassLauncher session launch/search/select operates on workspace groups while keeping stable v1 pane API mappings.
 
 ### FR-NAV-6 (U21): Native Black UI, Accessibility & Rex Action Audit
-Sidebar renders grouped workspaces, tab bar shows only the selected workspace's tabs, and search labels include `Workspace > Tab > Pane` context. Full keyboard focus, accessibility labels, and consistent native black UI are required. All original PRD U01–U21 features remain required (including new OS windows / `Cmd+N` under PRD U09), while extra Rex surfaces (floating panes, global hotkey, web sharing) are not silently claimed by basic navigation and are tracked as planned parity separate from current tests:
+The 2026-11-11 layout refinement is MUST: merge title, application header and tabs into one visible row without a separate Trano title or development badge. The compact current-workspace selector leads the tab strip; Sessions navigation is collapsed by default and remains available through a toggle and existing pickers. Trailing controls place Activity before Command Palette. Activity must be hosted and clipped inside the terminal workspace, with unchanged terminal geometry and explicit close/Escape/outside-click dismissal. Native bounds and screenshots at 1280×800 and 900×620 verify this acceptance; viewport-size checks alone do not prove containment.
+
+When enabled, the sidebar renders grouped workspaces. The tab bar shows only the selected workspace's tabs, and search labels include `Workspace > Tab > Pane` context. Full keyboard focus, accessibility labels, and consistent native black UI are required. All original PRD U01–U21 features remain required (including new OS windows / `Cmd+N` under PRD U09), while extra Rex surfaces (floating panes, global hotkey, web sharing) are not silently claimed by basic navigation and are tracked as planned parity separate from current tests:
 
 | Source Rex Action ID | Trano Status | Shortcut / Notes |
 | :--- | :--- | :--- |
@@ -60,7 +62,7 @@ Sidebar renders grouped workspaces, tab bar shows only the selected workspace's 
 | `pane.split.*`, `pane.focus.*`, `pane.move.*`, `pane.zoom/close/close_others/balance/resize` | Planned | Shared registry + CLI/API target IDs |
 | `pane.insert_path`, `pane.go_to_directory`, `pane.go_to`, `pane.move_to_tab/move_to_new_tab` | Planned | Edit menu + `Shift+Cmd+P` / `Cmd+P`; no claimed Rex key |
 | `pane.copy_id/rename/paste/copy/select_all/view_activity`, `prompt.previous/next`, scroll | Planned | Mapped in unified action registry |
-| New OS window (`Cmd+N`) / `client.tab.move_to_new_window` | Required, pending implementation | Required by original PRD U09; not optional future parity |
+| New OS window (`Cmd+N`) / `client.tab.move_to_new_window` | New Window implemented; move-to-window planned | Required by original PRD U09; not optional future parity |
 | `session.refresh`, floating panes, global hotkey, web sharing | Planned / Unverified | Planned parity separate from current navigation tests |
 
 ## 4. Sequential Implementation & Verification Plan (Owner: Codex)
