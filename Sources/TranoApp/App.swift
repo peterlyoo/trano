@@ -13,6 +13,7 @@ import TerminalCore
     private var settingsObservers: [ObjectIdentifier: AnyCancellable] = [:]
     private var keyMaps: [ObjectIdentifier: KeyBindingMap] = [:]
     private var readinessTimer: Timer?
+    var commandHintWindowIsActive: (NSWindow) -> Bool = { NSApp.isActive && $0.isKeyWindow }
 
     func applicationDidFinishLaunching(_ notification: Notification) {
         do {
@@ -60,7 +61,7 @@ import TerminalCore
             model.onCloseWindow = { [weak window] in window?.close() }
             configureMenu()
             observeSettings(model, window: window)
-            monitor = NSEvent.addLocalMonitorForEvents(matching: [.keyDown, .leftMouseDown]) { [weak self] event in
+            monitor = NSEvent.addLocalMonitorForEvents(matching: [.keyDown, .leftMouseDown, .flagsChanged]) { [weak self] event in
                 self?.handle(event) == true ? nil : event
             }
             if let index = CommandLine.arguments.firstIndex(of: "--snapshot"), CommandLine.arguments.count > index + 1 {
@@ -156,8 +157,18 @@ import TerminalCore
         refreshMenuBindings(model.state.settings.keyBindings)
     }
 
+    func windowDidResignKey(_ notification: Notification) {
+        guard let window = notification.object as? NSWindow else { return }
+        windows[window]?.commandKeyHints.cancel()
+    }
+
+    func applicationDidResignActive(_ notification: Notification) {
+        for model in windows.values { model.commandKeyHints.cancel() }
+    }
+
     func windowWillClose(_ notification: Notification) {
         guard let window = notification.object as? NSWindow, let model = windows.removeValue(forKey: window) else { return }
+        model.commandKeyHints.cancel()
         settingsObservers.removeValue(forKey: ObjectIdentifier(window))
         keyMaps.removeValue(forKey: ObjectIdentifier(window))
         for view in model.terminalViews.values { view.terminate() }
@@ -183,7 +194,10 @@ import TerminalCore
     func applicationWillTerminate(_ notification: Notification) {
         readinessTimer?.invalidate()
         if let monitor { NSEvent.removeMonitor(monitor) }
-        for model in windows.values { for view in model.terminalViews.values { view.terminate() } }
+        for model in windows.values {
+            model.commandKeyHints.cancel()
+            for view in model.terminalViews.values { view.terminate() }
+        }
     }
 
     func configureMenu() {
@@ -257,7 +271,19 @@ import TerminalCore
     }
 
     func handle(_ event: NSEvent) -> Bool {
-        guard let eventWindow = event.window, let store = windows[eventWindow] else { return false }
+        let candidate = event.window ?? (event.type == .flagsChanged ? NSApp.keyWindow : nil)
+        guard let eventWindow = candidate, let store = windows[eventWindow] else { return false }
+        if event.type == .flagsChanged {
+            store.commandKeyHints.flagsChanged(event.modifierFlags) { [weak self, weak eventWindow, weak store] in
+                guard let self, let eventWindow, let store else { return false }
+                if let text = eventWindow.firstResponder as? NSTextView, text.isFieldEditor { return false }
+                if let terminal = eventWindow.firstResponder as? TranoView, terminal.hasMarkedText() { return false }
+                return self.window === eventWindow && self.commandHintWindowIsActive(eventWindow) && store.canShowTabShortcutHints && eventWindow.attachedSheet == nil && NSApp.modalWindow == nil
+            }
+            return false
+        }
+        if event.type == .keyDown { store.commandKeyHints.interrupt() }
+        if event.type == .leftMouseDown { store.commandKeyHints.cancel() }
         if store.picker != nil {
             if event.type == .keyDown, event.keyCode == 53 {
                 store.dismissPicker()

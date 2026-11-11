@@ -169,7 +169,8 @@ struct WorkspaceView: View {
     }
 
     private var tabs: some View {
-        HStack(spacing: 4) {
+        let shortcuts = store.tabShortcutHints
+        return HStack(spacing: 4) {
             Button { store.showActivity = false; store.picker = .sessions } label: {
                 HStack(spacing: 7) {
                     Image(systemName: "square.stack.3d.up").font(.system(size: 11)).foregroundStyle(accent)
@@ -187,12 +188,23 @@ struct WorkspaceView: View {
                     ForEach(store.state.layout.currentTabs) { tab in
                         let session = store.sessions.first { $0.id == tab.panes.first }
                         HStack(spacing: 9) {
-                            AgentBadge(agent: session?.agent ?? .shell).font(.system(size: 10))
+                            ZStack {
+                                AgentBadge(agent: session?.agent ?? .shell).font(.system(size: 10))
+                                    .opacity(shortcuts[tab.id] == nil ? 1 : 0)
+                                    .accessibilityHidden(shortcuts[tab.id] != nil)
+                                if let shortcut = shortcuts[tab.id] {
+                                    Text(shortcut).font(.system(size: 9, weight: .medium, design: .monospaced)).foregroundStyle(.secondary)
+                                        .background(WorkspaceRegion("tab-shortcut-" + tab.id, label: shortcut))
+                                }
+                            }.frame(width: 20, height: 16).allowsHitTesting(false)
                             Text(tab.title == "Terminal" ? session?.title ?? "Terminal" : tab.title).font(.system(size: 11)).lineLimit(1)
                             if tab.panes.count > 1 { Text("\(tab.panes.count)").font(.system(size: 9)).foregroundStyle(.secondary) }
-                            Button { store.perform { try $0.update { $0.layout.closeTab(tab.id) } } } label: { Image(systemName: "xmark").font(.system(size: 8)).foregroundStyle(.tertiary) }.buttonStyle(.plain).help("Close Tab · keep running")
+                            Button { store.perform { try $0.update { $0.layout.closeTab(tab.id) } } } label: { Image(systemName: "xmark").font(.system(size: 8)).foregroundStyle(.tertiary) }
+                                .buttonStyle(.plain).help("Close Tab · keep running")
+                                .background(WorkspaceRegion("tab-close-" + tab.id))
                         }.padding(.horizontal, 12).frame(height: 32)
                             .background(tab.id == store.state.layout.selectedTabID ? Color.white.opacity(0.045) : .clear)
+                            .background(WorkspaceRegion("workspace-tab-" + tab.id))
                             .overlay(alignment: .bottom) { if tab.id == store.state.layout.selectedTabID { Rectangle().fill(accent).frame(height: 1) } }
                             .contentShape(Rectangle()).onTapGesture { store.showActivity = false; store.selectTab(tab.id) }
                             .modifier(TabActivityHover(snapshot: TabActivitySnapshot(tab: tab, sessions: store.sessions), placement: .below))
@@ -316,13 +328,18 @@ struct WorkspaceView: View {
 
 private struct WorkspaceRegion: NSViewRepresentable {
     let id: String
-    init(_ id: String) { self.id = id }
+    let label: String?
+    init(_ id: String, label: String? = nil) { self.id = id; self.label = label }
     func makeNSView(context: Context) -> NSView {
         let view = RegionView()
         view.identifier = NSUserInterfaceItemIdentifier(rawValue: id)
+        view.setAccessibilityLabel(label)
         return view
     }
-    func updateNSView(_ nsView: NSView, context: Context) { nsView.identifier = NSUserInterfaceItemIdentifier(rawValue: id) }
+    func updateNSView(_ nsView: NSView, context: Context) {
+        nsView.identifier = NSUserInterfaceItemIdentifier(rawValue: id)
+        nsView.setAccessibilityLabel(label)
+    }
     private final class RegionView: NSView {
         override func hitTest(_ point: NSPoint) -> NSView? { nil }
     }

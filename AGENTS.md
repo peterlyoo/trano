@@ -3,6 +3,7 @@
 - Start with `docs/PROGRESS.md`, `docs/RTM.md`, `docs/RECOVERY.md`, and `docs/NAVIGATION.md`. The original requirements are `U01` through `U21` in `docs/PRD.md`. Preserve them when continuing work; milestone documents are planning baselines, not current completion evidence.
 - This is a native macOS app with a Linux SSH helper. Keep the public product independent of private agent harnesses and private provider integrations.
 - Minimize user steps: choose useful defaults, make optional names automatic, and use native selection controls for installed options such as fonts. Transient navigation must dismiss on outside click and Escape without requiring a close button.
+- Use visible labels for profile creation/deletion. Transient keyboard hints belong in a stable noninteractive slot, separate from close/destructive targets, and must cancel with modifier release, editing/modal state and owner/app focus loss.
 - Give every terminal pane a stable SwiftUI identity. Test native tab creation and repeated switches with real attach clients and backend PIDs; backend-only action tests cannot detect a renderer reused for another pane.
 - Run `swift test` with full Xcode. Build with `scripts/build-app.sh`; the result is `build/Trano.app`. Do not run concurrent Swift builds in the same `.build` directory or overwrite an executing binary in place.
 - Finish each completed Trano change with a rebuild and refresh the signed local installation. Verify the installed build identity and running executable paths, while preserving live shell PIDs and layout.

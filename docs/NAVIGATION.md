@@ -39,6 +39,8 @@ Named workspace requests MUST trim surrounding whitespace and reuse case-insensi
 Session next/previous wraps across workspaces and restores each workspace's last active tab and focused pane. Tab next/previous cycles strictly within the current workspace. Navigation never restarts shells or processes. New Session creates workspace + tab + pane; New Tab creates a tab in the active workspace. Must be verified by unit round-trip migration and focus restore tests.
 
 ### FR-NAV-2 (U03/U04/U09): Unified Typed Action Registry & Shortcuts
+Holding Command alone for 400ms MUST reveal inline tab hints matching `Cmd+1..8` and `Cmd+9` for the last tab. Releasing Command, another modifier/shortcut, window resign/close, or app deactivation MUST cancel pending and visible hints; inactive windows, settings and pickers must not show them. Hints MUST preserve tab geometry and existing keyboard/IME dispatch.
+
 One typed registry exposes stable `id`, `title`, `category`, `keywords`, and `shortcut` shared across menus, palette, keyboard, and CLI/API `actions.list` with zero UI-only dead entries. Key capture matches exact modifiers and never steals IME commits or shortcuts inside TextFields/pickers.
 - **Pickers**: `Cmd+K` sessions picker, `Shift+Cmd+P` commands, `Cmd+P` Go To Anything (panes/tabs/sessions).
 - **Cycling**: Go To Tab `Cmd+1..8` (`Cmd+9` last), `Cmd+Shift+[`/`]` and `Ctrl+Tab` cycle tabs; `Cmd+Option+[`/`]` proposed for session cycling until Rex defaults are verified.

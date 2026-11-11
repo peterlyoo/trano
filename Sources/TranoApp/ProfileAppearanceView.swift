@@ -90,11 +90,12 @@ struct ProfileAppearanceView: View {
                 VStack(spacing: 10) {
                     List(selection: $selectedID) {
                         ForEach(profileSettings.appearanceProfiles) { profile in Text(profile.name).tag(profile.id) }
-                    }.frame(width: 150)
-                    HStack {
-                        Button { newProfile(); stageProfile(creating: true) } label: { Image(systemName: "plus") }.help("New profile").accessibilityLabel("New appearance profile")
-                        Spacer()
-                        Button {
+                    }
+                    VStack(spacing: 6) {
+                        Button { newProfile(); stageProfile(creating: true) } label: {
+                            Label("New Profile", systemImage: "plus").frame(maxWidth: .infinity, alignment: .leading)
+                        }.help("Create from current appearance").accessibilityLabel("New appearance profile")
+                        Button(role: .destructive) {
                             guard let id = selectedID else { return }
                             if let draft {
                                 var value = draft.wrappedValue
@@ -102,9 +103,11 @@ struct ProfileAppearanceView: View {
                                 draft.wrappedValue = value
                             } else { store.perform { try $0.removeAppearanceProfile(id) } }
                             newProfile()
-                        } label: { Image(systemName: "minus") }.disabled(selectedID == nil).help("Delete profile").accessibilityLabel("Delete appearance profile")
-                    }
-                }
+                        } label: {
+                            Label("Delete Profile", systemImage: "trash").frame(maxWidth: .infinity, alignment: .leading)
+                        }.disabled(selectedID == nil).help("Delete selected profile").accessibilityLabel("Delete appearance profile")
+                    }.buttonStyle(.bordered).controlSize(.small)
+                }.frame(width: 150)
                 ScrollView {
                     VStack(alignment: .leading, spacing: 14) {
                         TextField("Profile name", text: nameBinding).textFieldStyle(.roundedBorder)

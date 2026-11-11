@@ -6,16 +6,17 @@ import UserNotifications
 @MainActor final class AppStore: ObservableObject {
     @Published var state = RuntimeState()
     @Published var sessions: [TerminalSession] = []
-    @Published var message: String?
-    @Published var picker: PickerKind?
-    @Published var showActivity = false
+    @Published var message: String? { didSet { if message != nil { commandKeyHints.cancel() } } }
+    @Published var picker: PickerKind? { didSet { if picker != nil { commandKeyHints.cancel() } } }
+    @Published var showActivity = false { didSet { if showActivity { commandKeyHints.cancel() } } }
     @Published var showSessionsSidebar = false
-    @Published var showSettings = false
-    @Published var showVoice = false
-    @Published var showRemoteHosts = false
-    @Published var showAccounts = false
-    @Published var showExtensions = false
-    @Published var remotePathRequest: RemotePathRequest?
+    @Published var showSettings = false { didSet { if showSettings { commandKeyHints.cancel() } } }
+    @Published var showVoice = false { didSet { if showVoice { commandKeyHints.cancel() } } }
+    @Published var showRemoteHosts = false { didSet { if showRemoteHosts { commandKeyHints.cancel() } } }
+    @Published var showAccounts = false { didSet { if showAccounts { commandKeyHints.cancel() } } }
+    @Published var showExtensions = false { didSet { if showExtensions { commandKeyHints.cancel() } } }
+    @Published var remotePathRequest: RemotePathRequest? { didSet { if remotePathRequest != nil { commandKeyHints.cancel() } } }
+    @Published var tabShortcutHintsVisible = false
     @Published var zoomed = false
     @Published var loading = true
     let runtime: TerminalRuntime
@@ -26,6 +27,19 @@ import UserNotifications
     private var selection = WindowSelection()
     var preferredWorkspaceID: String? { selection.workspaceID }
     var isActiveWindow: () -> Bool = { true }
+    lazy var commandKeyHints = CommandKeyHints { [weak self] value in self?.tabShortcutHintsVisible = value }
+
+    var canShowTabShortcutHints: Bool {
+        !loading && !state.layout.currentTabs.isEmpty && picker == nil && message == nil && !showActivity && !showSettings && !showVoice && !showRemoteHosts && !showAccounts && !showExtensions && remotePathRequest == nil
+    }
+
+    var tabShortcutHints: [String: String] {
+        guard tabShortcutHintsVisible else { return [:] }
+        let tabs = state.layout.currentTabs
+        return Dictionary(uniqueKeysWithValues: tabs.enumerated().compactMap { index, tab in
+            CommandKeyHints.label(for: index, count: tabs.count).map { (tab.id, $0) }
+        })
+    }
 
     enum PickerKind: String, Identifiable { case sessions, commands, anything, movePane; var id: String { rawValue } }
     var selectedTab: TerminalTab? { state.layout.tabs.first { $0.id == state.layout.selectedTabID } }
@@ -245,6 +259,7 @@ import UserNotifications
     var onCloseWindow: (() -> Void)?
 
     func execute(_ action: ActionID) {
+        commandKeyHints.interrupt()
         if action == .closePane && focusedID == nil || action == .closeTab && selectedTab == nil { onCloseWindow?(); return }
         defer { restoreTerminalFocus() }
         let view = focusedID.flatMap { terminalViews[$0] }

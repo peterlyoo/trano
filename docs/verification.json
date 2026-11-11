@@ -1,12 +1,12 @@
 {
   "status": "implemented_with_qualification_failures_and_pending_gates",
   "sourceRevision": null,
-  "buildID": "41c7453456ac629762d36c2dd43d3182a0f9ade7f895c12929f6b3bc31fea7e5",
+  "buildID": "83e56194d3be5d40b06e2869684dcf6ceea76df1e2c417b75cd65da4179ca03b",
   "checks": {
     "swift": {
       "status": "passed",
       "coreTests": 99,
-      "uiTests": 38,
+      "uiTests": 45,
       "cliTests": 6,
       "failures": 0,
       "optionalProviderChecksSkipped": 2,
@@ -16,7 +16,7 @@
         "failures": 0,
         "scope": "Earlier product revision; provider/core code is unchanged in this UI correction."
       },
-      "totalExecuted": 143
+      "totalExecuted": 150
     },
     "native_bundle": {
       "status": "passed",
@@ -156,7 +156,7 @@
       "nativeClientCrashPersistence": {
         "status": "passed",
         "tests": 1,
-        "durationSeconds": 4.709
+        "durationSeconds": 4.335
       },
       "scope": "Native geometry/render and draft-model tests plus installed process verification. Physical pointer, keyboard and OS permission qualification remain separate.",
       "workspaceNavigation": {
@@ -199,6 +199,27 @@
       "fontSettingsVisualQualification": {
         "status": "not_qualified",
         "reason": "Earlier bitmap captures have missing text and incorrect control colors; no final bitmap or physical visual acceptance is claimed. Native selector actions and horizontal bounds pass after the palette layout repair."
+      },
+      "appearanceProfileActions": {
+        "createLabel": "New Profile",
+        "deleteLabel": "Delete Profile",
+        "sidebarWidthPoints": 150,
+        "existingDraftAndCRUDTests": 7,
+        "persistenceBehaviorUnchanged": true
+      },
+      "commandKeyHints": {
+        "status": "passed_with_explicit_native_test_owner_state",
+        "tests": 7,
+        "holdSeconds": 0.4,
+        "mapping": "first_eight_then_9_for_last_tab",
+        "releaseAndOwnerLossCancellation": true,
+        "editingAndIMESuppression": true,
+        "staleCallbacksSuppressed": true,
+        "tabAndViewportGeometryUnchanged": true,
+        "closeTargetSeparate": true,
+        "eventDrivenOnly": true,
+        "productionOwnerGuard": "app_active_and_owner_key_window",
+        "physicalHold": "not_run"
       }
     },
     "claude_organization": {
@@ -231,5 +252,5 @@
   },
   "verificationScope": "Current local UI correction identified by product buildID, full local Swift tests, Apple Development installation and process/session continuity; earlier performance and CI snapshots remain explicitly separate.",
   "sourceRevisionScope": "UI correction source is published alongside this record and pinned by buildID. The listed public CI run applies to the earlier source revision; current CI status is tracked by GitHub Actions.",
-  "baseSourceRevision": "0d9d514e943b23eac6394f218b6df0a6f02216e6"
+  "baseSourceRevision": "6369f7c797aa5f0dfb804471b8e60bdf43ac90dd"
 }

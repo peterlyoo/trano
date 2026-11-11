@@ -67,6 +67,8 @@ last_updated: 2026-11-11
 
 ## Goals
 
+The U03/U09/U21 discoverability refinement requires visible `New Profile` and `Delete Profile` actions, and tab shortcut hints after holding Command alone for 400ms. Hints must match actual tab-number dispatch, disappear on release or focus loss, and preserve tab geometry and terminal processes.
+
 The 2026-11-11 session refinement requires named workspace get-or-create, automatic unused `Session N` names for blank New Session input, and stable pane renderers across tab creation and switching. U03/U09/U21 acceptance also requires a workspace selector adjacent to native window controls, no added terminal inset, and a verified readable default font while preserving custom selections.
 
 The 2026-11-11 U03/U21 layout amendment requires one compact title/header/tab row, a leading current-workspace selector, an optional collapsed Sessions sidebar, and trailing Activity and Command Palette controls. Activity must overlay the existing terminal inside the same window without changing its viewport; native bounds, ordering and available terminal area are acceptance criteria under FR-NAV-6 in [NAVIGATION.md](NAVIGATION.md).

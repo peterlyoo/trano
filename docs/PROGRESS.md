@@ -26,6 +26,8 @@ flowchart TD
 
 ### Local Installation & Native UI Corrections
 
+Profile creation and deletion use visible New Profile and Delete Profile buttons. Holding Command alone for 400ms shows tab hints in a fixed leading slot; release, shortcuts, editing, modal UI, or owner loss cancel them while close buttons and tab/terminal geometry remain unchanged.
+
 Session, navigation, and font refinements are complete, with native bounds verified and font-settings visual qualification remaining open.
 
 - Tab and workspace flows: Stable pane identity `.id(id)` fixed `Cmd+T` `NSHostingView`/tmux regressions (`.local/tab-lifecycle-red.log`), preserving renderer object identity and attach/backend PIDs. Named workspace get-or-create reuses or creates workspaces via `actions.perform` / `trano do session.new --title NAME`, defaulting blank names to `Session N`.
@@ -57,8 +59,8 @@ Latest verification supersedes older milestone baselines:
 
 | Evidence Artifact | Scope & Exact Result |
 | :--- | :--- |
-| `.local/session-refinement-final-palette-swift.log` | Full run: 99 core (2 optional skipped), 38 UI, 6 CLI; 143 executed, 0 failures. Includes real pane/attach PID, native menu action, focus and Settings bounds regressions. |
-| `.local/session-refinement-final-signed-build.log`, `.local/native-ui-installed-receipt.json`, `.local/session-refinement-final-native.log` | Signed release build in 76.95s; separate installation preserved 7 live shell PIDs and exact layout. Isolated native crash persistence: 1 passed in 4.709s. |
+| `.local/profile-command-hints-final-swift.log` | Full run: 99 core (2 optional skipped), 45 UI, 6 CLI; 150 executed, 0 failures. Includes 7 Command-hold threshold/cancellation/mapping/native geometry and editing tests. |
+| `.local/profile-command-hints-signed-build.log`, `.local/native-ui-installed-receipt.json`, `.local/profile-command-hints-native.log` | Signed release build in 71.45s; separate installation preserved 7 live shell PIDs and exact layout. Isolated native crash persistence: 1 passed in 4.335s. |
 | `.local/review-repair-provider-compat.log` | 9 installed-provider compatibility tests passed, 0 skipped, 0 failures (empty managed profile Claude auth; Codex transferred conversation read without model request). |
 | `.local/provider-signals-green.log` | 3 isolated PTY fake-provider signal relay/cancellation tests passed in `12.315s`. |
 | `.local/provider-account-switch-green.log` | 3 fake-provider switch tests passed in `20.008s` (safe tool boundary, reaped old process, exact resume, preserved credentials, no duplicate launch). |
