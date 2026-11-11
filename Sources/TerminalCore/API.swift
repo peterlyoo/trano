@@ -340,7 +340,8 @@ public final class APIService {
             case "actions.list": result = try .encoded(ActionCatalog.resolved(overrides: runtime.state().settings.keyBindings))
             case "actions.perform":
                 guard let action = ActionID(rawValue: try required("id")) else { throw TerminalError.invalid("Unknown action") }
-                try runtime.performAction(action, cwd: request.params["cwd"]?.text, workspaceID: request.params["workspaceID"]?.text, tabID: request.params["tabID"]?.text, paneID: request.params["paneID"]?.text, requestNavigation: true)
+                if let title = request.params["title"], title.text == nil { throw TerminalError.invalid("title must be a string") }
+                try runtime.performAction(action, cwd: request.params["cwd"]?.text, title: request.params["title"]?.text, workspaceID: request.params["workspaceID"]?.text, tabID: request.params["tabID"]?.text, paneID: request.params["paneID"]?.text, requestNavigation: true)
             case "activity.list": result = try .encoded(runtime.list())
             case "events.list":
                 var cursor = 0

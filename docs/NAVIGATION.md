@@ -34,6 +34,8 @@ Read-only CLI inspection (no Rex state changed, no shortcut file copied) found *
 ## 3. Functional Requirements & Acceptance Criteria
 
 ### FR-NAV-1 (U03/U09/U10): Scoped Session → Tab → Pane Navigation
+Named workspace requests MUST trim surrounding whitespace and reuse case-insensitive matches, including closed workspaces, without creating an extra shell or tab when an existing usable tab exists. Blank New Session names MUST create a new workspace with an unused `Session N` name; invalid names MUST leave runtime state unchanged. Cmd+T and repeated tab switches MUST preserve each pane's native renderer identity, attach client, backend shell PID and output.
+
 Session next/previous wraps across workspaces and restores each workspace's last active tab and focused pane. Tab next/previous cycles strictly within the current workspace. Navigation never restarts shells or processes. New Session creates workspace + tab + pane; New Tab creates a tab in the active workspace. Must be verified by unit round-trip migration and focus restore tests.
 
 ### FR-NAV-2 (U03/U04/U09): Unified Typed Action Registry & Shortcuts
@@ -52,6 +54,10 @@ Supports renaming workspace/tab/pane, reordering tabs, closing view/tab/others w
 
 ### FR-NAV-6 (U21): Native Black UI, Accessibility & Rex Action Audit
 The 2026-11-11 layout refinement is MUST: merge title, application header and tabs into one visible row without a separate Trano title or development badge. The compact current-workspace selector leads the tab strip; Sessions navigation is collapsed by default and remains available through a toggle and existing pickers. Trailing controls place Activity before Command Palette. Activity must be hosted and clipped inside the terminal workspace, with unchanged terminal geometry and explicit close/Escape/outside-click dismissal. Native bounds and screenshots at 1280×800 and 900×620 verify this acceptance; viewport-size checks alone do not prove containment.
+
+The workspace selector MUST sit 2–4pt beyond the native window-control group with valid native hit targets, and terminal views MUST fill their pane beneath its header without an added outer inset. Workspace and command pickers MUST stay inside the owning window and close on outside click or Escape before input reaches the terminal. Installed font choices MUST use inline native selection controls with a live preview and useful defaults, preserving custom fonts and the existing Settings Save/Cancel contract.
+
+Settings palettes MUST fit the native window width; native color-control bounds must be verified rather than inferred from a nonempty bitmap capture.
 
 When enabled, the sidebar renders grouped workspaces. The tab bar shows only the selected workspace's tabs, and search labels include `Workspace > Tab > Pane` context. Full keyboard focus, accessibility labels, and consistent native black UI are required. All original PRD U01–U21 features remain required (including new OS windows / `Cmd+N` under PRD U09), while extra Rex surfaces (floating panes, global hotkey, web sharing) are not silently claimed by basic navigation and are tracked as planned parity separate from current tests:
 

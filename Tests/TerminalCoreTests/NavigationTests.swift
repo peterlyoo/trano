@@ -2,6 +2,142 @@ import XCTest
 @testable import TerminalCore
 
 final class NavigationTests: XCTestCase {
+    // Implements: FR-NAV-1, FR-NAV-5
+    func testNamedSessionRequestReusesAndReopensWorkspaceWithoutNewShells() throws {
+        try withSessionRuntime { runtime, root in
+            let service = APIService(runtime: runtime)
+            func open(_ title: String) {
+                let response = service.route(APIRequest(method: "actions.perform", params: [
+                    "id": .string("session.new"), "cwd": .string(root.path), "title": .string(title)
+                ]))
+                XCTAssertNil(response.error, response.error ?? "")
+            }
+            open("  Build 한글  ")
+            let first = try runtime.state()
+            let workspace = try XCTUnwrap(first.layout.selectedWorkspaceID)
+            XCTAssertEqual(first.layout.workspaces.first { $0.id == workspace }?.title, "Build 한글")
+            let tab = first.layout.selectedTabID
+            let pane = first.layout.focusedPaneID
+            open("Other")
+            let before = try runtime.state()
+            let pids = Dictionary(uniqueKeysWithValues: try runtime.list().map { ($0.id, $0.pid) })
+            open("  bUiLd 한글 ")
+            let reused = try runtime.state()
+            XCTAssertEqual(reused.layout.workspaces.count, 2)
+            XCTAssertEqual(reused.layout.selectedWorkspaceID, workspace)
+            XCTAssertEqual(reused.layout.selectedTabID, tab)
+            XCTAssertEqual(reused.layout.focusedPaneID, pane)
+            XCTAssertEqual(reused.layout.tabs.map(\.id), before.layout.tabs.map(\.id))
+            XCTAssertEqual(Dictionary(uniqueKeysWithValues: try runtime.list().map { ($0.id, $0.pid) }), pids)
+
+            try runtime.update { $0.layout.closeWorkspace(workspace) }
+            open("BUILD 한글")
+            let reopened = try runtime.state()
+            XCTAssertEqual(reopened.layout.selectedWorkspaceID, workspace)
+            XCTAssertFalse(try XCTUnwrap(reopened.layout.workspaces.first { $0.id == workspace }).closed)
+            XCTAssertEqual(reopened.layout.selectedTabID, tab)
+            XCTAssertEqual(reopened.layout.focusedPaneID, pane)
+            XCTAssertEqual(reopened.layout.workspaces.count, 2)
+            XCTAssertEqual(reopened.layout.tabs.map(\.id), before.layout.tabs.map(\.id))
+            XCTAssertEqual(Dictionary(uniqueKeysWithValues: try runtime.list().map { ($0.id, $0.pid) }), pids)
+            XCTAssertTrue(try runtime.list().allSatisfy(\.alive))
+        }
+    }
+
+    // Implements: FR-NAV-1, FR-NAV-5
+    func testBlankSessionNamesGenerateDistinctUnusedNames() throws {
+        try withSessionRuntime { runtime, root in
+            try runtime.update { $0.layout.addWorkspace(title: "Session 2") }
+            let service = APIService(runtime: runtime)
+            for (name, expected) in [(nil, "Session 1"), (Optional(""), "Session 3"), (Optional("  \n  "), "Session 4")] {
+                var params: [String: JSONValue] = ["id": .string("session.new"), "cwd": .string(root.path)]
+                if let name { params["title"] = .string(name) }
+                let response = service.route(APIRequest(method: "actions.perform", params: params))
+                XCTAssertNil(response.error, response.error ?? "")
+                let state = try runtime.state()
+                XCTAssertEqual(state.layout.workspaces.first { $0.id == state.layout.selectedWorkspaceID }?.title, expected)
+            }
+            let state = try runtime.state()
+            XCTAssertEqual(state.layout.workspaces.count, 4)
+            XCTAssertEqual(Set(state.layout.workspaces.map(\.title)).count, 4)
+            XCTAssertEqual(state.layout.tabs.count, 3)
+            XCTAssertTrue(try runtime.list().allSatisfy(\.alive))
+        }
+    }
+
+    // Implements: FR-NAV-1, FR-NAV-5
+    func testExistingEmptyNamedWorkspaceGetsOneShellAndTab() throws {
+        try withSessionRuntime { runtime, root in
+            var workspace = ""
+            try runtime.update { workspace = $0.layout.addWorkspace(title: "Empty") }
+            let service = APIService(runtime: runtime)
+            let request = APIRequest(method: "actions.perform", params: [
+                "id": .string("session.new"), "cwd": .string(root.path), "title": .string(" empty ")
+            ])
+            let response = service.route(request)
+            XCTAssertNil(response.error, response.error ?? "")
+            let state = try runtime.state()
+            XCTAssertEqual(state.layout.workspaces.count, 1)
+            XCTAssertEqual(state.layout.selectedWorkspaceID, workspace)
+            XCTAssertEqual(state.layout.currentTabs.count, 1)
+            XCTAssertEqual(state.sessions.count, 2)
+            let pids = Dictionary(uniqueKeysWithValues: try runtime.list().map { ($0.id, $0.pid) })
+            XCTAssertNil(service.route(request).error)
+            XCTAssertEqual(try runtime.state().layout, state.layout)
+            XCTAssertEqual(Dictionary(uniqueKeysWithValues: try runtime.list().map { ($0.id, $0.pid) }), pids)
+        }
+    }
+
+    // Implements: FR-NAV-1, FR-NAV-5
+    func testInvalidSessionNameCannotMutateTargetSelectionOrCreateShell() throws {
+        try withSessionRuntime { runtime, root in
+            var target = ""
+            try runtime.update {
+                target = $0.layout.addWorkspace(title: "Target")
+                $0.layout.addWorkspace(title: "Current")
+            }
+            let service = APIService(runtime: runtime)
+            for title in [String(repeating: "x", count: 201), "line\nbreak", "tab\tname", "nul\0name", "control\u{7f}name"] {
+                let before = try JSONValue.encoded(runtime.state())
+                let pids = Dictionary(uniqueKeysWithValues: try runtime.list().map { ($0.id, $0.pid) })
+                let response = service.route(APIRequest(method: "actions.perform", params: [
+                    "id": .string("session.new"), "cwd": .string(root.path),
+                    "title": .string(title), "workspaceID": .string(target)
+                ]))
+                XCTAssertNotNil(response.error)
+                XCTAssertEqual(try JSONValue.encoded(runtime.state()), before)
+                XCTAssertEqual(Dictionary(uniqueKeysWithValues: try runtime.list().map { ($0.id, $0.pid) }), pids)
+            }
+            for title in [JSONValue.bool(true), .number(42), .array([]), .object([:]), .null] {
+                let before = try JSONValue.encoded(runtime.state())
+                let response = service.route(APIRequest(method: "actions.perform", params: [
+                    "id": .string("session.new"), "cwd": .string(root.path),
+                    "title": title, "workspaceID": .string(target)
+                ]))
+                XCTAssertNotNil(response.error)
+                XCTAssertEqual(try JSONValue.encoded(runtime.state()), before)
+            }
+        }
+    }
+
+    private func withSessionRuntime(_ body: (TerminalRuntime, URL) throws -> Void) throws {
+        let root = FileManager.default.temporaryDirectory.appendingPathComponent("trano-names-" + UUID().uuidString.prefix(6))
+        let runtime = try TerminalRuntime(root: root)
+        defer {
+            for pane in (try? runtime.list()) ?? [] { try? runtime.terminate(pane.id) }
+            try? FileManager.default.removeItem(at: root)
+        }
+        _ = try runtime.create(title: "Fixture", cwd: root.path, shell: "/bin/sleep", arguments: ["60"])
+        for name in ["HOME", "ZDOTDIR"] {
+            let process = Process()
+            process.executableURL = URL(fileURLWithPath: runtime.executable)
+            process.arguments = ["-S", runtime.socketPath, "set-environment", "-g", name, root.path]
+            try process.run(); process.waitUntilExit()
+            XCTAssertEqual(process.terminationStatus, 0)
+        }
+        try body(runtime, root)
+    }
+
     // Implements: FR-NAV-5
     func testLauncherReusesProjectWorkspaceWithoutReusingItsPTY() throws {
         let root = FileManager.default.temporaryDirectory.appendingPathComponent("trano-launch-" + UUID().uuidString.prefix(6))

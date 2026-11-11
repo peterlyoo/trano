@@ -40,12 +40,12 @@ import TerminalCore
     static func font(named name: String, size: Double) -> NSFont? {
         guard size.isFinite, (9...40).contains(size) else { return nil }
         if let font = NSFont(name: name, size: size) { return font }
-        guard name == TerminalSettings().fontName else { return nil }
+        guard name == TerminalSettings().fontName || name == "SFMono-Regular" else { return nil }
         return NSFont.monospacedSystemFont(ofSize: size, weight: .regular)
     }
 
     func save(persist: (TerminalSettings, TerminalSettings) throws -> Void, updateChecks: (Bool) -> Void, updateDownloads: (Bool) -> Void) throws {
-        guard Self.font(named: settings.fontName, size: settings.fontSize) != nil else { throw TerminalError.invalid("This font is not installed. Enter its PostScript name, such as SFMono-Regular.") }
+        guard Self.font(named: settings.fontName, size: settings.fontSize) != nil else { throw TerminalError.invalid("Choose an installed font.") }
         guard settings.appearance.fallbackFontName.isEmpty || NSFont(name: settings.appearance.fallbackFontName, size: settings.fontSize) != nil else { throw TerminalError.invalid("The fallback font is not installed.") }
         guard AppearancePreferences.isHexColor(settings.background) else { throw TerminalError.invalid("Background must be a #RRGGBB color.") }
         try settings.appearance.validate(); _ = try KeyBindingMap(overrides: settings.keyBindings)
@@ -121,16 +121,11 @@ struct SettingsView: View {
                 }
                 HStack {
                     Text("Font").frame(width: 100, alignment: .leading)
-                    TextField("Font name", text: $draft.settings.fontName).textFieldStyle(.roundedBorder)
-                    Menu {
-                        ForEach(["SFMono-Regular", "Menlo-Regular", "Monaco"].filter { NSFont(name: $0, size: 14) != nil }, id: \.self) { name in
-                            Button(name) { draft.settings.fontName = name }
-                        }
-                    } label: { Image(systemName: "textformat") }.menuStyle(.borderlessButton).frame(width: 24).help("Choose font")
+                    FontChoicePicker(title: "Terminal font", selection: $draft.settings.fontName)
                     Stepper("\(Int(draft.settings.fontSize)) pt", value: $draft.settings.fontSize, in: 9...40).frame(width: 112)
                 }
                 Text("Trano  ~/projects\n한글 입력 · English · 0123456789\n❯ claude --resume")
-                    .font(Font(NSFont(name: draft.settings.fontName, size: draft.settings.fontSize) ?? NSFont.monospacedSystemFont(ofSize: draft.settings.fontSize, weight: .regular)))
+                    .font(Font(InstalledFontCatalog.previewFont(draft.settings)))
                     .foregroundStyle(Color(NSColor(hex: draft.settings.appearance.foreground)))
                     .padding(16).frame(maxWidth: .infinity, alignment: .leading)
                     .background(Color(NSColor(hex: draft.settings.background))).clipShape(RoundedRectangle(cornerRadius: 6))
@@ -153,7 +148,7 @@ struct SettingsView: View {
                 }
                 ExtendedAppearanceControls(settings: $draft.settings, root: store.runtime.root)
                 Text("ANSI palette").font(.caption).foregroundStyle(.secondary)
-                HStack(spacing: 8) {
+                LazyVGrid(columns: Array(repeating: GridItem(.flexible(minimum: 48), spacing: 8), count: 8), alignment: .leading, spacing: 8) {
                     ForEach(0..<16, id: \.self) { index in
                         ColorPicker("Color \(index)", selection: colorBinding($draft.settings.appearance.ansiColors[index]), supportsOpacity: false)
                             .labelsHidden().help("ANSI color \(index)")

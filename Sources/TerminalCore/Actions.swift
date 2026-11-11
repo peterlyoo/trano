@@ -112,8 +112,9 @@ public enum ActionCatalog {
 }
 
 extension TerminalRuntime {
-    public func performAction(_ action: ActionID, cwd: String? = nil, workspaceID: String? = nil, tabID: String? = nil, paneID: String? = nil, requestNavigation: Bool = false) throws {
+    public func performAction(_ action: ActionID, cwd: String? = nil, title: String? = nil, workspaceID: String? = nil, tabID: String? = nil, paneID: String? = nil, requestNavigation: Bool = false) throws {
         guard let definition = ActionCatalog.all.first(where: { $0.action == action }), !definition.requiresUI else { throw TerminalError.invalid("requiresUI: This action needs an active Trano window") }
+        let sessionTitle = action == .newSession ? try WorkspaceLayout.normalizedSessionTitle(title) : nil
         var restoreNavigation: NavigationRequest?
         try transaction {
             if workspaceID != nil || tabID != nil || paneID != nil {
@@ -130,7 +131,7 @@ extension TerminalRuntime {
                     }
                 }
             }
-            if action != .restoreSessions { try performSelectedAction(action, cwd: cwd) }
+            if action != .restoreSessions { try performSelectedAction(action, cwd: cwd, title: sessionTitle) }
             if requestNavigation && definition.category != "Appearance" {
                 try update { state in
                     if let workspace = state.layout.selectedWorkspaceID {
@@ -153,19 +154,43 @@ extension TerminalRuntime {
         }
     }
 
-    private func performSelectedAction(_ action: ActionID, cwd: String?) throws {
-        if [.newTab, .newSession, .splitRight, .splitDown, .splitLeft, .splitUp].contains(action) {
+    private func openSession(title: String?, cwd: String?) throws {
+        let before = try state()
+        let name = title ?? before.layout.nextSessionTitle()
+        let existing = before.layout.workspace(named: name)
+        if let existing, before.layout.tabs.contains(where: { $0.workspaceID == existing.id }) {
+            try update { try $0.layout.selectWorkspace(existing.id) }
+            return
+        }
+        let focused = before.sessions.first { $0.id == before.layout.focusedPaneID }
+        let directory: String
+        if focused?.remote != nil { directory = FileManager.default.homeDirectoryForCurrentUser.path }
+        else if let cwd { directory = cwd }
+        else if let focused { directory = try workingDirectory(focused.id) }
+        else { directory = FileManager.default.homeDirectoryForCurrentUser.path }
+        let pane = try create(title: URL(fileURLWithPath: directory).lastPathComponent, cwd: directory)
+        do {
+            try update { state in
+                if let existing { try state.layout.selectWorkspace(existing.id) }
+                else { state.layout.addWorkspace(title: name) }
+                state.layout.addTab(paneID: pane.id)
+            }
+        } catch { try? terminate(pane.id); throw error }
+    }
+
+    private func performSelectedAction(_ action: ActionID, cwd: String?, title: String?) throws {
+        if action == .newSession { try openSession(title: title, cwd: cwd); return }
+        if [.newTab, .splitRight, .splitDown, .splitLeft, .splitUp].contains(action) {
             let before = try state()
             let focused = before.sessions.first { $0.id == before.layout.focusedPaneID }
-            let remote = action == .newSession ? nil : focused?.remote
+            let remote = focused?.remote
             let liveDirectory = try before.layout.focusedPaneID.map { try workingDirectory($0) }
             let directory = cwd ?? liveDirectory ?? FileManager.default.homeDirectoryForCurrentUser.path
             let pane: TerminalSession
             if let remote { pane = try createRemoteSession(hostID: remote.hostID, cwd: directory, attachToLayout: false) }
-            else { pane = try create(title: URL(fileURLWithPath: directory).lastPathComponent, cwd: action == .newSession && focused?.remote != nil ? FileManager.default.homeDirectoryForCurrentUser.path : directory) }
+            else { pane = try create(title: URL(fileURLWithPath: directory).lastPathComponent, cwd: directory) }
             do {
                 try update { store in
-                    if action == .newSession { store.layout.addWorkspace(title: URL(fileURLWithPath: directory).lastPathComponent) }
                     if [.splitRight, .splitDown, .splitLeft, .splitUp].contains(action), let tab = store.layout.selectedTabID {
                         try store.layout.split(tabID: tab, paneID: pane.id, axis: [.splitDown, .splitUp].contains(action) ? .vertical : .horizontal, before: [.splitLeft, .splitUp].contains(action))
                     } else { store.layout.addTab(paneID: pane.id) }

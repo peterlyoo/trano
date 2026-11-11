@@ -19,13 +19,7 @@ struct ExtendedAppearanceControls: View {
             }
             HStack {
                 Text("Hangul fallback").frame(width: 110, alignment: .leading)
-                TextField("System fallback", text: $settings.appearance.fallbackFontName).textFieldStyle(.roundedBorder)
-                Menu {
-                    Button("System default") { settings.appearance.fallbackFontName = "" }
-                    ForEach(["AppleSDGothicNeo-Regular", "AppleGothic", "NanumGothic"].filter { NSFont(name: $0, size: 14) != nil }, id: \.self) { name in
-                        Button(name) { settings.appearance.fallbackFontName = name }
-                    }
-                } label: { Image(systemName: "textformat.abc") }.menuStyle(.borderlessButton).frame(width: 24).help("Choose fallback font")
+                FontChoicePicker(title: "Hangul fallback font", selection: $settings.appearance.fallbackFontName, fallback: true)
             }
             HStack {
                 Text("Background image").frame(width: 110, alignment: .leading)
@@ -115,11 +109,11 @@ struct ProfileAppearanceView: View {
                     VStack(alignment: .leading, spacing: 14) {
                         TextField("Profile name", text: nameBinding).textFieldStyle(.roundedBorder)
                         HStack {
-                            TextField("Font name", text: settingsBinding.fontName).textFieldStyle(.roundedBorder)
+                            FontChoicePicker(title: "Profile font", selection: settingsBinding.fontName)
                             Stepper("\(Int(settings.fontSize)) pt", value: settingsBinding.fontSize, in: 9...40).frame(width: 110)
                         }
                         Text("한글 · English · 0123456789\n❯ claude --resume")
-                            .font(Font(NSFont(name: settings.fontName, size: settings.fontSize) ?? NSFont.monospacedSystemFont(ofSize: settings.fontSize, weight: .regular)))
+                            .font(Font(InstalledFontCatalog.previewFont(settings)))
                             .foregroundStyle(Color(NSColor(hex: settings.appearance.foreground)))
                             .padding(12).frame(maxWidth: .infinity, alignment: .leading)
                             .background(Color(NSColor(hex: settings.background)))
@@ -175,7 +169,7 @@ struct ProfileAppearanceView: View {
         do {
             guard SettingsDraft.font(named: settings.fontName, size: settings.fontSize) != nil,
                   settings.appearance.fallbackFontName.isEmpty || NSFont(name: settings.appearance.fallbackFontName, size: settings.fontSize) != nil else {
-                throw TerminalError.invalid("Choose installed font names.")
+                throw TerminalError.invalid("Choose installed fonts.")
             }
             let profile = AppearanceProfile(id: draftID, name: name.trimmingCharacters(in: .whitespacesAndNewlines), settings: settings)
             try profile.validate()

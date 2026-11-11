@@ -4,7 +4,7 @@ state: implementing
 
 # Trano Engineering Progress
 
-> **Summary**: Trano implements its core contracts and is published at [peterlyoo/trano](https://github.com/peterlyoo/trano) with both macOS and Linux CI jobs passing, covering the `U20` source-publication scope. However, the full product remains incomplete. Completed performance qualification (`not_qualified`) fails the `U17` idle max RSS ceiling (`251.484375 MiB` > `250 MiB`), while cold-start, physical OS/UI, live-provider, and notarized-release gates remain open.
+> **Summary**: Trano implements its core contracts and is published at [peterlyoo/trano](https://github.com/peterlyoo/trano) with previous clean-checkout macOS and Linux CI jobs passing, covering the `U20` source-publication scope. However, the full product remains incomplete. Completed performance qualification (`not_qualified`) fails the `U17` idle max RSS ceiling (`251.484375 MiB` > `250 MiB`), while cold-start, physical OS/UI, live-provider, and notarized-release gates remain open.
 
 ## Scope & Architecture
 
@@ -26,11 +26,11 @@ flowchart TD
 
 ### Local Installation & Native UI Corrections
 
-Local installation and native UI layout corrections are verified at product buildID `0c1df512eda54550b151dc9e6e63b9f1f89a64d55fa9caaf584b73432d9ef48b`. Release `scripts/build-app.sh` built `build/Trano.app` in 106.29 seconds, and a separate step installed the Apple Development signed `/Applications/Trano.app` verified by deep strict codesign. Installed GUI and helper paths and helper buildID matched, replacing the old helper while preserving one live shell PID and exact workspace/tab/pane layout. PRD U03/U21 and FR-NAV-6 were amended with no dependency or schema changes; earlier Settings draft staging and UUID-separated `CLAUDE_CONFIG_DIR` limits remain unchanged.
+Session, navigation, and font refinements are complete, with native bounds verified and font-settings visual qualification remaining open.
 
-- Windows merge title, header, and tabs into one opaque 32pt header with workspace selector first, Activity before Command Palette, blank drag regions, traffic-light hit targets, and 0.45098 terminal alpha.
-- The Sessions sidebar hides by default to reclaim 217pt; Activity is a workspace-clipped overlay up to 320x420 with 12pt margins, tested Escape dismissal, and Close/outside-click wiring.
-- Verification ran 125 Swift tests (0 failures), a 27-test UI rerun, and a 4.115s crash persistence test; physical pointer actions were not run, and product gates remain open.
+- Tab and workspace flows: Stable pane identity `.id(id)` fixed `Cmd+T` `NSHostingView`/tmux regressions (`.local/tab-lifecycle-red.log`), preserving renderer object identity and attach/backend PIDs. Named workspace get-or-create reuses or creates workspaces via `actions.perform` / `trano do session.new --title NAME`, defaulting blank names to `Session N`.
+- Overlay focus and geometry: Same-window navigation closes on outside click or Escape before PTY input, returning focus to terminal while keeping Find text field focus. The workspace selector sits 3pt after traffic lights without the outer 8pt terminal inset; native bounds pass without physical pointer automation.
+- Fonts and Settings layout: Default `Menlo-Regular` 14pt migrates legacy defaults and supports inline dropdowns with live preview, `Automatic`, and Save/Cancel. Replacing the 888pt single `HStack` (48pt wells in a 680pt window) with an 8-column, two-row `LazyVGrid` resolved horizontal overflow; horizontal clipping no longer remains, though malformed bitmap captures prevent visual acceptance.
 
 ### Workspace, Appearance, Input & Tab Activity
 - **Appearance & Profiles**: Fonts, fallback, line spacing, color, opacity, background images, themes, and per-pane profiles in `Appearance.swift`, `AppearanceProfiles.swift`, `AppearanceSettings.swift`, `ProfileAppearanceView.swift`, and `TerminalBackgroundImage.swift`.
@@ -57,8 +57,8 @@ Latest verification supersedes older milestone baselines:
 
 | Evidence Artifact | Scope & Exact Result |
 | :--- | :--- |
-| `.local/unified-layout-final-swift.log`, `.local/unified-layout-final-ui.log` | Full run: 92 core (2 optional skipped), 27 UI, 6 CLI; 125 executed, 0 failures. Includes 6 native geometry and 4 Settings draft contracts. UI rerun: 27 passed. |
-| `.local/unified-layout-signed-build.log`, `.local/native-ui-installed-receipt.json`, `.local/unified-layout-persistence.log` | Signed release build in 106.29s; installed GUI/helper identity, same shell PID and layout verified. Isolated native crash persistence: 1 passed in 4.115s. |
+| `.local/session-refinement-final-palette-swift.log` | Full run: 99 core (2 optional skipped), 38 UI, 6 CLI; 143 executed, 0 failures. Includes real pane/attach PID, native menu action, focus and Settings bounds regressions. |
+| `.local/session-refinement-final-signed-build.log`, `.local/native-ui-installed-receipt.json`, `.local/session-refinement-final-native.log` | Signed release build in 76.95s; separate installation preserved 7 live shell PIDs and exact layout. Isolated native crash persistence: 1 passed in 4.709s. |
 | `.local/review-repair-provider-compat.log` | 9 installed-provider compatibility tests passed, 0 skipped, 0 failures (empty managed profile Claude auth; Codex transferred conversation read without model request). |
 | `.local/provider-signals-green.log` | 3 isolated PTY fake-provider signal relay/cancellation tests passed in `12.315s`. |
 | `.local/provider-account-switch-green.log` | 3 fake-provider switch tests passed in `20.008s` (safe tool boundary, reaped old process, exact resume, preserved credentials, no duplicate launch). |

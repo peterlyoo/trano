@@ -67,6 +67,8 @@ last_updated: 2026-11-11
 
 ## Goals
 
+The 2026-11-11 session refinement requires named workspace get-or-create, automatic unused `Session N` names for blank New Session input, and stable pane renderers across tab creation and switching. U03/U09/U21 acceptance also requires a workspace selector adjacent to native window controls, no added terminal inset, and a verified readable default font while preserving custom selections.
+
 The 2026-11-11 U03/U21 layout amendment requires one compact title/header/tab row, a leading current-workspace selector, an optional collapsed Sessions sidebar, and trailing Activity and Command Palette controls. Activity must overlay the existing terminal inside the same window without changing its viewport; native bounds, ordering and available terminal area are acceptance criteria under FR-NAV-6 in [NAVIGATION.md](NAVIGATION.md).
 
 U01부터 U21까지의 모든 요구사항을 제품 범위 내에 유지하며, 구현 및 검증 순서만 M0~M4 단계로 나누어 제공합니다.

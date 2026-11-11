@@ -88,6 +88,31 @@ import UserNotifications
 
     func newTab() { execute(.newTab) }
 
+    func newSession(title: String? = nil) {
+        picker = nil; zoomed = false
+        perform { try $0.performAction(.newSession, title: title) }
+    }
+
+    func dismissPicker() {
+        picker = nil
+        restoreTerminalFocus()
+    }
+
+    private func restoreTerminalFocus() {
+        DispatchQueue.main.async { [weak self] in
+            guard let self, self.picker == nil, !self.showSettings, !self.showVoice,
+                  !self.showRemoteHosts, !self.showAccounts, !self.showExtensions,
+                  self.remotePathRequest == nil, NSApp.modalWindow == nil,
+                  let id = self.focusedID, let view = self.terminalViews[id],
+                  let window = view.window, window.attachedSheet == nil else { return }
+            if let responder = window.firstResponder as? NSView, responder !== view {
+                let editorOwner = (responder as? NSTextView)?.delegate as? NSView
+                if responder.isDescendant(of: view) || editorOwner?.isDescendant(of: view) == true { return }
+            }
+            window.makeFirstResponder(view)
+        }
+    }
+
     func newTab(at directory: String) { perform { try $0.performAction(.newTab, cwd: directory) } }
 
     func split(_ axis: SplitAxis) {
@@ -221,9 +246,11 @@ import UserNotifications
 
     func execute(_ action: ActionID) {
         if action == .closePane && focusedID == nil || action == .closeTab && selectedTab == nil { onCloseWindow?(); return }
+        defer { restoreTerminalFocus() }
         let view = focusedID.flatMap { terminalViews[$0] }
         switch action {
         case .newWindow: onNewWindow?()
+        case .newSession: newSession()
         case .fullscreen: view?.window?.toggleFullScreen(nil)
         case .palette: picker = .commands
         case .switchSession: picker = .sessions

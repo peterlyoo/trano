@@ -258,6 +258,19 @@ import TerminalCore
 
     func handle(_ event: NSEvent) -> Bool {
         guard let eventWindow = event.window, let store = windows[eventWindow] else { return false }
+        if store.picker != nil {
+            if event.type == .keyDown, event.keyCode == 53 {
+                store.dismissPicker()
+                return true
+            }
+            if event.type == .leftMouseDown, let content = eventWindow.contentView,
+               let picker = navigationPicker(in: content),
+               !picker.bounds.contains(picker.convert(event.locationInWindow, from: nil)) {
+                store.dismissPicker()
+                return true
+            }
+            return false
+        }
         if store.showActivity {
             if event.type == .keyDown, event.keyCode == 53 {
                 store.showActivity = false
@@ -294,6 +307,14 @@ import TerminalCore
               let action = map.action(for: binding) else { return false }
         store.execute(action)
         return true
+    }
+
+    private func navigationPicker(in view: NSView) -> NSView? {
+        if view.identifier?.rawValue == "navigation-picker" { return view }
+        for child in view.subviews {
+            if let picker = navigationPicker(in: child) { return picker }
+        }
+        return nil
     }
 
 }

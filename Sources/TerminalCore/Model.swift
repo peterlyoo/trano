@@ -137,7 +137,7 @@ public struct TerminalTab: Codable, Identifiable, Equatable {
 }
 
 public struct TerminalSettings: Codable, Equatable {
-    public var fontName = "SFMono-Regular"
+    public var fontName = "Menlo-Regular"
     public var fontSize: Double = 14
     public var background = "#0B0B0C"
     public var notifications = true
@@ -154,7 +154,8 @@ public struct TerminalSettings: Codable, Equatable {
     private enum CodingKeys: String, CodingKey { case persistScrollback, fontName, fontSize, background, notifications, scrollbackLines, optionAsMeta, automaticRestore, automaticAccountSwitching, appearance, appearanceProfiles, paneAppearanceProfiles, keyBindings }
     public init(from decoder: Decoder) throws {
         let box = try decoder.container(keyedBy: CodingKeys.self)
-        fontName = try box.decodeIfPresent(String.self, forKey: .fontName) ?? "SFMono-Regular"
+        let savedFont = try box.decodeIfPresent(String.self, forKey: .fontName) ?? "Menlo-Regular"
+        fontName = savedFont == "SFMono-Regular" ? "Menlo-Regular" : savedFont
         fontSize = min(40, max(9, try box.decodeIfPresent(Double.self, forKey: .fontSize) ?? 14))
         background = try box.decodeIfPresent(String.self, forKey: .background) ?? "#0B0B0C"
         notifications = try box.decodeIfPresent(Bool.self, forKey: .notifications) ?? true

@@ -70,18 +70,58 @@ final class ActivityGeometryTests: XCTestCase {
     @MainActor func testCompactWorkspaceHeaderReclaimsSidebarWidth() async throws {
         let fixture = try await makeFixture()
         defer { dispose(fixture) }
-        XCTAssertEqual(fixture.terminal.bounds.width, fixture.hosting.bounds.width - 16, accuracy: 1)
+        XCTAssertEqual(fixture.terminal.bounds.width, fixture.hosting.bounds.width, accuracy: 1)
         let header = try XCTUnwrap(region("workspace-header", in: fixture.hosting))
         let switcher = try XCTUnwrap(region("workspace-switcher", in: fixture.hosting))
         let headerRect = header.convert(header.bounds, to: fixture.hosting)
         let switcherRect = switcher.convert(switcher.bounds, to: fixture.hosting)
         XCTAssertLessThanOrEqual(headerRect.height, 40)
         XCTAssertEqual(fixture.hosting.isFlipped ? headerRect.minY : fixture.hosting.bounds.maxY - headerRect.maxY, 0, accuracy: 1)
-        XCTAssertGreaterThanOrEqual(switcherRect.minX, 76)
+        let zoom = try XCTUnwrap(fixture.window.standardWindowButton(.zoomButton))
+        let zoomRect = zoom.convert(zoom.bounds, to: fixture.hosting)
+        XCTAssertGreaterThanOrEqual(switcherRect.minX - zoomRect.maxX, 2)
+        XCTAssertLessThanOrEqual(switcherRect.minX - zoomRect.maxX, 4)
         XCTAssertLessThanOrEqual(switcherRect.width, 170)
         let frame = try XCTUnwrap(fixture.window.contentView?.superview)
         let frameHeader = header.convert(header.bounds, to: frame)
         XCTAssertEqual(frame.isFlipped ? frameHeader.minY - frame.bounds.minY : frame.bounds.maxY - frameHeader.maxY, 0, accuracy: 1)
+    }
+
+    // Implements: FR-NAV-6
+    @MainActor func testWorkspacePickerIsContainedAndDismissesBeforeTerminalInput() async throws {
+        let fixture = try await makeFixture()
+        defer { dispose(fixture) }
+        fixture.window.setFrameOrigin(NSPoint(x: -10000, y: -10000))
+        fixture.window.orderFrontRegardless()
+        let delegate = ApplicationDelegate()
+        delegate.windows[fixture.window] = fixture.store
+        fixture.store.picker = .sessions
+        try await Task.sleep(for: .milliseconds(150))
+        fixture.hosting.layoutSubtreeIfNeeded()
+        let picker = region("navigation-picker", in: fixture.hosting)
+        XCTAssertNotNil(picker)
+        if let picker {
+            XCTAssertTrue(picker.window === fixture.window)
+            XCTAssertTrue(fixture.hosting.bounds.contains(picker.convert(picker.bounds, to: fixture.hosting)))
+        }
+        let escape = try XCTUnwrap(NSEvent.keyEvent(with: .keyDown, location: .zero, modifierFlags: [], timestamp: 0, windowNumber: fixture.window.windowNumber, context: nil, characters: "\u{1b}", charactersIgnoringModifiers: "\u{1b}", isARepeat: false, keyCode: 53))
+        XCTAssertTrue(delegate.handle(escape))
+        XCTAssertNil(fixture.store.picker)
+        fixture.store.picker = .sessions
+        try await Task.sleep(for: .milliseconds(100))
+        fixture.hosting.layoutSubtreeIfNeeded()
+        let outside = try XCTUnwrap(NSEvent.mouseEvent(with: .leftMouseDown, location: NSPoint(x: 16, y: 100), modifierFlags: [], timestamp: 0, windowNumber: fixture.window.windowNumber, context: nil, eventNumber: 1, clickCount: 1, pressure: 1))
+        XCTAssertTrue(delegate.handle(outside))
+        XCTAssertNil(fixture.store.picker)
+    }
+
+    // Implements: FR-NAV-6
+    @MainActor func testTerminalFillsPaneWithoutOuterInset() async throws {
+        let fixture = try await makeFixture()
+        defer { dispose(fixture) }
+        let workspace = try XCTUnwrap(region("terminal-workspace", in: fixture.hosting))
+        XCTAssertEqual(fixture.terminal.bounds.width, workspace.bounds.width, accuracy: 1)
+        XCTAssertEqual(fixture.terminal.bounds.height, workspace.bounds.height - 28, accuracy: 1)
     }
 
     // Implements: FR-NAV-6

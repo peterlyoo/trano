@@ -119,7 +119,13 @@ Every core `case` in [`Sources/TerminalCore/API.swift`](../Sources/TerminalCore/
 | `workspaces.launch` | `cwd` (string) | `agent` (`AgentKind` string, defaults to `"shell"`), `prompt` (string, defaults to `""`) | Launches workspace session and returns encoded result. |
 | `workspaces.select` | `id` (string) | None | Selects workspace `id` and sets `navigationRequest`; returns `{"ok": true}`. |
 | `actions.list` | None | None | Returns `ActionCatalog.resolved(overrides: runtime.state().settings.keyBindings)`. |
-| `actions.perform` | `id` (`ActionID` string) | `cwd` (string), `workspaceID` (string), `tabID` (string), `paneID` (string) | Performs catalog action with `requestNavigation: true` (rejects if `requiresUI=true`); returns `{"ok": true}`. |
+| `actions.perform` | `id` (`ActionID` string) | `cwd` (string), `title` (string, for `session.new`), `workspaceID` (string), `tabID` (string), `paneID` (string) | Performs catalog action with `requestNavigation: true` (rejects if `requiresUI=true`); returns `{"ok": true}`. |
+
+For `session.new`, an omitted or whitespace-only `title` creates a workspace with an unused `Session N` name. An explicit title is trimmed, limited to 200 characters without embedded control characters, and reuses a case-insensitive match without adding a shell or tab when that workspace already has tabs.
+
+```sh
+trano do session.new --title "Project"
+```
 
 ### Accounts and Extensions
 

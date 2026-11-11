@@ -249,7 +249,7 @@ if args.isEmpty || args.first == "--help" || args.first == "help" {
       launch --cwd PATH [--agent shell|claude|codex] [--prompt TEXT]
       select WORKSPACE_ID
       actions
-      do ACTION_ID [--workspace ID] [--tab ID] [--pane ID] [--cwd PATH]
+      do ACTION_ID [--workspace ID] [--tab ID] [--pane ID] [--cwd PATH] [--title NAME]
       create [--title TEXT] [--cwd PATH]
       capture ID [--lines 100]
       send ID TEXT [--enter]
@@ -372,9 +372,9 @@ do {
         guard args.isEmpty else { throw TerminalError.invalid("Unexpected workspaces arguments") }
         try emit(runtime.state().layout.workspaces.filter { query.isEmpty || $0.title.localizedCaseInsensitiveContains(query) })
     case "do":
-        let workspace = option("--workspace"), tab = option("--tab"), pane = option("--pane"), cwd = option("--cwd")
+        let workspace = option("--workspace"), tab = option("--tab"), pane = option("--pane"), cwd = option("--cwd"), title = option("--title")
         guard args.count == 1, let action = ActionID(rawValue: args[0]) else { throw TerminalError.invalid("do requires an action ID from actions") }
-        try runtime.performAction(action, cwd: cwd, workspaceID: workspace, tabID: tab, paneID: pane, requestNavigation: true)
+        try runtime.performAction(action, cwd: cwd, title: title, workspaceID: workspace, tabID: tab, paneID: pane, requestNavigation: true)
         try emit(runtime.state().layout)
     case "select":
         guard args.count == 1 else { throw TerminalError.invalid("select requires a workspace ID") }

@@ -81,7 +81,20 @@ struct WorkspaceView: View {
         .preferredColorScheme(.dark)
         .frame(minWidth: 900, minHeight: 580)
         .ignoresSafeArea(.container, edges: .top)
-        .sheet(item: $store.picker) { kind in PickerView(store: store, kind: kind) }
+        .overlay {
+            if let kind = store.picker {
+                ZStack(alignment: .top) {
+                    Color.black.opacity(0.16).contentShape(Rectangle()).onTapGesture { store.dismissPicker() }
+                    PickerView(store: store, kind: kind)
+                        .id(kind.id)
+                        .clipShape(RoundedRectangle(cornerRadius: 8))
+                        .overlay { RoundedRectangle(cornerRadius: 8).stroke(separatorColor, lineWidth: 1).allowsHitTesting(false) }
+                        .background(WorkspaceRegion("navigation-picker"))
+                        .shadow(color: .black.opacity(0.4), radius: 16, y: 6)
+                        .padding(.top, 44)
+                }
+            }
+        }
         .sheet(isPresented: $store.showSettings) { SettingsView(store: store) }
         .sheet(isPresented: $showAppearanceProfiles) { ProfileAppearanceView(store: store) }
         .sheet(isPresented: $store.showVoice) { VoiceInputView(store: store) }
@@ -163,7 +176,7 @@ struct WorkspaceView: View {
                     Text(workspaceTitle)
                         .font(.system(size: 11, weight: .semibold)).lineLimit(1)
                     Image(systemName: "chevron.down").font(.system(size: 8)).foregroundStyle(.secondary)
-                }.padding(.horizontal, 10).frame(maxWidth: 160, minHeight: 32)
+                }.padding(.horizontal, 6).frame(maxWidth: 160, minHeight: 32, alignment: .leading).fixedSize(horizontal: true, vertical: false)
                     .contentShape(Rectangle())
             }.accessibilityLabel("Switch Workspace").accessibilityValue(workspaceTitle).help("\(workspaceTitle) · Switch Workspace · ⌘K")
                 .background(WorkspaceRegion("workspace-switcher"))
@@ -218,7 +231,7 @@ struct WorkspaceView: View {
             Button { store.showActivity = false; store.picker = .commands } label: { Image(systemName: "command").frame(width: 24, height: 24) }
                 .help("Command Palette · ⇧⌘P").accessibilityLabel("Command Palette")
                 .background(WorkspaceRegion("command-palette-button"))
-        }.buttonStyle(.plain).padding(.leading, 80).padding(.trailing, 8).frame(height: 32)
+        }.buttonStyle(.plain).padding(.leading, 72).padding(.trailing, 8).frame(height: 32)
             .background(surface).background(WorkspaceRegion("workspace-header"))
     }
 
@@ -276,7 +289,7 @@ struct WorkspaceView: View {
                     if recovery.status != .restoring && session?.alive == false { Button("Retry") { store.perform(restoringContext: false, holdingTransaction: false) { _ = try $0.recoverSessions(paneID: id) } } }
                 }.foregroundStyle(.orange).padding(10).background(surface)
             }
-            TerminalPane(store: store, id: id).padding(8).background { TerminalBackgroundView(settings: appearance) }
+            TerminalPane(store: store, id: id).id(id).background { TerminalBackgroundView(settings: appearance) }
         }.overlay { Rectangle().stroke(id == store.focusedID ? accent.opacity(0.35) : .clear, lineWidth: 1).allowsHitTesting(false) }
     }
 
@@ -377,12 +390,20 @@ struct PickerView: View {
                 return (item.title, workspace + " · " + URL(fileURLWithPath: item.cwd).lastPathComponent, { store.attach(item.id) })
             }
         }
-        return all.filter { query.isEmpty || ($0.0 + " " + $0.1).localizedCaseInsensitiveContains(query) }
+        let name = query.trimmingCharacters(in: .whitespacesAndNewlines)
+        var matches = all.filter { name.isEmpty || ($0.0 + " " + $0.1).localizedCaseInsensitiveContains(name) }
+        if kind == .sessions {
+            let exact = matches.filter { $0.0.caseInsensitiveCompare(name) == .orderedSame }
+            matches = exact + matches.filter { $0.0.caseInsensitiveCompare(name) != .orderedSame }
+            if name.isEmpty { matches.append(("New Session", "⇧⌘N", { store.newSession() })) }
+            else if exact.isEmpty { matches.append(("Create “\(name)”", "New workspace", { store.newSession(title: name) })) }
+        }
+        return matches
     }
     private var placeholder: String {
         switch kind {
         case .commands: return "Search commands…"
-        case .sessions: return "Change session…"
+        case .sessions: return "Find or create a workspace…"
         case .anything: return "Find a pane, tab or session…"
         case .movePane: return "Move pane to tab…"
         }
@@ -410,7 +431,7 @@ struct PickerView: View {
                 if direction == .down { selection = min(selection + 1, max(0, entries.count - 1)) }
                 if direction == .up { selection = max(0, selection - 1) }
             }
-            .onExitCommand { store.picker = nil }
+            .onExitCommand { store.dismissPicker() }
     }
     private func choose() {
         guard entries.indices.contains(selection) else { return }

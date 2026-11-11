@@ -1,12 +1,12 @@
 {
   "status": "implemented_with_qualification_failures_and_pending_gates",
   "sourceRevision": null,
-  "buildID": "0c1df512eda54550b151dc9e6e63b9f1f89a64d55fa9caaf584b73432d9ef48b",
+  "buildID": "41c7453456ac629762d36c2dd43d3182a0f9ade7f895c12929f6b3bc31fea7e5",
   "checks": {
     "swift": {
       "status": "passed",
-      "coreTests": 92,
-      "uiTests": 27,
+      "coreTests": 99,
+      "uiTests": 38,
       "cliTests": 6,
       "failures": 0,
       "optionalProviderChecksSkipped": 2,
@@ -16,12 +16,7 @@
         "failures": 0,
         "scope": "Earlier product revision; provider/core code is unchanged in this UI correction."
       },
-      "totalExecuted": 125,
-      "latestUIRerun": {
-        "tests": 27,
-        "failures": 0,
-        "scope": "Accessibility/help metadata changes after the full suite; no core or CLI changes."
-      }
+      "totalExecuted": 143
     },
     "native_bundle": {
       "status": "passed",
@@ -33,7 +28,7 @@
         "path": "/Applications/Trano.app",
         "startedFromInstalledBundle": true,
         "helperReplaced": true,
-        "preservedLiveShellCount": 1,
+        "preservedLiveShellCount": 7,
         "sameShellPIDs": true,
         "sameLayout": true
       }
@@ -130,11 +125,12 @@
         "trafficLightHitTargets": true,
         "nativeBlankDragRegions": true,
         "terminalContentAlphaUnchanged": true,
-        "physicalDrag": "not_run"
+        "physicalDrag": "not_run",
+        "workspaceControlGapPoints": 3
       },
       "activity": {
         "presentation": "same_window_clipped_workspace_overlay",
-        "geometryTests": 6,
+        "geometryTests": 8,
         "testedContentWidths": [
           1280,
           900
@@ -160,7 +156,7 @@
       "nativeClientCrashPersistence": {
         "status": "passed",
         "tests": 1,
-        "durationSeconds": 4.115
+        "durationSeconds": 4.709
       },
       "scope": "Native geometry/render and draft-model tests plus installed process verification. Physical pointer, keyboard and OS permission qualification remain separate.",
       "workspaceNavigation": {
@@ -168,6 +164,41 @@
         "sidebarVisibleByDefault": false,
         "sidebarReclaimedWidthPoints": 217,
         "sidebarTogglePreservesLayout": true
+      },
+      "terminalOuterInsetPoints": 0,
+      "tabAndResponderRegressions": {
+        "tests": 3,
+        "nativeNewTabAndSwitch": "passed",
+        "sameAttachClientPIDs": true,
+        "sameBackendShellPIDs": true,
+        "noTerminatedOutput": true,
+        "commandFocusRestored": true,
+        "findFieldFocusPreserved": true
+      },
+      "navigationPicker": {
+        "presentation": "same_window_overlay",
+        "outsideClickAndEscapeDismissal": "passed_before_terminal_dispatch",
+        "findOrCreateWorkspace": true,
+        "mandatoryNameDialog": false
+      },
+      "fontSelection": {
+        "default": "Menlo-Regular",
+        "sizePoints": 14,
+        "controls": "inline_native_dropdowns",
+        "readableLabels": true,
+        "nativeMenuItemBindingAndCancel": "passed",
+        "legacyDefaultMigration": "passed",
+        "customFontsPreserved": true,
+        "hangulFallbackShaping": "passed",
+        "coreTests": 3,
+        "uiTests": 6,
+        "ansiPaletteColumns": 8,
+        "ansiPaletteRows": 2,
+        "nativeHorizontalBounds": "passed"
+      },
+      "fontSettingsVisualQualification": {
+        "status": "not_qualified",
+        "reason": "Earlier bitmap captures have missing text and incorrect control colors; no final bitmap or physical visual acceptance is claimed. Native selector actions and horizontal bounds pass after the palette layout repair."
       }
     },
     "claude_organization": {
@@ -177,6 +208,16 @@
       "organizationSelection": "not_implemented",
       "organizationIdentityVerification": "not_implemented",
       "authenticatedCrossOrganizationResume": "not_run"
+    },
+    "workspaceNaming": {
+      "status": "passed",
+      "addedRegressionTests": 4,
+      "namedGetOrCreate": "trimmed_case_insensitive",
+      "blankName": "unused_Session_N",
+      "closedWorkspaceReopen": true,
+      "preservesExistingShellsAndTabs": true,
+      "invalidNameHasNoCoreStateMutation": true,
+      "bundledCLI": "passed"
     }
   },
   "externalQualification": {
@@ -190,5 +231,5 @@
   },
   "verificationScope": "Current local UI correction identified by product buildID, full local Swift tests, Apple Development installation and process/session continuity; earlier performance and CI snapshots remain explicitly separate.",
   "sourceRevisionScope": "UI correction source is published alongside this record and pinned by buildID. The listed public CI run applies to the earlier source revision; current CI status is tracked by GitHub Actions.",
-  "baseSourceRevision": "fab707716db10bd8bbcb58651d75acdc07afd40b"
+  "baseSourceRevision": "0d9d514e943b23eac6394f218b6df0a6f02216e6"
 }

@@ -2,6 +2,8 @@
 
 - Start with `docs/PROGRESS.md`, `docs/RTM.md`, `docs/RECOVERY.md`, and `docs/NAVIGATION.md`. The original requirements are `U01` through `U21` in `docs/PRD.md`. Preserve them when continuing work; milestone documents are planning baselines, not current completion evidence.
 - This is a native macOS app with a Linux SSH helper. Keep the public product independent of private agent harnesses and private provider integrations.
+- Minimize user steps: choose useful defaults, make optional names automatic, and use native selection controls for installed options such as fonts. Transient navigation must dismiss on outside click and Escape without requiring a close button.
+- Give every terminal pane a stable SwiftUI identity. Test native tab creation and repeated switches with real attach clients and backend PIDs; backend-only action tests cannot detect a renderer reused for another pane.
 - Run `swift test` with full Xcode. Build with `scripts/build-app.sh`; the result is `build/Trano.app`. Do not run concurrent Swift builds in the same `.build` directory or overwrite an executing binary in place.
 - Finish each completed Trano change with a rebuild and refresh the signed local installation. Verify the installed build identity and running executable paths, while preserving live shell PIDs and layout.
 - Use isolated temporary `TRANO_DATA_DIR`, `HOME`, `ZDOTDIR`, and provider profile roots for experiments. Never point destructive tests at a user's runtime or the default tmux server. Generated state, credentials, caches, and logs stay ignored under `.local`, `.build`, or `build`.
@@ -17,3 +19,4 @@
 - Native benchmarks must verify both the selected tab layout and the reported terminal view count. Preserve raw samples and partial reports across failures, and label backend-only measurements separately.
 - A background SwiftUI hosting view may expose only an empty accessibility group. Check its actual accessibility tree before relying on button-driving tests; use real-runtime draft commit/discard tests when that surface is unavailable, and distinguish new-model contract coverage from reproduction of an existing UI bug.
 - Overlay containment tests must assert the owning window and workspace bounds as well as unchanged terminal viewport dimensions; a native popover can preserve viewport size while extending outside the app.
+- Bound native Settings controls by their measured intrinsic size; use multiple rows for palettes and assert actual horizontal control bounds. A successful bitmap write or nonempty PNG does not prove visual correctness; retain malformed capture evidence and use native control/action checks without claiming physical or visual qualification.

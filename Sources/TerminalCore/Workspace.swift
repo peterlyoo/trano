@@ -57,6 +57,26 @@ public struct WorkspaceLayout: Codable, Equatable {
         return workspace.id
     }
 
+    static func normalizedSessionTitle(_ title: String?) throws -> String? {
+        let value = (title ?? "").trimmingCharacters(in: .whitespacesAndNewlines)
+        guard value.count <= 200, value.rangeOfCharacter(from: .controlCharacters) == nil else {
+            throw TerminalError.invalid("Session names must be at most 200 characters without control characters")
+        }
+        return value.isEmpty ? nil : value
+    }
+
+    func workspace(named title: String) -> WorkspaceRecord? {
+        workspaces.first {
+            $0.title.trimmingCharacters(in: .whitespacesAndNewlines).caseInsensitiveCompare(title) == .orderedSame
+        }
+    }
+
+    func nextSessionTitle() -> String {
+        var number = 1
+        while workspace(named: "Session \(number)") != nil { number += 1 }
+        return "Session \(number)"
+    }
+
     public mutating func selectWorkspace(_ id: String) throws {
         guard let index = workspaces.firstIndex(where: { $0.id == id }) else { throw TerminalError.invalid("Unknown workspace") }
         rememberSelection()
