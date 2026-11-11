@@ -43,7 +43,7 @@ import TerminalCore
             let height = snapshot && dimensions.count == 2 ? min(2160, max(620, dimensions[1])) : 800
             let window = NSWindow(contentRect: NSRect(x: 0, y: 0, width: width, height: height), styleMask: [.titled, .closable, .miniaturizable, .resizable], backing: .buffered, defer: false)
             window.title = "Trano"
-            window.titlebarAppearsTransparent = true
+            window.titlebarAppearsTransparent = false
             window.backgroundColor = .clear
             window.isOpaque = false
             window.appearance = NSAppearance(named: .darkAqua)
@@ -129,7 +129,7 @@ import TerminalCore
         let model = AppStore(runtime: runtime)
         let window = NSWindow(contentRect: NSRect(x: 0, y: 0, width: 1280, height: 800), styleMask: [.titled, .closable, .miniaturizable, .resizable], backing: .buffered, defer: false)
         window.title = "Trano"
-        window.titlebarAppearsTransparent = true
+        window.titlebarAppearsTransparent = false
         window.backgroundColor = .clear
         window.isOpaque = false
         window.appearance = NSAppearance(named: .darkAqua)

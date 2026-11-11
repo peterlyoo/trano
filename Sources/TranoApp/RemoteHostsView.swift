@@ -21,7 +21,7 @@ struct RemoteHostsView: View {
                 Image(systemName: "network").foregroundStyle(.mint)
                 Text("Remote hosts").font(.title2.weight(.semibold))
                 Spacer()
-                Button("Done") { store.showRemoteHosts = false }.keyboardShortcut(.cancelAction)
+                Button("Close") { store.showRemoteHosts = false }.keyboardShortcut(.cancelAction)
             }
             Text("Connect using an SSH alias or user@hostname. Remote jobs keep running when you disconnect.")
                 .font(.callout).foregroundStyle(.secondary)

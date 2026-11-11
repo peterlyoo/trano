@@ -24,6 +24,16 @@ flowchart TD
 
 ## Implemented Capabilities
 
+### Local Installation & Native UI Corrections
+
+Release build `04c6b221a155a493b41af366be736a93c1aa025f58dd971bf5b034a619faf620` is signed with the installed Apple Development identity and installed to `/Applications/Trano.app` without distribution notarization. The installed helper replaced the old helper while preserving 1 live shell PID and exact workspace, tab, and pane layout.
+
+- **Window Chrome**: First and additional windows use nontransparent native titlebars (alpha `0` to `1`, content alpha `0.45098`, global background-drag `false`).
+- **Activity Popover**: Moved to a transient `320x420` popover, preventing the `261pt` viewport shrinkage at `1280` and `900` widths.
+- **Settings & Font**: Shared draft stages embedded profiles and update toggles until outer Save or Cancel. `SFMono-Regular` uses the system monospaced fallback. Modal `Done` labels are now `Close`.
+
+**Limits**: Verified via 120 tests executed, 2 optional skipped, 0 failures, and frame renders, not physical GUI clicks or dragging. Profiles isolate `CLAUDE_CONFIG_DIR` by UUID, but organization-aware support is unimplemented.
+
 ### Workspace, Appearance, Input & Tab Activity
 - **Appearance & Profiles**: Fonts, fallback, line spacing, color, opacity, background images, themes, and per-pane profiles in `Appearance.swift`, `AppearanceProfiles.swift`, `AppearanceSettings.swift`, `ProfileAppearanceView.swift`, and `TerminalBackgroundImage.swift`.
 - **Keymaps, Voice & Glyphs**: Exact-modifier keymaps (`KeyBindings.swift`, `KeyboardShortcutRecorder.swift`), `ko-KR`/`en-US` voice preview and PTT controls (`VoiceInput.swift`), and custom provider glyphs (`AgentLogo.swift`, not final official trademark-qualified assets).
@@ -49,7 +59,7 @@ Latest verification supersedes older milestone baselines:
 
 | Evidence Artifact | Scope & Exact Result |
 | :--- | :--- |
-| `.local/review-repair-final-swift.log` | 92 core tests executed (2 optional installed-provider tests skipped, 0 failures), 17 UI tests passed, 6 CLI tests passed (includes 13 `AccountRollbackTests`, 12 `AgentTaskTests`, 7 `TabActivityHoverTests`, 1 `RecoveryEntryTests`). |
+| `.local/native-ui-final-swift.log` | 92 core tests executed (2 optional installed-provider tests skipped, 0 failures), 22 UI tests passed, 6 CLI tests passed; includes the native Activity viewport case and 4 Settings draft/runtime contracts. |
 | `.local/review-repair-provider-compat.log` | 9 installed-provider compatibility tests passed, 0 skipped, 0 failures (empty managed profile Claude auth; Codex transferred conversation read without model request). |
 | `.local/provider-signals-green.log` | 3 isolated PTY fake-provider signal relay/cancellation tests passed in `12.315s`. |
 | `.local/provider-account-switch-green.log` | 3 fake-provider switch tests passed in `20.008s` (safe tool boundary, reaped old process, exact resume, preserved credentials, no duplicate launch). |
@@ -61,7 +71,7 @@ Latest verification supersedes older milestone baselines:
 | `.local/remote-lifecycle-race.log` | Saved transcription of captured `go test -race -count=1 -v ./...` tool output (exit `0`, full verbose `PASS` in `41.042s`, includes empty-conversation-ID confirmation guard). |
 | `.local/remote-lifecycle-vet-linux-compile.log` | Saved transcription receipt for `go vet ./...`, `GOOS=linux GOARCH=amd64 go test -c`, and `GOOS=linux GOARCH=arm64 go test -c` (no output, observed aggregate exit `0`). |
 | `.local/remote-lifecycle-pty.log` | Saved captured macOS PTY harness `PASS` in `0.76s` (exit `0`; `0x03` Ctrl-C interrupt, exit `42`, active retry metadata, original foreground group restored; captured before later empty-ID guard while terminal/process-group code remained unchanged). |
-| `.local/published-source-build.log`, `.local/final-service-handoff.log` | Release `Build complete! (13.16s)`, `codesign --verify --deep --strict build/Trano.app` exit `0`, `plutil -lint` `OK`, `TranoBuildID` `4b9e94cd26a0a0aa95bd52b3594bef04ca7fb7d923a92763399733d3b129b339`; service handoff `1` pass (`3.356s`) replaced old helper with new helper PID/build while preserving the live shell PID. |
+| Earlier `.local/published-source-build.log`, `.local/final-service-handoff.log` | Release `Build complete! (13.16s)`, `codesign --verify --deep --strict build/Trano.app` exit `0`, `plutil -lint` `OK`, `TranoBuildID` `4b9e94cd26a0a0aa95bd52b3594bef04ca7fb7d923a92763399733d3b129b339`; service handoff `1` pass (`3.356s`) replaced old helper with new helper PID/build while preserving the live shell PID. |
 | [GitHub Actions run `42869346614`](https://github.com/peterlyoo/trano/actions/runs/42869346614) | Clean-checkout CI `SUCCESS` at [`1e027ceb132287756f056bee11ea663fde76db1f`](https://github.com/peterlyoo/trano/commit/1e027ceb132287756f056bee11ea663fde76db1f) : [`remote` job `130016099447`](https://github.com/peterlyoo/trano/actions/runs/42869346614/job/130016099447) (`go test -race ./...` in `28.714s` + cross-compile) and [`macos` job `130016100336`](https://github.com/peterlyoo/trano/actions/runs/42869346614/job/130016100336) (native core/renderer, bundle build, and publication checks) both passed. |
 | `.local/review-repair-packaging-tests.log` | 6 packaging/OSS boundary tests passed in `1.243s`. |
 | `.local/review-repair-privacy.log` | Candidate publication privacy check passed across 185 files. |

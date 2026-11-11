@@ -25,7 +25,7 @@ struct AccountsView: View {
                         .font(.callout).foregroundStyle(.secondary)
                 }
                 Spacer()
-                Button("Done") { store.showAccounts = false }.keyboardShortcut(.cancelAction)
+                Button("Close") { store.showAccounts = false }.keyboardShortcut(.cancelAction)
             }
             if store.state.accounts.isEmpty {
                 ContentUnavailableView("Add your first account", systemImage: "person.crop.circle.badge.plus", description: Text("Sign in through Claude or Codex in a separate terminal tab."))

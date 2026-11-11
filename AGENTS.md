@@ -14,3 +14,4 @@
 - Account-transfer rollback must validate every backup and prove that installed files and database rows still match the receipt before restoring them. Refuse rollback when newer target work exists; never treat a missing receipt as proof of success.
 - SSH recovery must run outside the shared local state transaction. Revalidate pane identity before committing results, and test local state mutation while SSH is deliberately blocked.
 - Native benchmarks must verify both the selected tab layout and the reported terminal view count. Preserve raw samples and partial reports across failures, and label backend-only measurements separately.
+- A background SwiftUI hosting view may expose only an empty accessibility group. Check its actual accessibility tree before relying on button-driving tests; use real-runtime draft commit/discard tests when that surface is unavailable, and distinguish new-model contract coverage from reproduction of an existing UI bug.

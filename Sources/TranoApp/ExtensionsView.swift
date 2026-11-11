@@ -17,7 +17,7 @@ struct ExtensionsView: View {
             HStack {
                 Text("Agent extensions").font(.title2.weight(.semibold))
                 Spacer()
-                Button("Done") { store.showExtensions = false }.keyboardShortcut(.cancelAction)
+                Button("Close") { store.showExtensions = false }.keyboardShortcut(.cancelAction)
             }
             Text("Share skills and MCP servers. Choose which extensions each account uses.")
                 .font(.callout).foregroundStyle(.secondary)

@@ -71,6 +71,7 @@ struct ExtendedAppearanceControls: View {
 struct ProfileAppearanceView: View {
     @ObservedObject var store: AppStore
     var embedded = false
+    var draft: Binding<TerminalSettings>?
     @Environment(\.dismiss) private var dismiss
     @State private var selectedID: String?
     @State private var draftID = UUID().uuidString.lowercased()
@@ -78,31 +79,44 @@ struct ProfileAppearanceView: View {
     @State private var settings = TerminalSettings()
     @State private var error: String?
 
+    private var profileSettings: TerminalSettings { draft?.wrappedValue ?? store.state.settings }
+    private var nameBinding: Binding<String> {
+        Binding(get: { name }, set: { name = $0; stageProfile() })
+    }
+    private var settingsBinding: Binding<TerminalSettings> {
+        Binding(get: { settings }, set: { settings = $0; stageProfile() })
+    }
+
     var body: some View {
         VStack(alignment: .leading, spacing: 14) {
             if !embedded {
-                HStack { Text("Appearance profiles").font(.title2.weight(.semibold)); Spacer(); Button("Done") { dismiss() }.keyboardShortcut(.cancelAction) }
+                HStack { Text("Appearance profiles").font(.title2.weight(.semibold)); Spacer(); Button("Close") { dismiss() }.keyboardShortcut(.cancelAction) }
             }
             HStack(alignment: .top, spacing: 16) {
                 VStack(spacing: 10) {
                     List(selection: $selectedID) {
-                        ForEach(store.state.settings.appearanceProfiles) { profile in Text(profile.name).tag(profile.id) }
+                        ForEach(profileSettings.appearanceProfiles) { profile in Text(profile.name).tag(profile.id) }
                     }.frame(width: 150)
                     HStack {
-                        Button { newProfile() } label: { Image(systemName: "plus") }.help("New profile").accessibilityLabel("New appearance profile")
+                        Button { newProfile(); stageProfile(creating: true) } label: { Image(systemName: "plus") }.help("New profile").accessibilityLabel("New appearance profile")
                         Spacer()
                         Button {
                             guard let id = selectedID else { return }
-                            store.perform { try $0.removeAppearanceProfile(id) }; newProfile()
+                            if let draft {
+                                var value = draft.wrappedValue
+                                SettingsDraft.removeProfile(id, from: &value)
+                                draft.wrappedValue = value
+                            } else { store.perform { try $0.removeAppearanceProfile(id) } }
+                            newProfile()
                         } label: { Image(systemName: "minus") }.disabled(selectedID == nil).help("Delete profile").accessibilityLabel("Delete appearance profile")
                     }
                 }
                 ScrollView {
                     VStack(alignment: .leading, spacing: 14) {
-                        TextField("Profile name", text: $name).textFieldStyle(.roundedBorder)
+                        TextField("Profile name", text: nameBinding).textFieldStyle(.roundedBorder)
                         HStack {
-                            TextField("Font name", text: $settings.fontName).textFieldStyle(.roundedBorder)
-                            Stepper("\(Int(settings.fontSize)) pt", value: $settings.fontSize, in: 9...40).frame(width: 110)
+                            TextField("Font name", text: settingsBinding.fontName).textFieldStyle(.roundedBorder)
+                            Stepper("\(Int(settings.fontSize)) pt", value: settingsBinding.fontSize, in: 9...40).frame(width: 110)
                         }
                         Text("한글 · English · 0123456789\n❯ claude --resume")
                             .font(Font(NSFont(name: settings.fontName, size: settings.fontSize) ?? NSFont.monospacedSystemFont(ofSize: settings.fontSize, weight: .regular)))
@@ -110,48 +124,56 @@ struct ProfileAppearanceView: View {
                             .padding(12).frame(maxWidth: .infinity, alignment: .leading)
                             .background(Color(NSColor(hex: settings.background)))
                         HStack {
-                            profileColor("Background", $settings.background)
-                            profileColor("Text", $settings.appearance.foreground)
+                            profileColor("Background", settingsBinding.background)
+                            profileColor("Text", settingsBinding.appearance.foreground)
                         }
                         HStack {
-                            profileColor("Cursor", $settings.appearance.cursor)
-                            profileColor("Selection", $settings.appearance.selection)
+                            profileColor("Cursor", settingsBinding.appearance.cursor)
+                            profileColor("Selection", settingsBinding.appearance.selection)
                         }
                         HStack {
                             Text("Opacity").frame(width: 110, alignment: .leading)
-                            Slider(value: $settings.appearance.opacity, in: 0.3...1)
+                            Slider(value: settingsBinding.appearance.opacity, in: 0.3...1)
                         }
-                        ExtendedAppearanceControls(settings: $settings, root: store.runtime.root).id(draftID)
+                        ExtendedAppearanceControls(settings: settingsBinding, root: store.runtime.root).id(draftID)
                         if let error { Text(error).font(.caption).foregroundStyle(.orange) }
-                        HStack { Spacer(); Button("Save Profile", action: save) }
+                        if !embedded { HStack { Spacer(); Button("Save Profile", action: save) } }
                     }.padding(.trailing, 8)
-                }
+                }.disabled(embedded && selectedID == nil)
             }
         }.padding(embedded ? 16 : 24)
             .frame(width: embedded ? nil : 720, height: embedded ? nil : 560)
             .preferredColorScheme(.dark)
-            .onAppear { newProfile(); if let first = store.state.settings.appearanceProfiles.first { selectedID = first.id; load(first.id) } }
+            .onAppear { newProfile(); if let first = profileSettings.appearanceProfiles.first { selectedID = first.id; load(first.id) } }
             .onChange(of: selectedID) { _, id in if let id { load(id) } }
     }
 
     private func newProfile() {
         selectedID = nil; draftID = UUID().uuidString.lowercased(); name = "New Profile"
-        settings = store.state.settings.resolvedAppearance(for: store.focusedID ?? "")
+        settings = profileSettings.resolvedAppearance(for: store.focusedID ?? "")
         error = nil
     }
 
     private func load(_ id: String) {
-        guard let profile = store.state.settings.appearanceProfiles.first(where: { $0.id == id }) else { return }
+        guard let profile = profileSettings.appearanceProfiles.first(where: { $0.id == id }) else { return }
         draftID = profile.id; name = profile.name
-        settings = store.state.settings
+        settings = profileSettings
         settings.fontName = profile.fontName; settings.fontSize = profile.fontSize
         settings.background = profile.background; settings.appearance = profile.appearance
         error = nil
     }
 
+    private func stageProfile(creating: Bool = false) {
+        guard let draft, creating || selectedID != nil else { return }
+        var value = draft.wrappedValue
+        SettingsDraft.setProfile(AppearanceProfile(id: draftID, name: name, settings: settings), in: &value)
+        draft.wrappedValue = value
+        if creating { selectedID = draftID }
+    }
+
     private func save() {
         do {
-            guard NSFont(name: settings.fontName, size: settings.fontSize) != nil,
+            guard SettingsDraft.font(named: settings.fontName, size: settings.fontSize) != nil,
                   settings.appearance.fallbackFontName.isEmpty || NSFont(name: settings.appearance.fallbackFontName, size: settings.fontSize) != nil else {
                 throw TerminalError.invalid("Choose installed font names.")
             }

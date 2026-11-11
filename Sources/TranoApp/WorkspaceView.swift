@@ -33,7 +33,11 @@ struct WorkspaceView: View {
                 }.help("Remote hosts")
                 Divider().frame(height: 14)
                 Button { store.picker = .sessions } label: { Image(systemName: "magnifyingglass") }.help("Switch Session · ⌘K").accessibilityLabel("Switch Session")
-                Button { store.showActivity.toggle() } label: { Image(systemName: "waveform.path") }.help("Show Activity").accessibilityLabel("Show Activity")
+                Button { store.showActivity.toggle() } label: { Image(systemName: "waveform.path") }
+                    .help("Show Activity").accessibilityLabel("Show Activity")
+                    .popover(isPresented: $store.showActivity, arrowEdge: .top) {
+                        activity.frame(width: 320, height: 420).preferredColorScheme(.dark)
+                    }
                 Button { store.showAccounts = true } label: { Image(systemName: "person.crop.circle") }.help("Agent accounts").accessibilityLabel("Agent accounts")
                 Button { store.showExtensions = true } label: { Image(systemName: "puzzlepiece.extension") }.help("Agent extensions").accessibilityLabel("Agent extensions")
                 Button { store.showVoice = true } label: { Image(systemName: "mic") }.help("Voice Input").accessibilityLabel("Voice Input").disabled(store.focusedID == nil)
@@ -59,10 +63,6 @@ struct WorkspaceView: View {
                                 .buttonStyle(.borderedProminent).tint(accent).foregroundStyle(.black)
                         }.frame(maxWidth: .infinity, maxHeight: .infinity)
                     }
-                }
-                if store.showActivity {
-                    Rectangle().fill(separatorColor).frame(width: 1)
-                    activity.frame(width: 260)
                 }
             }
             Rectangle().fill(separatorColor).frame(height: 1)
@@ -243,11 +243,11 @@ struct WorkspaceView: View {
 
     private var activity: some View {
         VStack(alignment: .leading, spacing: 16) {
-            HStack { Text("Activity").font(.system(size: 13, weight: .semibold)); Spacer(); Button { store.showActivity = false } label: { Image(systemName: "xmark") }.buttonStyle(.plain).accessibilityLabel("Close Activity") }
+            HStack { Text("Activity").font(.system(size: 13, weight: .semibold)); Spacer(); Button { store.showActivity = false } label: { Image(systemName: "xmark") }.buttonStyle(.plain).keyboardShortcut(.cancelAction).help("Close Activity").accessibilityLabel("Close Activity") }
             ScrollView {
                 VStack(alignment: .leading, spacing: 16) {
                     ForEach(store.sessions.sorted { $0.activity.updatedAt > $1.activity.updatedAt }) { session in
-                        Button { store.attach(session.id) } label: {
+                        Button { store.showActivity = false; store.attach(session.id) } label: {
                             VStack(alignment: .leading, spacing: 6) {
                                 HStack { Circle().fill(activityColor(session.activity.state)).frame(width: 6, height: 6); Text(session.activity.state.rawValue.capitalized).font(.system(size: 11, weight: .medium)) }
                                 Text(session.title).font(.system(size: 12))

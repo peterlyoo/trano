@@ -1,27 +1,37 @@
 {
   "status": "implemented_with_qualification_failures_and_pending_gates",
-  "sourceRevision": "1e027ceb132287756f056bee11ea663fde76db1f",
-  "buildID": "4b9e94cd26a0a0aa95bd52b3594bef04ca7fb7d923a92763399733d3b129b339",
+  "sourceRevision": null,
+  "buildID": "04c6b221a155a493b41af366be736a93c1aa025f58dd971bf5b034a619faf620",
   "checks": {
     "swift": {
       "status": "passed",
       "coreTests": 92,
-      "uiTests": 17,
+      "uiTests": 22,
       "cliTests": 6,
       "failures": 0,
       "optionalProviderChecksSkipped": 2,
       "installedProviderCompatibility": {
         "tests": 9,
         "skipped": 0,
-        "failures": 0
-      }
+        "failures": 0,
+        "scope": "Earlier product revision; provider/core code is unchanged in this UI correction."
+      },
+      "totalExecuted": 120
     },
     "native_bundle": {
       "status": "passed",
       "configuration": "release",
-      "signature": "ad_hoc_verified",
+      "signature": "apple_development_verified",
       "icon": "Trano.icns",
-      "sbom": "CycloneDX_1.6"
+      "sbom": "CycloneDX_1.6",
+      "installation": {
+        "path": "/Applications/Trano.app",
+        "startedFromInstalledBundle": true,
+        "helperReplaced": true,
+        "preservedLiveShellCount": 1,
+        "sameShellPIDs": true,
+        "sameLayout": true
+      }
     },
     "account_handoff": {
       "status": "passed_with_synthetic_providers",
@@ -71,7 +81,9 @@
       "idleProductRSSMiBMax": 251.484375,
       "idleMemoryTarget": "failed",
       "outputLoadSeconds": 600.434856334,
-      "note": "The completed ten-visible-pane run exceeded the idle maximum RSS target. Cold readiness, native warm attach and physical keyboard-to-render gates remain unmeasured; warm-cache headless metrics do not substitute for them."
+      "note": "The completed ten-visible-pane run exceeded the idle maximum RSS target. Cold readiness, native warm attach and physical keyboard-to-render gates remain unmeasured; warm-cache headless metrics do not substitute for them.",
+      "measuredBuildID": "9ce0fa0712616fbed9af0359ee94da000d56afc960eb072c766f58349148465a",
+      "scope": "Earlier immutable bundle, not the current installed UI correction."
     },
     "publication": {
       "status": "public_source_published_clean_ci_privacy_and_license_checks_passed",
@@ -103,6 +115,48 @@
         "cleanupError": null
       },
       "scope": "Short test-harness validation; the previous 30-launch / 60-second idle / 600-second output measurement is unchanged and U17 remains unqualified."
+    },
+    "native_ui": {
+      "titlebar": {
+        "status": "native_frame_render_passed",
+        "titlebarAlphaBefore": 0,
+        "titlebarAlphaAfter": 1,
+        "terminalContentAlphaUnchanged": true,
+        "physicalDrag": "not_run"
+      },
+      "activity": {
+        "presentation": "native_transient_popover",
+        "viewportGeometryTests": 1,
+        "testedContentWidths": [
+          1280,
+          900
+        ],
+        "priorWidthReductionPoints": 261,
+        "viewportSizeUnchanged": true
+      },
+      "settings": {
+        "status": "draft_runtime_contracts_passed",
+        "tests": 4,
+        "draftsDiscardOnCancel": true,
+        "embeddedProfilesAndUpdatePreferencesSaveOnly": true,
+        "managementDismissal": "Close_with_Escape",
+        "defaultSystemFontFallbackAccepted": true,
+        "nativeAXButtons": "unavailable_in_background_test_host"
+      },
+      "nativeClientCrashPersistence": {
+        "status": "passed",
+        "tests": 1,
+        "durationSeconds": 4.396
+      },
+      "scope": "Native geometry/render and draft-model tests plus installed process verification. Physical pointer, keyboard and OS permission qualification remain separate."
+    },
+    "claude_organization": {
+      "status": "partial_profile_isolation_only",
+      "separateProfileCredentials": true,
+      "usageKey": "Trano_profile_accountID",
+      "organizationSelection": "not_implemented",
+      "organizationIdentityVerification": "not_implemented",
+      "authenticatedCrossOrganizationResume": "not_run"
     }
   },
   "externalQualification": {
@@ -114,6 +168,7 @@
     "live_glass_launcher": "not_run",
     "developer_id_notarized_release": "not_configured"
   },
-  "verificationScope": "Published product source and local rebuilt bundle; later benchmark-only regressions and short native smoke; separately identified full performance snapshot. External qualification remains pending.",
-  "sourceRevisionScope": "Unchanged product code and its successful clean-checkout CI. The benchmark-only repair is validated locally in the source published alongside this record."
+  "verificationScope": "Current local UI correction identified by product buildID, full local Swift tests, Apple Development installation and process/session continuity; earlier performance and CI snapshots remain explicitly separate.",
+  "sourceRevisionScope": "UI correction source is published alongside this record and pinned by buildID. The listed public CI run applies to the earlier source revision; current CI status is tracked by GitHub Actions.",
+  "baseSourceRevision": "c0b2faca86167446c9479deb995fd6956b61902b"
 }
