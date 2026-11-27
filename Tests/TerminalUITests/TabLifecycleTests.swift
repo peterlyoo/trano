@@ -1,7 +1,7 @@
 import AppKit
 import SwiftUI
 import XCTest
-import TerminalCore
+@testable import TerminalCore
 @testable import TranoApp
 
 final class TabLifecycleTests: XCTestCase {
@@ -27,6 +27,7 @@ final class TabLifecycleTests: XCTestCase {
             store.terminalViews.removeAll()
             window.close()
             try? runtime.terminate(pane.id)
+            runtime.shutdownTestHost()
             try? FileManager.default.removeItem(at: root)
         }
         XCTAssertTrue(window.makeFirstResponder(terminal))
@@ -67,6 +68,7 @@ final class TabLifecycleTests: XCTestCase {
             store.terminalViews.removeAll()
             window.close()
             try? runtime.terminate(pane.id)
+            runtime.shutdownTestHost()
             try? FileManager.default.removeItem(at: root)
         }
         store.picker = .commands
@@ -84,15 +86,9 @@ final class TabLifecycleTests: XCTestCase {
         _ = NSApplication.shared
         let root = URL(fileURLWithPath: "/tmp/trano-tabs-" + UUID().uuidString.prefix(8))
         let runtime = try TerminalRuntime(root: root)
+        runtime.isolatePaneHome(root)
         let first = try runtime.create(title: "First", cwd: root.path, arguments: ["-f"])
         try runtime.update { $0.layout.addTab(paneID: first.id) }
-        for name in ["HOME", "ZDOTDIR"] {
-            let process = Process()
-            process.executableURL = URL(fileURLWithPath: runtime.executable)
-            process.arguments = ["-S", runtime.socketPath, "set-environment", "-g", name, root.path]
-            try process.run(); process.waitUntilExit()
-            XCTAssertEqual(process.terminationStatus, 0)
-        }
         let store = AppStore(runtime: runtime)
         let window = NSWindow(contentRect: NSRect(x: 0, y: 0, width: 1000, height: 700), styleMask: [.titled, .closable, .resizable, .fullSizeContentView], backing: .buffered, defer: false)
         window.isReleasedWhenClosed = false
@@ -106,6 +102,7 @@ final class TabLifecycleTests: XCTestCase {
             views.forEach { $0.terminate() }
             window.close()
             for pane in (try? runtime.list()) ?? [] { try? runtime.terminate(pane.id) }
+            runtime.shutdownTestHost()
             try? FileManager.default.removeItem(at: root)
         }
         await settle(until: { !store.loading && store.terminalViews[first.id]?.process.running == true }, hosting: hosting)

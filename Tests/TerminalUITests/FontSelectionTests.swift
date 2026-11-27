@@ -9,14 +9,12 @@ final class FontSelectionTests: XCTestCase {
     // Implements: U05, U21
     @MainActor func testSettingsNativeColorWellsStayInsideHorizontalBounds() async throws {
         _ = NSApplication.shared
-        let root = URL(fileURLWithPath: "/tmp/trano-font-bounds-" + UUID().uuidString.prefix(8))
-        let runtime = try TerminalRuntime(root: root)
-        let store = AppStore(runtime: runtime)
-        let hosting = NSHostingView(rootView: SettingsView(store: store))
-        let window = NSWindow(contentRect: NSRect(x: 0, y: 0, width: 680, height: 570), styleMask: [.titled], backing: .buffered, defer: false)
+        let palette = try XCTUnwrap(ThemePreferences.builtIns.first)
+        let hosting = NSHostingView(rootView: ThemePaletteEditor(palette: palette, legacy: TerminalSettings(), commit: { _ in }))
+        let window = NSWindow(contentRect: NSRect(x: -12000, y: -12000, width: 570, height: 620), styleMask: [.titled], backing: .buffered, defer: false)
         window.isReleasedWhenClosed = false
         window.contentView = hosting
-        defer { window.close(); try? FileManager.default.removeItem(at: root) }
+        defer { window.close() }
         try await Task.sleep(for: .milliseconds(200))
         hosting.layoutSubtreeIfNeeded()
         func colorWells(in view: NSView) -> [NSColorWell] {
@@ -54,6 +52,10 @@ final class FontSelectionTests: XCTestCase {
         XCTAssertFalse(terminal.title.contains("Menlo-Regular"))
         XCTAssertTrue(hosting.bounds.contains(terminal.convert(terminal.bounds, to: hosting)))
         XCTAssertTrue(hosting.bounds.contains(fallback.convert(fallback.bounds, to: hosting)))
+        for control in controls {
+            let menu = try XCTUnwrap(control.menu)
+            menu.delegate?.menuNeedsUpdate?(menu)
+        }
         let monaco = try XCTUnwrap(NSFont(name: "Monaco", size: 14))
         let monacoItem = try XCTUnwrap(terminal.item(withTitle: monaco.displayName ?? "Monaco"))
         XCTAssertTrue(NSApp.sendAction(try XCTUnwrap(monacoItem.action), to: monacoItem.target, from: monacoItem))

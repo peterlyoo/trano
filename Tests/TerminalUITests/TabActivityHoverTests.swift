@@ -1,6 +1,7 @@
 import AppKit
 import SwiftUI
 import XCTest
+@testable import SwiftTerm
 @testable import TerminalCore
 @testable import TranoApp
 
@@ -56,6 +57,19 @@ final class TabActivityHoverTests: XCTestCase {
         XCTAssertEqual(snapshot.panes[2].root.state, .unknown)
         XCTAssertNil(snapshot.panes[2].root.updatedAt)
         XCTAssertEqual(snapshot.panes[2].root.source, "unavailable")
+    }
+
+    // Implements: FR-HOVER-1
+    func testCardWidthFitsContentWithinCompactBounds() {
+        let short = session("s", agent: .claude, state: .running)
+        XCTAssertEqual(TabActivitySnapshot(tab: TerminalTab(paneID: short.id), sessions: [short]).preferredWidth, 200)
+        var long = session("l", agent: .claude, state: .blocked)
+        long.title = String(repeating: "Very long agent conversation title ", count: 4)
+        XCTAssertEqual(TabActivitySnapshot(tab: TerminalTab(paneID: long.id), sessions: [long]).preferredWidth, 300)
+        var medium = session("m", agent: .codex, state: .idle)
+        medium.title = "Claude Ship 기반 Roy 개선점"
+        let width = TabActivitySnapshot(tab: TerminalTab(paneID: medium.id), sessions: [medium]).preferredWidth
+        XCTAssertGreaterThan(width, 200); XCTAssertLessThan(width, 300)
     }
 
     // Implements: FR-HOVER-1
@@ -163,6 +177,66 @@ final class TabActivityHoverTests: XCTestCase {
         XCTAssertFalse(panel.ignoresMouseEvents)
     }
 
+    // Implements: FR-HOVER-2
+    @MainActor func testEachWorkspaceTabTracksAndPresentsOnlyBelowItself() async throws {
+        _ = NSApplication.shared
+        let root = URL(fileURLWithPath: "/tmp/trano-hover-tabs-" + UUID().uuidString.prefix(8))
+        defer { try? FileManager.default.removeItem(at: root) }
+        let store = AppStore(runtime: try TerminalRuntime(root: root), startServices: false)
+        store.interfacePreferences = InterfacePreferences()
+        let hosting = NSHostingView(rootView: WorkspaceView(store: store))
+        let window = HoverTestWindow(contentRect: NSRect(x: 100, y: 100, width: 1000, height: 600), styleMask: [.titled, .closable, .resizable, .fullSizeContentView], backing: .buffered, defer: false)
+        window.isReleasedWhenClosed = false
+        window.contentView = hosting
+        window.orderFrontRegardless()
+        defer { store.terminalViews.removeAll(); window.contentView = nil; window.close() }
+        var layout = WorkspaceLayout()
+        layout.addWorkspace(title: "hover")
+        var rows: [TerminalSession] = []
+        for index in 0..<20 {
+            let id = UUID().uuidString.lowercased()
+            rows.append(TerminalSession(id: id, title: "Tab \(index)", cwd: root.path, pid: 0, alive: false))
+            layout.addTab(paneID: id)
+            let terminal = TranoView(frame: .zero)
+            terminal.frameDriver.invalidate()
+            terminal.paneID = id; terminal.store = store
+            store.terminalViews[id] = terminal
+        }
+        store.sessions = rows; store.state.sessions = rows; store.state.layout = layout
+        for _ in 0..<8 { hosting.layoutSubtreeIfNeeded(); try await Task.sleep(for: .milliseconds(30)) }
+
+        func region(_ id: String) -> NSView? {
+            func find(_ view: NSView) -> NSView? {
+                if view.identifier?.rawValue == id { return view }
+                return view.subviews.lazy.compactMap { find($0) }.first
+            }
+            return find(hosting)
+        }
+        var checked = 0
+        for selected in [19, 0] {
+        try store.state.layout.selectTab(store.state.layout.currentTabs[selected].id)
+        for _ in 0..<8 { hosting.layoutSubtreeIfNeeded(); try await Task.sleep(for: .milliseconds(30)) }
+        XCTAssertGreaterThan(try XCTUnwrap(region("workspace-tab-" + store.state.layout.currentTabs[selected].id)).clippedVisibleBounds.width, 1)
+        for tab in store.state.layout.currentTabs {
+            let row = try XCTUnwrap(region("workspace-tab-" + tab.id))
+            let visible = row.convert(row.clippedVisibleBounds, to: nil)
+            guard visible.width > 1 else { continue }
+            let anchors = findAnchors(in: hosting)
+            let anchor = try XCTUnwrap(anchors.first { $0.convert($0.bounds, to: nil).minX == row.convert(row.bounds, to: nil).minX })
+            let moved = try XCTUnwrap(NSEvent.mouseEvent(with: .mouseMoved, location: NSPoint(x: visible.midX, y: visible.midY), modifierFlags: [],
+                                                        timestamp: 0, windowNumber: window.windowNumber, context: nil, eventNumber: 0, clickCount: 0, pressure: 0))
+            for candidate in anchors { candidate.mouseMoved(with: moved) }
+            try await Task.sleep(for: .milliseconds(300))
+            XCTAssertEqual(anchors.filter { $0.presenter.panel != nil }.count, 1, "Only the hovered tab may open a card")
+            let panel = try XCTUnwrap(anchor.presenter.panel, "Hovered tab \(tab.id) did not open its card")
+            XCTAssertEqual(panel.frame.minX, window.convertToScreen(visible).minX, accuracy: 1, "Hover card is not under its own tab")
+            for candidate in anchors { candidate.mouseExited(with: moved); candidate.presenter.dismiss() }
+            checked += 1
+        }
+        }
+        XCTAssertGreaterThan(checked, 6)
+    }
+
     private func session(_ id: String, agent: AgentKind, state: ActivityState, timestamp: Date = Date(timeIntervalSince1970: 1_800_000_000)) -> TerminalSession {
         var result = TerminalSession(id: id, title: "Pane \(id)", cwd: "/tmp", pid: 1)
         result.agent = agent
@@ -211,7 +285,9 @@ final class TabActivityHoverTests: XCTestCase {
     }
 
     @MainActor private func mouseEvent(_ type: NSEvent.EventType, window: NSWindow) throws -> NSEvent {
-        try XCTUnwrap(NSEvent.enterExitEvent(with: type, location: NSPoint(x: 10, y: 350), modifierFlags: [], timestamp: 0,
+        let anchor = findAnchors(in: try XCTUnwrap(window.contentView)).first
+        let location = anchor.map { $0.convert(NSPoint(x: $0.bounds.midX, y: $0.bounds.midY), to: nil) } ?? .zero
+        return try XCTUnwrap(NSEvent.enterExitEvent(with: type, location: location, modifierFlags: [], timestamp: 0,
                                            windowNumber: window.windowNumber, context: nil, eventNumber: 0, trackingNumber: 0, userData: nil))
     }
 }

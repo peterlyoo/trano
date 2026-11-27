@@ -5,6 +5,52 @@ import XCTest
 @testable import TranoApp
 
 final class ActivityGeometryTests: XCTestCase {
+    // Implements: FR-DECISION-4
+    @MainActor func testDecisionCountFitsInsideItsBubbleAndUpdatesInPlace() async throws {
+        let fixture = try await makeFixture()
+        defer { dispose(fixture) }
+        let text = DecisionText(en: "Choose", ko: "선택")
+        let question = DecisionQuestion(requestID: UUID().uuidString.lowercased(), threadID: UUID().uuidString.lowercased(), source: DecisionSource(agent: "codex", sessionID: "fixture", workspace: "/tmp/fixture"), question: text, options: [DecisionOption(id: "one", label: text, description: text), DecisionOption(id: "two", label: text, description: text)])
+        for count in [0, 1, 12, 512] {
+            fixture.store.decisionEntries = (0..<count).map { _ in DecisionInboxEntry(question: question, paneID: "pane", generation: "generation", createdAt: Date(), status: "pending", delivered: false) }
+            try await Task.sleep(for: .milliseconds(100))
+            fixture.hosting.layoutSubtreeIfNeeded()
+            let icon = try XCTUnwrap(region("decision-count-icon", in: fixture.hosting))
+            let label = try XCTUnwrap(icon.subviews.first { $0 is NSTextField } as? NSTextField)
+            let outline = try XCTUnwrap(icon.subviews.first { $0 is NSImageView } as? NSImageView)
+            XCTAssertEqual(label.stringValue, String(count))
+            XCTAssertNotNil(outline.image)
+            XCTAssertTrue((outline.accessibilityLabel() ?? "").isEmpty)
+            XCTAssertTrue(icon.bounds.contains(label.frame))
+            XCTAssertGreaterThanOrEqual(label.bounds.width, label.attributedStringValue.size().width)
+            XCTAssertEqual(label.frame.midX, outline.frame.midX, accuracy: 0.5)
+            XCTAssertEqual(icon.bounds.height, 24, accuracy: 0.5)
+        }
+    }
+
+    // Implements: FR-ACTIVITY-1
+    @MainActor func testActivitySectionsShowUnreadCompletionUntilObserved() async throws {
+        let fixture = try await makeFixture()
+        defer { dispose(fixture) }
+        let samples: [(ActivityState, AgentKind)] = [(.running, .claude), (.blocked, .codex), (.done, .claude)]
+        let rows: [TerminalSession] = samples.enumerated().map { index, value in
+            var row = TerminalSession(id: "activity-\(index)", title: "Task \(index)", cwd: "/tmp/project", pid: 0, agent: value.1)
+            row.activity.state = value.0
+            return row
+        }
+        fixture.store.sessions = rows
+        fixture.store.showActivity = true
+        try await Task.sleep(for: .milliseconds(150))
+        fixture.hosting.layoutSubtreeIfNeeded()
+        for id in ["working", "attention", "done"] { XCTAssertNotNil(region("activity-section-" + id, in: fixture.hosting)) }
+        XCTAssertNotNil(region("activity-unread-activity-2", in: fixture.hosting))
+        fixture.store.state.activityReadAt[rows[2].id] = rows[2].activity.updatedAt
+        try await Task.sleep(for: .milliseconds(100))
+        fixture.hosting.layoutSubtreeIfNeeded()
+        XCTAssertNil(region("activity-unread-activity-2", in: fixture.hosting))
+        XCTAssertNotNil(region("activity-unread-activity-1", in: fixture.hosting))
+    }
+
     // Implements: U07, U21
     @MainActor func testActivityPresentationKeepsTerminalViewportSize() async throws {
         let fixture = try await makeFixture()
@@ -73,8 +119,12 @@ final class ActivityGeometryTests: XCTestCase {
         XCTAssertEqual(fixture.terminal.bounds.width, fixture.hosting.bounds.width, accuracy: 1)
         let header = try XCTUnwrap(region("workspace-header", in: fixture.hosting))
         let switcher = try XCTUnwrap(region("workspace-switcher", in: fixture.hosting))
+        let remote = try XCTUnwrap(region("remote-hosts-button", in: fixture.hosting))
+        XCTAssertTrue(remote.window === fixture.window)
+        XCTAssertGreaterThanOrEqual(remote.bounds.width, 24)
         let headerRect = header.convert(header.bounds, to: fixture.hosting)
         let switcherRect = switcher.convert(switcher.bounds, to: fixture.hosting)
+        XCTAssertEqual(headerRect.height, 40, accuracy: 0.5)
         XCTAssertLessThanOrEqual(headerRect.height, 40)
         XCTAssertEqual(fixture.hosting.isFlipped ? headerRect.minY : fixture.hosting.bounds.maxY - headerRect.maxY, 0, accuracy: 1)
         let zoom = try XCTUnwrap(fixture.window.standardWindowButton(.zoomButton))

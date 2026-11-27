@@ -1,8 +1,9 @@
 import Foundation
 
-public enum TerminalCursorStyle: String, Codable, CaseIterable { case block, beam, underline }
+public enum TerminalCursorStyle: String, Codable, CaseIterable, Sendable { case block, beam, underline }
 
 public struct AppearancePreferences: Codable, Equatable {
+    public static let opacityRange = 0.0...1.0
     public var foreground = "#ECECEE"
     public var cursor = "#85D7C1"
     public var selection = "#35594F"
@@ -33,12 +34,12 @@ public struct AppearancePreferences: Codable, Equatable {
     }
 
     public func validate() throws {
-        guard opacity.isFinite, (0.3...1).contains(opacity), ansiColors.count == 16,
+        guard opacity.isFinite, Self.opacityRange.contains(opacity), ansiColors.count == 16,
               lineSpacing.isFinite, (1...2).contains(lineSpacing),
               backgroundImageOpacity.isFinite, (0...0.4).contains(backgroundImageOpacity),
               fallbackFontName.utf8.count <= 200, !fallbackFontName.unicodeScalars.contains(where: CharacterSet.controlCharacters.contains),
               ([foreground, cursor, selection] + ansiColors).allSatisfy(Self.isHexColor) else {
-            throw TerminalError.invalid("Use valid colors, 30–100% opacity, 1–2× line spacing, and 0–40% image intensity.")
+            throw TerminalError.invalid("Use valid colors, 0–100% opacity, 1–2× line spacing, and 0–40% image intensity.")
         }
         if let path = backgroundImagePath {
             guard path.hasPrefix("/"), path.utf8.count <= 4096,

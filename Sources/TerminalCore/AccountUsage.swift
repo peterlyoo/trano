@@ -21,6 +21,31 @@ public struct AccountUsageSnapshot: Codable, Equatable, Identifiable {
     public let windows: [AccountUsageWindow]
     public let source: String
     public var message: String?
+    public let resetCredits: AccountResetCredits?
+    public let organizationBindingID: String?
+    public init(accountID: String, provider: AgentKind, status: AccountUsageStatus, observedAt: Date,
+                windows: [AccountUsageWindow], source: String, message: String?, resetCredits: AccountResetCredits? = nil, organizationBindingID: String? = nil) {
+        self.accountID = accountID; self.provider = provider; self.status = status; self.observedAt = observedAt
+        self.windows = windows; self.source = source; self.message = message
+        self.organizationBindingID = organizationBindingID.flatMap { $0.isEmpty ? nil : $0 }
+        self.resetCredits = status == .authenticationRequired || status == .unavailable ? nil : resetCredits
+    }
+    private enum CodingKeys: String, CodingKey {
+        case accountID, provider, status, observedAt, windows, source, message, resetCredits, organizationBindingID
+    }
+    public init(from decoder: Decoder) throws {
+        let value = try decoder.container(keyedBy: CodingKeys.self)
+        accountID = try value.decode(String.self, forKey: .accountID)
+        provider = try value.decode(AgentKind.self, forKey: .provider)
+        status = try value.decode(AccountUsageStatus.self, forKey: .status)
+        observedAt = try value.decode(Date.self, forKey: .observedAt)
+        windows = try value.decode([AccountUsageWindow].self, forKey: .windows)
+        source = try value.decode(String.self, forKey: .source)
+        message = try value.decodeIfPresent(String.self, forKey: .message)
+        organizationBindingID = try value.decodeIfPresent(String.self, forKey: .organizationBindingID).flatMap { $0.isEmpty ? nil : $0 }
+        if status == .authenticationRequired || status == .unavailable { resetCredits = nil }
+        else { resetCredits = try? value.decodeIfPresent(AccountResetCredits.self, forKey: .resetCredits) }
+    }
     public var retryAt: Date? {
         guard status == .limited else { return nil }
         return windows.filter { $0.usedPercent >= 100 }.compactMap(\.resetsAt).max()
@@ -28,7 +53,7 @@ public struct AccountUsageSnapshot: Codable, Equatable, Identifiable {
 }
 
 public enum AccountUsageAdapter {
-    public static func claude(accountID: String, data: Data, now: Date = Date()) throws -> AccountUsageSnapshot {
+    public static func claude(accountID: String, data: Data, now: Date = Date(), organizationBindingID: String? = nil) throws -> AccountUsageSnapshot {
         let payload = try object(data)
         let limits = payload["rate_limits"] as? [String: Any] ?? [:]
         var windows: [AccountUsageWindow] = []
@@ -45,10 +70,10 @@ public enum AccountUsageAdapter {
         return AccountUsageSnapshot(accountID: accountID, provider: .claude,
                                     status: windows.isEmpty ? .unknown : (windows.contains { $0.usedPercent >= 100 } ? .limited : .available),
                                     observedAt: now, windows: windows, source: "claude.statusline",
-                                    message: windows.isEmpty ? "Claude has not reported a current quota window" : nil)
+                                    message: windows.isEmpty ? "Claude has not reported a current quota window" : nil, organizationBindingID: organizationBindingID)
     }
 
-    public static func codex(accountID: String, data: Data, now: Date = Date()) throws -> AccountUsageSnapshot {
+    public static func codex(accountID: String, data: Data, now: Date = Date(), organizationBindingID: String? = nil) throws -> AccountUsageSnapshot {
         let payload = try object(data)
         guard let limits = payload["rateLimits"] as? [String: Any] else { throw TerminalError.invalid("Missing Codex quota response") }
         var windows: [AccountUsageWindow] = []
@@ -67,7 +92,8 @@ public enum AccountUsageAdapter {
         let status: AccountUsageStatus = permission == true ? .available : (limited ? .limited : .unknown)
         return AccountUsageSnapshot(accountID: accountID, provider: .codex, status: status,
                                     observedAt: now, windows: windows, source: "codex.account/rateLimits/read",
-                                    message: status == .unknown ? "Codex did not report whether ordinary usage is allowed" : nil)
+                                    message: status == .unknown ? "Codex did not report whether ordinary usage is allowed" : nil,
+                                    resetCredits: AccountResetCredits.parse(payload["rateLimitResetCredits"], observedAt: now), organizationBindingID: organizationBindingID)
     }
 
     static func object(_ data: Data) throws -> [String: Any] {
@@ -86,10 +112,18 @@ public enum AccountUsageAdapter {
 extension TerminalRuntime {
     public func accountUsage(now: Date = Date()) throws -> [AccountUsageSnapshot] {
         try transaction {
-            let url = root.appendingPathComponent("account-usage.json")
-            let saved = FileManager.default.fileExists(atPath: url.path) ? try JSONDecoder().decode([AccountUsageSnapshot].self, from: AccountFile.read(url, limit: 1_048_576)) : []
+            let saved = try readAccountUsageCache()
             return try state().accounts.map { account in
-                var value = saved.first { $0.accountID == account.id } ?? AccountUsageSnapshot(accountID: account.id, provider: account.provider, status: .unknown, observedAt: .distantPast, windows: [], source: "none", message: "Usage has not been reported")
+                guard var value = saved.first(where: {
+                    $0.accountID == account.id && $0.provider == account.provider &&
+                    $0.organizationBindingID == account.organizationUsageBindingID
+                }) else {
+                    let unavailable = account.organizationUsageBindingID != nil || saved.contains { $0.accountID == account.id }
+                    return AccountUsageSnapshot(accountID: account.id, provider: account.provider,
+                        status: unavailable ? .unavailable : .unknown, observedAt: .distantPast, windows: [], source: "none",
+                        message: unavailable ? "Usage has not been reported for the current profile" : "Usage has not been reported",
+                        organizationBindingID: account.organizationUsageBindingID)
+                }
                 if value.status == .available && now.timeIntervalSince(value.observedAt) > 300 {
                     value.status = .unknown; value.message = "Refresh usage before switching automatically"
                 }
@@ -98,26 +132,28 @@ extension TerminalRuntime {
         }
     }
 
-    @discardableResult public func recordClaudeAccountUsage(accountID: String, data: Data) throws -> AccountUsageSnapshot {
-        try saveAccountUsage(AccountUsageAdapter.claude(accountID: accountID, data: data))
+    @discardableResult public func recordClaudeAccountUsage(accountID: String, data: Data, organizationBindingID: String? = nil) throws -> AccountUsageSnapshot {
+        try saveAccountUsage(AccountUsageAdapter.claude(accountID: accountID, data: data, organizationBindingID: organizationBindingID))
     }
 
-    @discardableResult public func recordAccountLimit(accountID: String, source: String, resetAt: Date? = nil) throws -> AccountUsageSnapshot {
+    @discardableResult public func recordAccountLimit(accountID: String, source: String, resetAt: Date? = nil, organizationBindingID: String? = nil) throws -> AccountUsageSnapshot {
+        let organizationBindingID = organizationBindingID.flatMap { $0.isEmpty ? nil : $0 }
         guard let account = try state().accounts.first(where: { $0.id == accountID }) else { throw TerminalError.invalid("Unknown account") }
-        let prior = try accountUsage().first { $0.accountID == accountID }
+        let prior = try accountUsage().first { $0.accountID == accountID && $0.organizationBindingID == organizationBindingID }
         let windows = resetAt.map { [AccountUsageWindow(id: "reported_limit", usedPercent: 100, resetsAt: $0)] } ?? prior?.windows ?? []
-        return try saveAccountUsage(AccountUsageSnapshot(accountID: accountID, provider: account.provider, status: .limited, observedAt: Date(), windows: windows, source: source, message: "Provider reported a rate limit"))
+        return try saveAccountUsage(AccountUsageSnapshot(accountID: accountID, provider: account.provider, status: .limited, observedAt: Date(), windows: windows, source: source, message: "Provider reported a rate limit", resetCredits: prior?.resetCredits, organizationBindingID: organizationBindingID))
     }
 
-    @discardableResult public func recordAccountFailure(accountID: String, authentication: Bool) throws -> AccountUsageSnapshot {
+    @discardableResult public func recordAccountFailure(accountID: String, authentication: Bool, organizationBindingID: String? = nil) throws -> AccountUsageSnapshot {
         guard let account = try state().accounts.first(where: { $0.id == accountID }) else { throw TerminalError.invalid("Unknown account") }
         return try saveAccountUsage(AccountUsageSnapshot(accountID: accountID, provider: account.provider, status: authentication ? .authenticationRequired : .unavailable,
-                                                        observedAt: Date(), windows: [], source: "provider", message: authentication ? "Sign in to this account" : "Provider is temporarily unavailable"))
+                                                        observedAt: Date(), windows: [], source: "provider", message: authentication ? "Sign in to this account" : "Provider is temporarily unavailable", organizationBindingID: organizationBindingID))
     }
 
     @discardableResult public func refreshAccountUsage(accountID: String) throws -> AccountUsageSnapshot {
         guard let account = try state().accounts.first(where: { $0.id == accountID }) else { throw TerminalError.invalid("Unknown account") }
         if account.provider == .claude { return try accountUsage().first { $0.accountID == accountID }! }
+        let organizationBindingID = account.organizationUsageBindingID
         let directory = try accountRoot(accountID)
         let fd = open(directory.appendingPathComponent(".trano-refresh.lock").path, O_CREAT | O_RDWR | O_CLOEXEC | O_NOFOLLOW, 0o600)
         guard fd >= 0 else { throw TerminalError.runtime("Cannot lock account refresh") }
@@ -135,20 +171,31 @@ extension TerminalRuntime {
             let response = try AccountRPC.request(method: "account/rateLimits/read", parameters: .null, environment: environment)
             if case .object(let error)? = response["error"] {
                 let authentication = error["code"] == .number(-32600) && error["message"]?.text == "codex account authentication required to read rate limits"
-                value = AccountUsageSnapshot(accountID: accountID, provider: .codex, status: authentication ? .authenticationRequired : .unavailable, observedAt: Date(), windows: [], source: "codex.account/rateLimits/read", message: authentication ? "Sign in to this account" : "Codex could not refresh usage")
+                value = AccountUsageSnapshot(accountID: accountID, provider: .codex, status: authentication ? .authenticationRequired : .unavailable, observedAt: Date(), windows: [], source: "codex.account/rateLimits/read", message: authentication ? "Sign in to this account" : "Codex could not refresh usage", organizationBindingID: organizationBindingID)
             } else if let result = response["result"] {
-                value = try AccountUsageAdapter.codex(accountID: accountID, data: JSONEncoder().encode(result))
+                value = try AccountUsageAdapter.codex(accountID: accountID, data: JSONEncoder().encode(result), organizationBindingID: organizationBindingID)
             } else { throw TerminalError.invalid("Codex returned no usage result") }
         } catch {
-            value = AccountUsageSnapshot(accountID: accountID, provider: .codex, status: .unavailable, observedAt: Date(), windows: [], source: "codex.account/rateLimits/read", message: "Usage refresh failed; check the Codex installation and connection")
+            value = AccountUsageSnapshot(accountID: accountID, provider: .codex, status: .unavailable, observedAt: Date(), windows: [], source: "codex.account/rateLimits/read", message: "Usage refresh failed; check the Codex installation and connection", organizationBindingID: organizationBindingID)
         }
         return try saveAccountUsage(value)
     }
 
+    private func readAccountUsageCache() throws -> [AccountUsageSnapshot] {
+        let url = root.appendingPathComponent("account-usage.json")
+        return FileManager.default.fileExists(atPath: url.path)
+            ? try JSONDecoder().decode([AccountUsageSnapshot].self, from: AccountFile.read(url, limit: 1_048_576)) : []
+    }
+
     @discardableResult private func saveAccountUsage(_ value: AccountUsageSnapshot) throws -> AccountUsageSnapshot {
         try transaction {
-            guard try state().accounts.contains(where: { $0.id == value.accountID && $0.provider == value.provider }) else { throw TerminalError.invalid("Usage provider does not match the account") }
-            var saved = try accountUsage()
+            guard let account = try state().accounts.first(where: { $0.id == value.accountID }),
+                  account.provider == value.provider, account.organizationUsageBindingID == value.organizationBindingID else {
+                return AccountUsageSnapshot(accountID: value.accountID, provider: value.provider, status: .unavailable,
+                    observedAt: value.observedAt, windows: [], source: value.source,
+                    message: "Account configuration changed; refresh usage", organizationBindingID: value.organizationBindingID)
+            }
+            var saved = try readAccountUsageCache()
             saved.removeAll { $0.accountID == value.accountID }; saved.append(value)
             try Self.atomicWrite(JSONEncoder().encode(saved), to: root.appendingPathComponent("account-usage.json"))
             return value

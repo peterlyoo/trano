@@ -10,6 +10,7 @@ include:
   - docs/
   - .github/
   - licenses/
+  - vendor/SwiftTerm/
   - Package.swift
   - Package.resolved
   - .gitignore
@@ -35,7 +36,30 @@ ownership:
   product: MIT; original Trano code and project-local scripts.
   dependencies: Preserve upstream licenses and notices; never relabel dependencies as MIT.
   provider_marks: Names identify compatible providers; no affiliation or trademark grant.
+reviewed_binary_assets:
+  manifest: docs/program-icon-sources.json
+  enforcement: Only the three exact PNG paths and SHA256 values in scripts/check-publication.py are permitted.
+  assets:
+    - Sources/TranoApp/Resources/ProgramIcons/zsh.png
+    - Sources/TranoApp/Resources/ProgramIcons/k9s.png
+    - Sources/TranoApp/Resources/ProgramIcons/kubernetes.png
+reviewed_vendored_sources:
+  path: vendor/SwiftTerm/
+  upstream: https://github.com/migueldeicaza/SwiftTerm
+  version: 1.99.1
+  revision: 2f573f73af5e768d90847dce20c97fa9535d7164
+  archive_sha256: b7bd5d65ea4e2ad0a8776878ae9b873e80c25747e437df494e5d9fceba54affe
+  provenance: vendor/SwiftTerm/TranoVendor.json
+  retained_licenses:
+    - vendor/SwiftTerm/LICENSE
+    - licenses/SwiftTerm.txt
+  license_sha256: 0dc6bdd99b652c675586854efcacd59de21e2679d64fcaa20424aeb951df6856
+  modifications: Local modified fork; upstream revision is not the built source-tree identity.
+  sbom: Modified component version and tree hash; exact upstream version, revision and archive hash in pedigree/properties.
+  enforcement: No privacy, binary, symlink or generated-file exemption. All other vendor subtrees require explicit review.
 verification:
   - python3 scripts/check-publication.py
   - python3 scripts/check-publication.py --staged
   - python3 Tests/Integrations/test_publication.py
+  - python3 Tests/Integrations/test_vendored_dependencies.py
+  - python3 scripts/generate-sbom.py --check

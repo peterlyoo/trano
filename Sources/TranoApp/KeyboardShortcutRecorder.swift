@@ -18,7 +18,8 @@ enum NativeKeyBinding {
     }
 
     static func menuEquivalent(_ binding: String) -> (String, NSEvent.ModifierFlags) {
-        let parts = binding.split(separator: "+").map(String.init)
+        guard let canonical = try? KeyBindingMap.normalize(binding) else { return ("", []) }
+        let parts = canonical.split(separator: "+").map(String.init)
         let names: [String: String] = ["left": String(UnicodeScalar(NSLeftArrowFunctionKey)!), "right": String(UnicodeScalar(NSRightArrowFunctionKey)!), "up": String(UnicodeScalar(NSUpArrowFunctionKey)!), "down": String(UnicodeScalar(NSDownArrowFunctionKey)!), "enter": "\r", "tab": "\t", "escape": "\u{1b}", "space": " ", "pageup": String(UnicodeScalar(NSPageUpFunctionKey)!), "pagedown": String(UnicodeScalar(NSPageDownFunctionKey)!), "home": String(UnicodeScalar(NSHomeFunctionKey)!), "end": String(UnicodeScalar(NSEndFunctionKey)!)]
         var flags: NSEvent.ModifierFlags = []
         if parts.contains("cmd") { flags.insert(.command) }
@@ -30,8 +31,14 @@ enum NativeKeyBinding {
     }
 }
 
+enum ShortcutRecordingMode: Hashable {
+    case single, sequence(length: Int)
+    var length: Int { if case .sequence(let length) = self { return length }; return 1 }
+}
+
 struct KeyboardShortcutRecorder: NSViewRepresentable {
     var value: String?
+    var mode: ShortcutRecordingMode = .single
     var onChange: (String) -> Void
     func makeNSView(context: Context) -> ShortcutButton {
         let button = ShortcutButton()
@@ -40,6 +47,10 @@ struct KeyboardShortcutRecorder: NSViewRepresentable {
         return button
     }
     func updateNSView(_ button: ShortcutButton, context: Context) {
+        button.appearance = context.environment.toolPanelTheme.appearance
+        button.font = .systemFont(ofSize: ToolPanelMetrics.bodySize)
+        button.controlSize = .small
+        button.mode = mode
         button.binding = value; button.onChange = onChange
         if !button.recording { button.title = value.map(KeyBindingMap.display) ?? "Record…" }
     }
@@ -48,14 +59,22 @@ struct KeyboardShortcutRecorder: NSViewRepresentable {
 final class ShortcutButton: NSButton {
     var binding: String?
     var onChange: ((String) -> Void)?
+    var mode: ShortcutRecordingMode = .single {
+        didSet { if oldValue != mode { cancelRecording() } }
+    }
     private(set) var recording = false
+    private var strokes: [String] = []
     override var acceptsFirstResponder: Bool { true }
     @objc func beginRecording() {
-        recording = true; title = "Press shortcut…"; window?.makeFirstResponder(self)
+        guard (1...3).contains(mode.length) else { return }
+        recording = true
+        strokes = []
+        title = mode.length == 1 ? "Press shortcut…" : "Stroke 1 of \(mode.length)…"
+        window?.makeFirstResponder(self)
         setAccessibilityLabel("Record keyboard shortcut. Press Escape to cancel.")
     }
     override func resignFirstResponder() -> Bool {
-        recording = false; title = binding.map(KeyBindingMap.display) ?? "Record…"
+        cancelRecording()
         return super.resignFirstResponder()
     }
     override func performKeyEquivalent(with event: NSEvent) -> Bool {
@@ -66,8 +85,26 @@ final class ShortcutButton: NSButton {
         if recording { capture(event) } else { super.keyDown(with: event) }
     }
     func capture(_ event: NSEvent) {
-        if event.keyCode == 53 { window?.makeFirstResponder(nil); return }
-        guard let binding = NativeKeyBinding.binding(for: event) else { NSSound.beep(); return }
-        recording = false; onChange?(binding); window?.makeFirstResponder(nil)
+        guard recording, !event.isARepeat else { return }
+        if event.keyCode == 53 { cancelRecording(); window?.makeFirstResponder(nil); return }
+        guard let stroke = NativeKeyBinding.binding(for: event), !KeyBindingMap.reserved.contains(stroke) else {
+            title = "Use Command or Control"
+            return
+        }
+        strokes.append(stroke)
+        guard strokes.count == mode.length else {
+            title = KeyBindingMap.display(strokes.joined(separator: ",")) + " → Stroke \(strokes.count + 1)"
+            return
+        }
+        let value = strokes.joined(separator: ",")
+        binding = value
+        cancelRecording()
+        onChange?(value)
+        window?.makeFirstResponder(nil)
+    }
+    private func cancelRecording() {
+        recording = false
+        strokes = []
+        title = binding.map(KeyBindingMap.display) ?? "Record…"
     }
 }

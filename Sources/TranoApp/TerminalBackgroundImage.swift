@@ -63,19 +63,11 @@ struct TerminalBackgroundView: View {
     let settings: TerminalSettings
     @State private var image: NSImage?
 
+    var backgroundOpacity: Double? = nil
     var body: some View {
         Group {
             if settings.appearance.backgroundImagePath != nil {
-                GeometryReader { geometry in
-                    ZStack {
-                        Color(NSColor(hex: settings.background)).opacity(settings.appearance.opacity)
-                        if let image {
-                            Image(nsImage: image).resizable().scaledToFill()
-                                .frame(width: geometry.size.width, height: geometry.size.height).clipped()
-                                .opacity(settings.appearance.backgroundImageOpacity * settings.appearance.opacity)
-                        }
-                    }
-                }
+                TerminalBackgroundSurface(settings: settings, image: image, backgroundOpacity: backgroundOpacity)
             }
         }.allowsHitTesting(false).accessibilityHidden(true)
             .task(id: settings.appearance.backgroundImagePath) {
@@ -85,5 +77,24 @@ struct TerminalBackgroundView: View {
                 guard !Task.isCancelled else { return }
                 image = loaded
             }
+    }
+}
+
+struct TerminalBackgroundSurface: View {
+    let settings: TerminalSettings
+    let image: NSImage?
+    var backgroundOpacity: Double? = nil
+
+    var body: some View {
+        GeometryReader { geometry in
+            ZStack {
+                Color(NSColor(hex: settings.background))
+                if let image {
+                    Image(nsImage: image).resizable().scaledToFill()
+                        .frame(width: geometry.size.width, height: geometry.size.height).clipped()
+                        .opacity(settings.appearance.backgroundImageOpacity)
+                }
+            }.compositingGroup().opacity(backgroundOpacity ?? settings.appearance.opacity)
+        }
     }
 }

@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 import argparse
+import hashlib
 import pathlib
 import plistlib
 import re
@@ -16,6 +17,12 @@ PACKAGES = {
     "h": ("1.0.1", "Apache-2.0", "LICENSE", "resolved-non-Apple-graphics", "excluded"),
     "dollup": ("1.3.0", "Unspecified in formatter wrapper", "", "resolved-formatter-not-distributed", "excluded"),
 }
+SWIFTTERM_SOURCE = "https://github.com/migueldeicaza/SwiftTerm"
+SWIFTTERM_REVISION = "2f573f73af5e768d90847dce20c97fa9535d7164"
+SWIFTTERM_ARCHIVE_SHA256 = "b7bd5d65ea4e2ad0a8776878ae9b873e80c25747e437df494e5d9fceba54affe"
+SWIFTTERM_LICENSE_SHA256 = "0dc6bdd99b652c675586854efcacd59de21e2679d64fcaa20424aeb951df6856"
+VENDOR_PATH = "vendor/SwiftTerm"
+GENERATED_VENDOR_PARTS = {".git", ".local", ".build", "build", "__pycache__", ".DS_Store"}
 TOOLS = [
     ("tmux", "3.6a", "https://github.com/tmux/tmux", "3.6a", "ISC and individual source-file notices", "COPYING", "external-runtime-and-ci", "b6d8d9c76585db8ef5fa00d4931902fa4b8cbe8166f528f44fc403961a3f3759"),
     ("libevent", "2.1.13-stable", "https://github.com/libevent/libevent", "release-2.1.13-stable", "BSD-3-Clause", "LICENSE", "ci-build", "f7e9383b8c0baa81b687e5b5eecc01beefaf1b19b64151d95ed61647fe7a315c"),
@@ -60,11 +67,93 @@ def package_component(pin):
             "properties": [{"name": "trano:role", "value": role}, {"name": "trano:vcsRevision", "value": revision}]}
 
 
+def local_package_paths(root):
+    manifest = (root / "Package.swift").read_text()
+    manifest = re.sub(r"(?m)^\s*//.*$", "", manifest)
+    paths = []
+    for arguments in re.findall(r"\.package\s*\(([^)]*)\)", manifest):
+        if not re.search(r"\bpath\s*:", arguments):
+            continue
+        local = re.fullmatch(r'\s*(?:name\s*:\s*"[^"\n]+"\s*,\s*)?path\s*:\s*"([^"\n]+)"\s*,?\s*', arguments)
+        if local is None:
+            raise ValueError("Local package paths must be reviewed relative string literals")
+        paths.append(local.group(1))
+    if any(path != VENDOR_PATH for path in paths) or len(paths) != len(set(paths)):
+        raise ValueError("Unreviewed local package dependency")
+    return paths
+
+
+def vendored_swiftterm_component(root, pin=None):
+    version = PACKAGES["swiftterm"][0]
+    vendor = root / VENDOR_PATH
+    try:
+        if (root / "vendor").is_symlink() or vendor.is_symlink() or not vendor.is_dir():
+            raise ValueError("Vendored SwiftTerm must be a source directory")
+        for name in ["Package.swift", "TranoVendor.json", "LICENSE"]:
+            path = vendor / name
+            if path.is_symlink() or not path.is_file():
+                raise ValueError("Missing vendored SwiftTerm package, license or provenance")
+        metadata = read_document(vendor / "TranoVendor.json")
+        expected = {"source": SWIFTTERM_SOURCE, "version": version, "revision": SWIFTTERM_REVISION,
+                    "archiveSHA256": SWIFTTERM_ARCHIVE_SHA256}
+        if not isinstance(metadata, dict) or any(metadata.get(key) != value for key, value in expected.items()):
+            raise ValueError("Vendored SwiftTerm upstream provenance requires review")
+        changes = metadata.get("localChanges")
+        if not isinstance(changes, list) or not changes or any(not isinstance(item, str) or not item.strip() for item in changes):
+            raise ValueError("Vendored SwiftTerm must describe its local changes")
+        originals = metadata.get("originalFileSHA256")
+        if not isinstance(originals, dict) or originals.get("LICENSE") != SWIFTTERM_LICENSE_SHA256:
+            raise ValueError("Vendored SwiftTerm upstream license provenance requires review")
+        for path in [vendor / "LICENSE", root / "licenses/SwiftTerm.txt"]:
+            if path.is_symlink() or hashlib.sha256(path.read_bytes()).hexdigest() != SWIFTTERM_LICENSE_SHA256:
+                raise ValueError("Vendored SwiftTerm license bytes require review")
+        if pin is not None and (pin["state"]["version"] != version or pin["state"]["revision"] != SWIFTTERM_REVISION
+                                or pin["location"].removesuffix(".git") != SWIFTTERM_SOURCE):
+            raise ValueError("Resolved SwiftTerm pin conflicts with vendored upstream provenance")
+        digest = hashlib.sha256()
+        for path in sorted(vendor.rglob("*"), key=lambda item: item.relative_to(vendor).as_posix()):
+            relative = path.relative_to(vendor)
+            if path.is_symlink() or any(part in GENERATED_VENDOR_PARTS for part in relative.parts):
+                raise ValueError("Symlink or generated artifact in vendored SwiftTerm source")
+            if path.is_file():
+                digest.update(relative.as_posix().encode("utf-8") + b"\0")
+                digest.update(hashlib.sha256(path.read_bytes()).digest() + b"\0")
+        tree_sha256 = digest.hexdigest()
+    except (OSError, subprocess.CalledProcessError, plistlib.InvalidFileException) as error:
+        raise ValueError("Missing or invalid vendored SwiftTerm license or provenance") from error
+    upstream = package_component({"identity": "swiftterm", "state": {"version": version, "revision": SWIFTTERM_REVISION},
+                                  "location": SWIFTTERM_SOURCE})
+    fork_version = version + "+trano." + tree_sha256[:12]
+    purl = "pkg:generic/trano/swiftterm@" + fork_version.replace("+", "%2B")
+    archive_url = SWIFTTERM_SOURCE + "/archive/" + SWIFTTERM_REVISION + ".tar.gz"
+    return {"type": "library", "bom-ref": purl, "name": "swiftterm", "version": fork_version,
+            "scope": "required", "purl": purl, "licenses": license_value("MIT"),
+            "hashes": [{"alg": "SHA-256", "content": tree_sha256}],
+            "pedigree": {"ancestors": [upstream], "notes": "Locally modified vendored fork: " + "; ".join(changes)},
+            "externalReferences": upstream["externalReferences"] + [
+                {"type": "distribution", "url": archive_url, "comment": "Unmodified upstream source archive",
+                 "hashes": [{"alg": "SHA-256", "content": SWIFTTERM_ARCHIVE_SHA256}]}],
+            "properties": [{"name": "trano:role", "value": "runtime"},
+                           {"name": "trano:sourceType", "value": "vendored-modified"},
+                           {"name": "trano:dirty", "value": "true"},
+                           {"name": "trano:localPath", "value": VENDOR_PATH},
+                           {"name": "trano:upstreamVersion", "value": version},
+                           {"name": "trano:vcsRevision", "value": SWIFTTERM_REVISION},
+                           {"name": "trano:upstreamArchiveSHA256", "value": SWIFTTERM_ARCHIVE_SHA256},
+                           {"name": "trano:hashSubject", "value": "vendored path/content tree; sorted UTF-8 relative path + NUL + raw file SHA-256 + NUL"}]}
+
+
 def build_sbom(root, version="0.1.0"):
     if not re.fullmatch(r"[0-9]+(?:\.[0-9]+){1,2}", version):
         raise ValueError("App version must have two or three numeric components")
     pins = read_document(root / "Package.resolved")["pins"]
-    components = [package_component(pin) for pin in sorted(pins, key=lambda pin: pin["identity"])]
+    components = {pin["identity"]: package_component(pin) for pin in pins}
+    if len(components) != len(pins):
+        raise ValueError("Duplicate resolved package identity")
+    if VENDOR_PATH in local_package_paths(root):
+        pin = next((pin for pin in pins if pin["identity"] == "swiftterm"), None)
+        components["swiftterm"] = vendored_swiftterm_component(root, pin)
+    components = [components[name] for name in sorted(components)]
     bootstrap = (root / "scripts/bootstrap-ci-tools.sh").read_text()
     provenance = (root / "docs/dependency-provenance.yaml").read_text()
     for name, number, source, tag, license_name, license_path, role, checksum in TOOLS:

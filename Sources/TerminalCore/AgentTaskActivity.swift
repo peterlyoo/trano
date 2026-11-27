@@ -59,7 +59,15 @@ enum AgentTaskActivity {
 }
 
 extension TerminalRuntime {
-    public func report(_ paneID: String, report: ActivityReport) throws {
+    public func report(_ paneID: String, report: ActivityReport, expectedPID: Int32? = nil) throws {
+        try transaction {
+            if let expectedPID, try state().sessions.first(where: { $0.id == paneID })?.pid != expectedPID { return }
+            guard try !isTerminalIntentionallyClosed(paneID) else { return }
+            try applyActivityReport(paneID, report: report)
+        }
+    }
+
+    private func applyActivityReport(_ paneID: String, report: ActivityReport) throws {
         if let taskID = report.taskID {
             try recordAgentTask(paneID: paneID, id: taskID, parentID: report.parentID, name: report.taskName,
                                 state: report.state, agent: report.agent, source: "osc7501", generation: report.generation,

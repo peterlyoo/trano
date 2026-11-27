@@ -1,0 +1,65 @@
+{
+  "schemaVersion": 1,
+  "purpose": "Bundled artwork identifies observed foreground programs; no runtime artwork download.",
+  "assets": [
+    {
+      "program": "zsh",
+      "repository": "Zsh-art/logo",
+      "commit": "17617f2f6c70c65943a48745c91d997e7561f19d",
+      "sourcePath": "favicon/favicon.png",
+      "license": "CC-BY-SA-4.0",
+      "attribution": "Justin Dorfman and contributors; designed by Guist; commissioned by Reblaze",
+      "licenseNotice": "licenses/zsh-artwork.txt",
+      "resource": "Sources/TranoApp/Resources/ProgramIcons/zsh.png",
+      "sourceURL": "https://raw.githubusercontent.com/Zsh-art/logo/17617f2f6c70c65943a48745c91d997e7561f19d/favicon/favicon.png",
+      "sha256": "edf16f9ee4deb963c84196b9951ccd9ed22783c8285b47706abc2859efa1a085",
+      "pixelWidth": 48,
+      "pixelHeight": 48,
+      "modifications": "None; original PNG bytes are bundled unchanged. Display uses a bounded thumbnail.",
+      "licenseEvidence": {
+        "sourceURL": "https://raw.githubusercontent.com/Zsh-art/logo/17617f2f6c70c65943a48745c91d997e7561f19d/LICENSES/CC-BY-SA-4.0.txt",
+        "attributionSourceURL": "https://raw.githubusercontent.com/Zsh-art/logo/17617f2f6c70c65943a48745c91d997e7561f19d/README.md"
+      }
+    },
+    {
+      "program": "k9s",
+      "repository": "derailed/k9s",
+      "commit": "3a2e9334575db09291ae8e6037986d2fad72e108",
+      "sourcePath": "assets/k9s_small.png",
+      "license": "Apache-2.0",
+      "attribution": "K9s project contributors (derailed/k9s)",
+      "licenseNotice": "licenses/k9s-artwork.txt",
+      "resource": "Sources/TranoApp/Resources/ProgramIcons/k9s.png",
+      "sourceURL": "https://raw.githubusercontent.com/derailed/k9s/3a2e9334575db09291ae8e6037986d2fad72e108/assets/k9s_small.png",
+      "sha256": "cdfa8b99ec487af566a6278b399f74cddf659db1d2238e3a9fa1aa856ad47734",
+      "pixelWidth": 200,
+      "pixelHeight": 100,
+      "modifications": "None; original PNG bytes are bundled unchanged. Display uses a bounded thumbnail.",
+      "licenseEvidence": {
+        "sourceURL": "https://raw.githubusercontent.com/derailed/k9s/3a2e9334575db09291ae8e6037986d2fad72e108/LICENSE",
+        "logoSourceURL": "https://raw.githubusercontent.com/derailed/k9s/3a2e9334575db09291ae8e6037986d2fad72e108/README.md"
+      }
+    },
+    {
+      "program": "kubectl_exec",
+      "repository": "cncf/artwork",
+      "commit": "bffd512a8b625f15cf5f8e0427469380b5768e90",
+      "sourcePath": "projects/kubernetes/icon/color/kubernetes-icon-color.png",
+      "license": "Apache-2.0",
+      "attribution": "The Kubernetes Authors; Kubernetes is a Linux Foundation trademark",
+      "licenseNotice": "licenses/kubernetes-artwork.txt",
+      "resource": "Sources/TranoApp/Resources/ProgramIcons/kubernetes.png",
+      "sourceURL": "https://raw.githubusercontent.com/cncf/artwork/bffd512a8b625f15cf5f8e0427469380b5768e90/projects/kubernetes/icon/color/kubernetes-icon-color.png",
+      "sha256": "1d513b79f10991d71c06d5a99beb0967717aa674fb666ce31cd6b6223e98c7a2",
+      "pixelWidth": 1501,
+      "pixelHeight": 1501,
+      "modifications": "None; original PNG bytes are bundled unchanged. Display uses a bounded thumbnail.",
+      "licenseEvidence": {
+        "sourceURL": "https://raw.githubusercontent.com/kubernetes/kubernetes/dd21ea95bc597663b263c040dc7abf43c037a7d0/logo/LICENSE",
+        "licenseTextURL": "https://raw.githubusercontent.com/kubernetes/kubernetes/dd21ea95bc597663b263c040dc7abf43c037a7d0/LICENSE",
+        "trademarkNoticeURL": "https://raw.githubusercontent.com/cncf/artwork/bffd512a8b625f15cf5f8e0427469380b5768e90/LICENSE.md",
+        "guidelinesURL": "https://github.com/kubernetes/kubernetes/blob/dd21ea95bc597663b263c040dc7abf43c037a7d0/logo/usage_guidelines.md"
+      }
+    }
+  ]
+}

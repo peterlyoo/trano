@@ -6,10 +6,48 @@ state: implementing
 traceability_to: []
 version: 2
 authors: [codex]
-last_updated: 2026-11-11
+last_updated: 2026-11-12
 ---
 
 # Trano PRD: 백그라운드 유지와 에이전트 관리를 결합한 오픈소스 터미널 기획
+
+Explicit close amendment: [CLOSED-TERMINALS.md](CLOSED-TERMINALS.md) replaces keep-running pane/tab close with saved state and process termination; explicit reopen starts a fresh shell and resumes the saved exact conversation. Window/app closure, workspace hide, and transfers keep their existing behavior.
+
+Input ergonomics amendment: [INPUT-ERGONOMICS-SRS.md](INPUT-ERGONOMICS-SRS.md) adds Korean two-set keyboard-layout correction to Cmd+K workspace search and editable multiline paste previews with focus-aware Return. Original query/name identity, IME composition, final input ownership and no-auto-submit rules remain authoritative. The redundant bottom persistent/live/host status strip is removed.
+
+Accumulated-request amendment: [BATCH-COMPLETION.md](BATCH-COMPLETION.md) requires source/consumer/verification/installation accounting for every accepted request. [BATCH-COMPLETION-SRS.md](BATCH-COMPLETION-SRS.md) fills organization-aware managed Claude profiles without changing global credentials or claiming live-provider qualification from fake tests.
+
+Program-icon amendment: NAVIGATION.md FR-NAV-11 adds foreground zsh, k9s and kubectl-exec identity to the existing program icon surfaces without changing agent lifecycle identity.
+
+Tab-drag amendment: NAVIGATION.md FR-NAV-12 connects native tab drag input to existing-window transfers and outside-drop completion. Separating any tab preserves its full split and running jobs in a normal new window. Workspace rows and the existing switcher's drag chooser accept pane/tab drops without requiring prior navigation. Preview creation alone does not satisfy completion.
+
+Pane-drag amendment: FR-NAV-10 in NAVIGATION.md makes pane-header dragging work across tabs and detaches an outside drop into a normal window containing the same running pane.
+
+Focused-agent tab amendment: FR-NAV-9 in NAVIGATION.md binds stacked agent icons and automatic tab titles to the focused pane, retaining manual tab names and existing renderer/job identity.
+
+Decision navigation amendment: each native question exposes Go to Session, targeting its bound pane and launch generation. Navigation can reopen retained views, preserves backend jobs and unfinished answer drafts, and never answers the question or restarts an agent.
+
+Workspace-close amendment: expose Close Workspace from the compact workspace header, workspace picker and sessions sidebar, using existing `session.close` semantics. Close hides the workspace and its native views while retaining backend jobs and tab/pane identity; mirrored-window refresh and startup must not silently reopen it. Explicit search or named get-or-create can reopen the retained workspace.
+
+Follow-up input amendment: retain an editable per-pane input queue and deliver one item only after trusted root-agent turn completion, independently of GUI lifetime. [FOLLOW-UPS.md](FOLLOW-UPS.md) defines FR-QUEUE-1–4, including edit/delete, completion guards and crash-safe delivery. This extends M2 without removing U01–U21.
+
+Native decision amendment: [DECISIONS.md](DECISIONS.md) defines the embedded local question/choice inbox, EasyDecision adapter compatibility, exact producer binding, completion gating and Go to Session as FR-DECISION-1–5.
+
+Workspace activity amendment: [WORKSPACE-ACTIVITY-SRS.md](WORKSPACE-ACTIVITY-SRS.md) adds a small activity dot beside session-picker workspace titles using current running/attention state, preserving search, row actions and live jobs.
+
+Reset-ticket amendment: remove the tab-strip New Tab plus while retaining keyboard/menu creation; show verified currently redeemable reset counts beside Command Palette, with account details and no automatic consumption. Requirements are FR-RESET-1–3 in M2-SRS.md.
+
+Window transparency amendment: [TRANSPARENCY-SRS.md](TRANSPARENCY-SRS.md) extends existing appearance opacity to the entire window background, preserving foreground readability and preventing repeated alpha compositing.
+
+Toolbar customization amendment: [TOOLBAR-SRS.md](TOOLBAR-SRS.md) defines direct right-click visibility controls on toolbar icons and persistent per-item visibility with recovery through the existing tab/blank-header Customize View menu.
+
+Header context-menu amendment: right-click tabs or blank tab-strip space for New Tab, session controls, Add Remote Host and Customize View; reuse existing appearance/settings/profile controls while preserving native tab dragging. See FR-NAV-7 in NAVIGATION.md.
+
+Session-picker amendment: Cmd+K rows expose Rename Session, Close Session and durable Move Up/Down actions by stable workspace ID, retaining the search UI and backend jobs. See FR-NAV-8 in NAVIGATION.md.
+
+Navigation controls amendment: the Decisions toolbar button shows its pending count inside an unmarked speech bubble. Queued Input replaces the pane header's appearance-profile control and opens through a configurable shortcut; appearance profiles remain in the pane context menu. Tabs can be dragged between existing windows without duplicating panes or interrupting their jobs. Acceptance extends FR-QUEUE-4, FR-DECISION-4 and FR-NAV-4.
+
+Pane/window amendment: pane drag works across existing windows, `Cmd+Shift+Enter` toggles focused-pane maximization without recreating terminals, and Float Pane presents an existing pane in a movable floating surface with a return action. An empty startup creates a terminal in an automatically named random workspace; restored jobs and layouts take precedence. Command Palette supports Up/Down selection, scrolling, Enter activation and IME-safe input. Native window close/reopen and transient animation lifetime require regression coverage for the reported AppKit crash.
 
 > 현재 구현 상태, 실제 테스트, 남은 요구사항과 다음 명령은 [PROGRESS.md](PROGRESS.md) 및 [RTM.md](RTM.md)에 있으며, 재부팅 후 세션 자동 복원 요구사항은 [RECOVERY.md](RECOVERY.md)에 정의되어 있습니다. 이 문서의 이전 마일스톤 상태와 근거는 과거의 계획 스냅샷일 뿐 전체 제품 완성을 의미하지 않으며, 기존의 모든 U01-U21은 계속 유효한 범위에 포함됩니다.
 
@@ -69,7 +107,7 @@ last_updated: 2026-11-11
 
 The U03/U09/U21 discoverability refinement requires visible `New Profile` and `Delete Profile` actions, and tab shortcut hints after holding Command alone for 400ms. Hints must match actual tab-number dispatch, disappear on release or focus loss, and preserve tab geometry and terminal processes.
 
-The 2026-11-11 session refinement requires named workspace get-or-create, automatic unused `Session N` names for blank New Session input, and stable pane renderers across tab creation and switching. U03/U09/U21 acceptance also requires a workspace selector adjacent to native window controls, no added terminal inset, and a verified readable default font while preserving custom selections.
+The 2026-11-11 session refinement requires named workspace get-or-create, automatic unused lowercase `word-word` names for blank New Session input and all other implicit workspace creation, including launcher/API requests, and stable pane renderers across tab creation and switching. U03/U09/U21 acceptance also requires a workspace selector adjacent to native window controls, no added terminal inset, and a verified readable default font while preserving custom selections.
 
 The 2026-11-11 U03/U21 layout amendment requires one compact title/header/tab row, a leading current-workspace selector, an optional collapsed Sessions sidebar, and trailing Activity and Command Palette controls. Activity must overlay the existing terminal inside the same window without changing its viewport; native bounds, ordering and available terminal area are acceptance criteria under FR-NAV-6 in [NAVIGATION.md](NAVIGATION.md).
 
@@ -168,3 +206,23 @@ U01부터 U21까지의 모든 요구사항을 제품 범위 내에 유지하며,
 
 * **2026-11-10 (v2, codex)**: 최종 제품명 **Trano**(`Trano.app`, `TranoApp`, `trano`, `TranoCLI`, URL 스킴 `trano`) 및 런타임 환경 변수(`TRANO_DATA_DIR`, `TRANO_REMOTE_ROOT`), 상대 경로 전용 문서 규칙 반영. `SwiftTerm 1.99.1`+격리된 `tmux` 및 `Go 1.24` stdlib over SSH 아키텍처와 현재 `implementing` 상태(12개 Swift 테스트, 네이티브 앱 `SIGKILL` 테스트, Go 로컬 `tmux` 테스트 통과 및 잔여 미완료 게이트) 업데이트.
 * **2026-11-10 (v1, codex)**: `artifact-2026-11-10-agent-terminal-prd` 초안 작성. U01~U21 전체 요구사항 정의, 확인된 외부 사실과 미래 설계 분리, M0(`SwiftTerm`+전용 `tmux` 서버 후보 포함)~M4 마일스톤(proposed) 수립.
+
+## Kitty clipboard and URL-hint amendment
+
+Trano supports OSC 5522 standard-clipboard interoperability and keyboard URL selection from the visible terminal. Scope and acceptance: [KITTY.md](KITTY.md), [KITTY-SRS.md](KITTY-SRS.md), [KITTY-IDD.md](KITTY-IDD.md).
+
+## Native conversation resume amendment
+
+The native Resume surface searches previous Claude/Codex conversations across explicit local account roots and resumes the selected exact conversation in a new tab. Already active conversations navigate to their retained pane, preserving existing jobs and account identity. Acceptance: [RESUME-SRS.md](RESUME-SRS.md), FR-RESUME-1–6.
+
+Background server visibility amendment: the existing native helper owns a menu-bar server-health item and session-preserving API recovery. Acceptance is defined in [SERVER-STATUS-SRS.md](SERVER-STATUS-SRS.md).
+
+Unisession amendment: the user-facing Supervisor dashboard is replaced by one themed shared ordinary terminal, pinned within the active Trano workspace and retained across workspace changes. See [UNISESSION-SRS.md](UNISESSION-SRS.md).
+
+Session worktree lifecycle amendment: Trano tracks future linked worktrees created by its own tasks and safely cleans eligible worktrees after completion, with settings and Activity visibility. See [WORKTREE-CLEANUP-SRS.md](WORKTREE-CLEANUP-SRS.md).
+
+Pessimistic twin amendment: exact same-provider conversation forks review and fix an owned snapshot worktree, then offer human-approved deferred merge, feedback-only or discard through the existing Decision inbox. Security review starts fresh from snapshot diff; bounded Queued Input rounds and owned-resource cleanup complete the same milestone. See [PESSIMISTIC-TWIN-SRS.md](PESSIMISTIC-TWIN-SRS.md).
+
+## Shared tool panel presentation — 2026-11-13
+
+Customize View tools and utility dialogs share the current interface theme, header, spacing, typography and guarded Close controls. [Milestone](TOOL-PANELS.md) and [acceptance](TOOL-PANELS-SRS.md) define the rendering and continuity checks.

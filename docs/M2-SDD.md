@@ -3,12 +3,38 @@ artifact_id: artifact-2026-11-10-agent-terminal-m2-sdd
 artifact_type: sdlc-sdd
 state: planned
 version: 1
-last_updated: 2026-11-10
+last_updated: 2026-11-12
 parent_id: artifact-2026-11-10-agent-terminal-m2-srs
 traceability_to:
   - artifact-2026-11-10-agent-terminal-m2-srs
 ---
 # M2 SDD separates UI from durable core services
+
+| FR-NAV-12 behavior | Owning implementation |
+|---|---|
+| Native source and hit-test routing | `TabDragSource.swift`, tab label overlay in `WorkspaceView.swift`; native move operation, tracked cancellation/release and retained source |
+| Transfer/outside completion | `WorkspaceDrag.swift`; immutable one-shot token, canonical complete-tab transfer to the existing seeded normal-window factory |
+| Explicit workspace destination | `WorkspaceDropTarget.swift`; drop rows and local drag chooser on the existing switcher, explicit target workspace without pre-drop navigation |
+| Queued ownership | Runtime transaction revalidates open workspace/tab/pane targets; queue-start input checks precede locks |
+
+| FR-NAV-9 behavior | Owning implementation |
+|---|---|
+| Focused title, remembered focus, manual-name override, distinct front-to-back providers | `TranoApp/TabPresentation.swift`; strip/sidebar/hover consumers |
+| Bounded optional live title without durable-state changes or DNS | `TerminalCore/TerminalTitleMetadata.swift`, `Runtime.list()`, `TerminalSession.displayTitle` |
+| Live title-only changes without renderer replacement | Per-session tmux title forwarding at attach; native delegate validates renderer identity; `AppStore` coalesces background reads and retains late events by generation |
+
+| FR-NAV-10 behavior | Owning implementation |
+|---|---|
+| Header drag and click/context-control routing | `PaneDragSource.swift`; native dragging source over header labels and blank area |
+| Tab move and outside completion | `WorkspaceDrag.swift`; one-shot immutable pane token, canonical transfer and source-window/input revalidation |
+| New normal window with existing job | `ApplicationDelegate.makeDetachedPaneWindow`, seeded `AppStore` first snapshot with `recoverOnStartup: false`; no shell creation or unrelated recovery |
+
+| FR-NAV-11 behavior | Owning implementation |
+|---|---|
+| Exact program identity and kubectl-exec parsing | `TerminalProgram.swift`, `ForegroundProgramProbe.swift`; verified foreground process metadata, bounded kubectl argv, enum-only cache |
+| Read-only local metadata and live display | `Runtime.list`, `foregroundPrograms(for:)`, `AppStore` coalesced background sampler; focused `TabPresentation.programs` and pane header |
+| Packaged icons | `ProgramLogo.swift`, `Resources/ProgramIcons`, pinned sources/licenses in `program-icon-sources.json`; installed app uses its own resource bundle |
+| Linux metadata | `remote/program.go`, optional Session.foregroundProgram and `Remote.swift` copies on the existing refresh path |
 
 > 현재 구현 상태, 실제 테스트, 남은 요구사항과 다음 명령은 [PROGRESS.md](PROGRESS.md) 및 [RTM.md](RTM.md)에 있으며, 재부팅 후 세션 자동 복원 요구사항은 [RECOVERY.md](RECOVERY.md)에 정의되어 있습니다. 이 문서의 이전 마일스톤 상태와 근거는 과거의 계획 스냅샷일 뿐 전체 제품 완성을 의미하지 않으며, 기존의 모든 U01-U21은 계속 유효한 범위에 포함됩니다.
 

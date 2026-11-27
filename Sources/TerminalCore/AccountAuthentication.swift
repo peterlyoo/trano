@@ -8,10 +8,13 @@ public struct AccountAuthenticationSnapshot: Codable {
     public let provider: AgentKind
     public let status: AccountAuthenticationStatus
     public let checkedAt: Date
+    public var organization: ClaudeOrganizationSelection? = nil
+    public var organizationVerification: AccountOrganizationVerification = .unbound
 }
 
 enum AccountAuthenticationAdapter {
     static func claude(account: AccountProfile, root: URL, exitCode: Int32, data: Data) throws -> AccountAuthenticationSnapshot {
+        guard data.count <= 65_536 else { throw TerminalError.invalid("Authentication metadata exceeds 64 KiB") }
         let payload = try AccountUsageAdapter.object(data)
         let status: AccountAuthenticationStatus
         if let directory = payload["configDirectory"] as? String,
@@ -21,12 +24,24 @@ enum AccountAuthenticationAdapter {
             else if exitCode == 1, payload["loggedIn"] as? Bool == false { status = .loggedOut }
             else { status = .unknown }
         } else { status = .unknown }
-        return AccountAuthenticationSnapshot(accountID: account.id, provider: account.provider, status: status, checkedAt: Date())
+        var organization: ClaudeOrganizationSelection?
+        if status == .authenticated, payload["authMethod"] as? String == "claude.ai", let id = payload["orgId"] as? String {
+            organization = try? ClaudeOrganizationSelection(uuid: id, name: payload["orgName"] as? String)
+        }
+        let verification: AccountOrganizationVerification
+        if let selection = account.organization?.selection {
+            if status != .authenticated || payload["authMethod"] as? String != "claude.ai" { verification = .unavailable }
+            else if let organization { verification = organization.uuid == selection.uuid ? .verified : .mismatch }
+            else { verification = .missing }
+        } else { verification = .unbound }
+        return AccountAuthenticationSnapshot(accountID: account.id, provider: account.provider, status: status, checkedAt: Date(),
+                                             organization: organization, organizationVerification: verification)
     }
 }
 
 extension TerminalRuntime {
     public func accountAuthentication(accountID: String) throws -> AccountAuthenticationSnapshot {
+        try assertOutsideSharedTransaction()
         guard let account = try state().accounts.first(where: { $0.id == accountID }) else { throw TerminalError.invalid("Unknown account") }
         let directory = try accountRoot(accountID), command = try accountCommand(accountID, login: true)
         let fd = open(directory.appendingPathComponent(".trano-refresh.lock").path, O_CREAT | O_RDWR | O_CLOEXEC | O_NOFOLLOW, 0o600)
@@ -51,7 +66,8 @@ extension TerminalRuntime {
             else { status = .unknown }
             return AccountAuthenticationSnapshot(accountID: account.id, provider: account.provider, status: status, checkedAt: Date())
         } catch {
-            return AccountAuthenticationSnapshot(accountID: account.id, provider: account.provider, status: .unknown, checkedAt: Date())
+            return AccountAuthenticationSnapshot(accountID: account.id, provider: account.provider, status: .unknown, checkedAt: Date(),
+                organizationVerification: account.organization?.selection == nil ? .unbound : .unavailable)
         }
     }
 }

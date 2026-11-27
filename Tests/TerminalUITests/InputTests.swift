@@ -1,7 +1,7 @@
 import AppKit
 import SwiftTerm
 import XCTest
-import TerminalCore
+@testable import TerminalCore
 @testable import TranoApp
 
 @MainActor private final class InputRecorder: NSObject, TerminalViewDelegate {
@@ -15,6 +15,50 @@ import TerminalCore
 }
 
 final class InputTests: XCTestCase {
+    // Implements: FR-DECISION-4, FR-QUEUE-4
+    @MainActor func testDecisionEditingBlocksUserInputWithoutBlockingTerminalReplies() async throws {
+        _ = NSApplication.shared
+        let root = URL(fileURLWithPath: "/tmp/trano-input-" + UUID().uuidString.prefix(6))
+        let runtime = try TerminalRuntime(root: root)
+        let pane = try runtime.create(title: "Input guard", cwd: root.path, arguments: ["-df"])
+        let store = AppStore(runtime: runtime)
+        let loaded = Date().addingTimeInterval(3)
+        while store.loading && Date() < loaded { try await Task.sleep(for: .milliseconds(10)) }
+        let view = TranoView(frame: NSRect(x: 0, y: 0, width: 640, height: 400))
+        view.store = store
+        view.configure(TerminalSettings())
+        let window = NSWindow(contentRect: view.frame, styleMask: [.titled], backing: .buffered, defer: false)
+        window.isReleasedWhenClosed = false
+        window.contentView = view
+        window.setFrameOrigin(NSPoint(x: -10000, y: -10000))
+        window.orderFrontRegardless()
+        defer { view.terminate(); window.close(); try? runtime.terminate(pane.id); runtime.shutdownTestHost(); try? FileManager.default.removeItem(at: root) }
+        let attach = try runtime.attachCommand(pane.id)
+        view.startProcess(executable: attach.executable, args: attach.arguments, environment: runtime.testAttachEnvironment(pane.id))
+        try runtime.send(pane.id, text: "stty raw -echo; printf ready > ready; cat > received", enter: true)
+        let ready = root.appendingPathComponent("ready"), received = root.appendingPathComponent("received")
+        let deadline = Date().addingTimeInterval(5)
+        while !FileManager.default.fileExists(atPath: ready.path) && Date() < deadline { try await Task.sleep(for: .milliseconds(10)) }
+        XCTAssertTrue(FileManager.default.fileExists(atPath: ready.path))
+        let recorder = InputRecorder()
+        view.terminalDelegate = recorder
+        let delegate = ApplicationDelegate()
+        delegate.windows[window] = store
+        store.decisionPaneID = pane.id
+        window.makeFirstResponder(view)
+        let event = try XCTUnwrap(NSEvent.keyEvent(with: .keyDown, location: .zero, modifierFlags: [], timestamp: 0, windowNumber: window.windowNumber, context: nil, characters: "a", charactersIgnoringModifiers: "a", isARepeat: false, keyCode: 0))
+        XCTAssertTrue(delegate.handle(event))
+        view.insertText("must not reach the PTY", replacementRange: NSRange(location: NSNotFound, length: 0))
+        XCTAssertEqual((try? Data(contentsOf: received)) ?? Data(), Data())
+        view.feed(text: "\u{1b}]10;?\u{7}")
+        while recorder.committed.isEmpty && Date() < deadline { try await Task.sleep(for: .milliseconds(10)) }
+        XCTAssertTrue(String(decoding: recorder.committed, as: UTF8.self).contains("rgb:"))
+        store.decisionPaneID = nil
+        view.insertText("한글", replacementRange: NSRange(location: NSNotFound, length: 0))
+        while (try? Data(contentsOf: received)) != Data("한글".utf8) && Date() < deadline { try await Task.sleep(for: .milliseconds(10)) }
+        XCTAssertEqual(try Data(contentsOf: received), Data("한글".utf8))
+    }
+
     // Implements: FR-RECOVERY-2, FR-RECOVERY-3
     @MainActor func testVisiblePaneReconnectsAfterBackendRecreation() throws {
         _ = NSApplication.shared
@@ -24,15 +68,12 @@ final class InputTests: XCTestCase {
         try runtime.update { $0.layout.addTab(paneID: pane.id) }
         let store = AppStore(runtime: runtime)
         let view = TranoView(frame: NSRect(x: 0, y: 0, width: 640, height: 400))
-        defer { view.terminate(); try? runtime.terminate(pane.id); try? FileManager.default.removeItem(at: root) }
+        defer { view.terminate(); try? runtime.terminate(pane.id); runtime.shutdownTestHost(); try? FileManager.default.removeItem(at: root) }
         store.terminalViews[pane.id] = view
         let firstDeadline = Date().addingTimeInterval(5)
         while store.sessions.isEmpty && Date() < firstDeadline { RunLoop.current.run(until: Date().addingTimeInterval(0.01)) }
         view.connect(store: store, id: pane.id)
-        let process = Process()
-        process.executableURL = URL(fileURLWithPath: runtime.executable)
-        process.arguments = ["-S", runtime.socketPath, "kill-server"]
-        try process.run(); process.waitUntilExit()
+        try runtime.crashTestHost()
         _ = try runtime.recoverSessions()
         store.refresh()
         let deadline = Date().addingTimeInterval(5)
@@ -62,17 +103,48 @@ final class InputTests: XCTestCase {
         XCTAssertEqual(recorder.committed, Data(decomposed.utf8))
     }
 
-    // Implements: FR-INPUT-1, FR-INPUT-2. Actual Trano view, tmux and PTY transport.
+    // Implements: FR-INPUT-1. Control-Option-Space switches the source while Option stays held.
+    @MainActor func testOptionHeldFromInputSourceShortcutDoesNotComposeTheNextKey() throws {
+        _ = NSApplication.shared
+        let view = TerminalView(frame: NSRect(x: 0, y: 0, width: 640, height: 400))
+        let recorder = InputRecorder()
+        view.terminalDelegate = recorder
+        view.optionAsMetaKey = false
+        var source = "com.apple.inputmethod.Korean.2SetKorean"
+        view.currentKeyboardInputSourceID = { source }
+        func flags(_ modifiers: NSEvent.ModifierFlags) throws -> NSEvent {
+            try XCTUnwrap(NSEvent.keyEvent(with: .flagsChanged, location: .zero, modifierFlags: modifiers, timestamp: 0,
+                windowNumber: 0, context: nil, characters: "", charactersIgnoringModifiers: "", isARepeat: false, keyCode: 58))
+        }
+        let optionP = try XCTUnwrap(NSEvent.keyEvent(with: .keyDown, location: .zero, modifierFlags: .option, timestamp: 0,
+            windowNumber: 0, context: nil, characters: "π", charactersIgnoringModifiers: "p", isARepeat: false, keyCode: 35))
+
+        view.flagsChanged(with: try flags([.control]))
+        view.flagsChanged(with: try flags([.control, .option]))
+        source = "com.apple.keylayout.ABC"
+        view.flagsChanged(with: try flags([.option]))
+        view.keyDown(with: optionP)
+        XCTAssertEqual(String(decoding: recorder.committed, as: UTF8.self), "p")
+
+        recorder.committed.removeAll()
+        view.flagsChanged(with: try flags([]))
+        view.flagsChanged(with: try flags([.option]))
+        view.keyDown(with: optionP)
+        XCTAssertEqual(String(decoding: recorder.committed, as: UTF8.self), "π")
+    }
+
+    // Implements: FR-INPUT-1, FR-INPUT-2. Actual Trano view, PTY host attach and PTY transport.
     @MainActor func testTranoCompositionCommitsExactUTF8ToRealPTY() throws {
         _ = NSApplication.shared
         let root = URL(fileURLWithPath: "/tmp/trano-ime-" + UUID().uuidString.prefix(6))
         let runtime = try TerminalRuntime(root: root)
         let pane = try runtime.create(title: "IME", cwd: root.path, arguments: ["-f"])
         let view = TranoView(frame: NSRect(x: 0, y: 0, width: 640, height: 400))
-        defer { view.terminate(); try? runtime.terminate(pane.id); try? FileManager.default.removeItem(at: root) }
+        defer { view.terminate(); try? runtime.terminate(pane.id); runtime.shutdownTestHost(); try? FileManager.default.removeItem(at: root) }
         view.configure(TerminalSettings())
         XCTAssertNil(view.terminalDelegate?.clipboardRead(source: view))
-        view.startProcess(executable: runtime.executable, args: try runtime.attachArguments(pane.id))
+        let attach = try runtime.attachCommand(pane.id)
+        view.startProcess(executable: attach.executable, args: attach.arguments, environment: runtime.testAttachEnvironment(pane.id))
         try runtime.send(pane.id, text: "stty raw -echo; printf ready > ready; cat > received", enter: true)
         let ready = root.appendingPathComponent("ready"), received = root.appendingPathComponent("received")
         let deadline = Date().addingTimeInterval(5)

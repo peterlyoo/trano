@@ -16,6 +16,7 @@ public struct AccountSwitchPlan: Codable, Identifiable {
     public let targetRoot: String
     public let files: [String]
     public let createdAt: Date
+    public var organizationAuthorization: AccountOrganizationAuthorization? = nil
 }
 
 public struct AccountTransferFile: Codable {
@@ -35,8 +36,15 @@ public struct AccountTransferReceipt: Codable, Identifiable {
 
 extension TerminalRuntime {
     public func prepareAccountSwitch(paneID: String, targetAccountID: String, expectedGeneration: String,
-                                     toolsInFlight: Bool, safeTurnBoundary: Bool) throws -> AccountSwitchPlan {
+                                     toolsInFlight: Bool, safeTurnBoundary: Bool,
+                                     organizationAuthorization: AccountOrganizationAuthorization? = nil) throws -> AccountSwitchPlan {
         guard !toolsInFlight, safeTurnBoundary else { throw TerminalError.invalid("Wait for a safe turn boundary before switching accounts") }
+        guard let sourceLaunch = try state().agentLaunches.first(where: { $0.paneID == paneID && $0.id == expectedGeneration }) else {
+            throw TerminalError.invalid("No current managed conversation is available to switch")
+        }
+        let authorization = try organizationAuthorization ?? preflightAccountOrganization(accountID: targetAccountID, cwd: sourceLaunch.cwd)
+        guard authorization.accountID == targetAccountID else { throw TerminalError.invalid("Organization authorization belongs to another account") }
+        try revalidateAccountOrganizationAuthorization(authorization, cwd: sourceLaunch.cwd)
         return try transaction {
             guard let launch = try state().agentLaunches.first(where: { $0.paneID == paneID && $0.id == expectedGeneration }),
                   let sourceID = launch.accountID, let sessionID = launch.providerSessionID, UUID(uuidString: sessionID) != nil else {
@@ -44,10 +52,11 @@ extension TerminalRuntime {
             }
             let source = try accountRoot(sourceID), target = try accountRoot(targetAccountID)
             let files = try AccountSessionFiles.discover(provider: launch.provider, sessionID: sessionID, cwd: launch.cwd, root: source)
-            let plan = AccountSwitchPlan(id: UUID().uuidString.lowercased(), paneID: paneID, provider: launch.provider,
+            var plan = AccountSwitchPlan(id: UUID().uuidString.lowercased(), paneID: paneID, provider: launch.provider,
                                          expectedGeneration: expectedGeneration, providerPID: launch.providerPID,
                                          sourceAccountID: sourceID, targetAccountID: targetAccountID, providerSessionID: sessionID,
                                          cwd: launch.cwd, sourceRoot: source.path, targetRoot: target.path, files: files, createdAt: Date())
+            plan.organizationAuthorization = authorization
             try validateAccountSwitch(plan)
             return plan
         }
@@ -69,6 +78,12 @@ extension TerminalRuntime {
                   try accountRoot(plan.sourceAccountID).path == plan.sourceRoot,
                   try accountRoot(plan.targetAccountID).path == plan.targetRoot else {
                 throw TerminalError.invalid("Account switch became stale; refresh the conversation and target account")
+            }
+            if target.organization?.selection != nil || plan.organizationAuthorization != nil {
+                guard let authorization = plan.organizationAuthorization, authorization.accountID == target.id else {
+                    throw TerminalError.invalid("The switch target requires verified organization identity")
+                }
+                try validateAccountOrganizationAuthorization(authorization, cwd: plan.cwd)
             }
             guard !state.agentLaunches.contains(where: {
                 $0.id != plan.expectedGeneration && [plan.sourceAccountID, plan.targetAccountID].contains($0.accountID ?? "") &&
@@ -172,9 +187,9 @@ extension TerminalRuntime {
     }
 
     private func accountRollbackRoot(_ id: String) throws -> URL {
-        guard UUID(uuidString: id) != nil, try state().accounts.contains(where: { $0.id == id }) else { throw TerminalError.invalid("Unknown account") }
+        guard UUID(uuidString: id) != nil, let profile = try state().accounts.first(where: { $0.id == id }) else { throw TerminalError.invalid("Unknown account") }
         let marker = try AccountSessionFiles.path("accounts/" + id + "/.trano-account", beneath: root)
-        guard try AccountFile.read(marker, limit: 64) == Data("trano-account-v1\n".utf8) else { throw TerminalError.invalid("Account directory is not owned by Trano") }
+        try Self.validateManagedAccountMarker(AccountFile.read(marker, limit: 64), profile: profile)
         return marker.deletingLastPathComponent()
     }
 }

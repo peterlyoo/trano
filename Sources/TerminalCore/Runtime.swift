@@ -7,12 +7,19 @@ import Glibc
 
 public final class TerminalRuntime: @unchecked Sendable {
     public let root: URL
-    public let executable: String
+    public let legacyTmuxExecutable: String?
     public let helperExecutable: String?
-    public var socketPath: String { root.appendingPathComponent("mux.sock").path }
+    public var legacySocketPath: String { root.appendingPathComponent("mux.sock").path }
+    public internal(set) var host: any PaneBackend
+    /// Extra environment for new panes, after the host base environment. Isolated fixtures set HOME/ZDOTDIR here.
+    var paneEnvironmentOverlay: [String] = []
+    var closedRemoteTransport: any ClosedRemoteTerminalTransport = NativeClosedRemoteTerminalTransport()
+    var terminalHistoryRemoteCoordinator = RemoteTerminalHistoryCoordinator()
     private let mutex = NSRecursiveLock()
     private let lockFD: Int32
     private var lockDepth = 0
+    private let foregroundProgramProbe = ForegroundProgramProbe()
+    var accountAuthenticationIdentityReader = ClaudeAuthenticationIdentityReader()
 
     public static var defaultRoot: URL {
         if let path = ProcessInfo.processInfo.environment["TRANO_DATA_DIR"] { return URL(fileURLWithPath: path) }
@@ -24,10 +31,8 @@ public final class TerminalRuntime: @unchecked Sendable {
         self.helperExecutable = helperExecutable
         let candidates = (ProcessInfo.processInfo.environment["PATH"] ?? "").split(separator: ":").map { "\($0)/tmux" }
             + ["/opt/homebrew/bin/tmux", "/usr/local/bin/tmux", "/usr/bin/tmux"]
-        guard let executable = candidates.first(where: { FileManager.default.isExecutableFile(atPath: $0) }) else {
-            throw TerminalError.runtime("tmux is required. Install tmux before launching Trano.")
-        }
-        self.executable = executable
+        legacyTmuxExecutable = candidates.first(where: { FileManager.default.isExecutableFile(atPath: $0) })
+        host = PaneHostClient(root: self.root, executable: helperExecutable)
         guard self.root.path.utf8.count < 90 else { throw TerminalError.invalid("Runtime directory is too long for a Unix socket") }
         let marker = self.root.appendingPathComponent(".trano")
         if FileManager.default.fileExists(atPath: self.root.path) {
@@ -46,11 +51,6 @@ public final class TerminalRuntime: @unchecked Sendable {
         try FileManager.default.setAttributes([.posixPermissions: 0o700], ofItemAtPath: self.root.path)
         lockFD = open(self.root.appendingPathComponent("state.lock").path, O_CREAT | O_RDWR | O_NOFOLLOW | O_CLOEXEC, 0o600)
         guard lockFD >= 0 else { throw TerminalError.runtime("Cannot lock runtime directory") }
-        let config = self.root.appendingPathComponent("tmux.conf")
-        if !FileManager.default.fileExists(atPath: config.path) {
-            let text = "set -g status off\nset -g exit-empty on\nset -g history-limit 10000\nset -g default-terminal tmux-256color\nset -g mouse off\nset -g set-clipboard off\nset -g allow-passthrough on\nset -g remain-on-exit on\nset -g escape-time 0\nset -g focus-events on\nset -g prefix None\nunbind-key C-b\n"
-            try Self.atomicWrite(Data(text.utf8), to: config)
-        }
     }
 
     deinit { close(lockFD) }
@@ -69,29 +69,61 @@ public final class TerminalRuntime: @unchecked Sendable {
         return try operation()
     }
 
+    func assertOutsideSharedTransaction() throws {
+        mutex.lock()
+        defer { mutex.unlock() }
+        guard lockDepth == 0 else { throw TerminalError.invalid("External work must run outside the shared runtime transaction") }
+    }
+
     private func locked<T>(_ operation: () throws -> T) throws -> T { try transaction(operation) }
 
-    public func state() throws -> RuntimeState { try locked { try load() } }
+    public func state() throws -> RuntimeState { try state(beforeDecode: {}) }
+
+    func state(beforeDecode: () throws -> Void) throws -> RuntimeState {
+        let snapshot = try locked { try readStateData() }
+        return try decodeState(snapshot, beforeDecode: beforeDecode)
+    }
 
     public func update(_ action: (inout RuntimeState) throws -> Void) throws {
         try locked {
             var state = try load()
+            let previousLayout = state.layout
             try action(&state)
+            try validateClosedTerminalLayoutMutation(from: previousLayout, to: state.layout)
+            try applyInterfaceTopology(from: previousLayout, to: &state.layout)
             try save(state)
         }
     }
 
-    private func load() throws -> RuntimeState {
+    private func load() throws -> RuntimeState { try decodeState(readStateData()) }
+
+    private func readStateData() throws -> (primary: Data, continuity: Data?, organizations: Data?, masterView: Data?)? {
         let url = root.appendingPathComponent("state.json")
-        guard FileManager.default.fileExists(atPath: url.path) else { return RuntimeState() }
-        let result = try JSONDecoder().decode(RuntimeState.self, from: Data(contentsOf: url))
+        guard FileManager.default.fileExists(atPath: url.path) else { return nil }
+        let primary = try Data(contentsOf: url)
+        let continuity = try continuityData()
+        let organizations = try organizationSidecarData()
+        let masterView = try? masterViewData()
+        return (primary, continuity, organizations, masterView ?? nil)
+    }
+
+    private func decodeState(_ snapshot: (primary: Data, continuity: Data?, organizations: Data?, masterView: Data?)?,
+                             beforeDecode: () throws -> Void = {}) throws -> RuntimeState {
+        guard let snapshot else { return RuntimeState() }
+        try beforeDecode()
+        var result = try JSONDecoder().decode(RuntimeState.self, from: snapshot.primary)
         guard result.schemaVersion == 1 else { throw TerminalError.invalid("Unsupported state schema") }
+        try restoreContinuity(to: &result, data: snapshot.continuity)
+        try restoreAccountOrganizations(to: &result, data: snapshot.organizations)
+        applyMasterView(to: &result, data: snapshot.masterView)
         return result
     }
 
     private func save(_ state: RuntimeState) throws {
         var state = state
         state.revision += 1
+        try persistAccountOrganizations(from: &state)
+        try persistContinuity(from: &state)
         let encoder = JSONEncoder()
         encoder.outputFormatting = [.prettyPrinted, .sortedKeys]
         try Self.atomicWrite(encoder.encode(state), to: root.appendingPathComponent("state.json"))
@@ -114,13 +146,18 @@ public final class TerminalRuntime: @unchecked Sendable {
         guard fsync(fd) == 0, rename(temporary.path, url.path) == 0 else { throw TerminalError.runtime("State replacement failed") }
     }
 
-    @discardableResult private func tmux(_ args: [String], allowFailure: Bool = false, outputLimit: Int = 1_048_576) throws -> String {
+    /// Talks to a tmux server left by a release that hosted panes in tmux. Used only by legacy migration.
+    @discardableResult func legacyTmux(_ args: [String], allowFailure: Bool = false, outputLimit: Int = 1_048_576) throws -> String {
+        guard let executable = legacyTmuxExecutable else {
+            if allowFailure { return "" }
+            throw TerminalError.runtime("tmux is unavailable")
+        }
         var environment = ProcessInfo.processInfo.environment
         environment.removeValue(forKey: "TMUX")
         for key in ["REX_BLOCK", "REX_SESSION", "REX_SERVER", "TRANO_LAUNCH_ID"] { environment.removeValue(forKey: key) }
         environment["TERM"] = "xterm-256color"
         environment["LC_MESSAGES"] = "C"
-        let arguments = (["-u", "-S", socketPath, "-f", root.appendingPathComponent("tmux.conf").path] + args)
+        let arguments = (["-u", "-S", legacySocketPath] + args)
             .map { $0.hasSuffix(";") ? String($0.dropLast()) + "\\;" : $0 }
         let result = try CommandRunner.run(executable, arguments, environment: environment, limit: outputLimit)
         if result.status != 0 {
@@ -142,42 +179,69 @@ public final class TerminalRuntime: @unchecked Sendable {
         return item
     }
 
-    public func create(title: String, cwd: String, shell: String = "/bin/zsh", arguments: [String] = ["-l"], restoringID: String? = nil) throws -> TerminalSession {
+    public func create(title: String, cwd: String, shell: String? = nil, arguments: [String]? = nil, restoringID: String? = nil, reservedID: String? = nil, closedArchiveID: String? = nil) throws -> TerminalSession {
         try locked {
+            if let restoringID, try isTerminalIntentionallyClosed(restoringID) {
+                guard let closedArchiveID, try closedTerminalPaneSnapshot(restoringID)?.archiveID == closedArchiveID else {
+                    throw TerminalError.invalid("Use Reopen Closed Terminal to restore an intentionally closed terminal")
+                }
+            }
+            let preferences = shell == nil && arguments == nil && restoringID == nil
+                ? try terminalPreferences() : TerminalPreferences()
+            let selected = try TerminalLaunchSelection.resolve(preferences: preferences, shell: shell,
+                                                               arguments: arguments, restoringID: restoringID)
+            let resolvedShell = selected.executable
+            let resolvedArguments = selected.arguments
             var directory: ObjCBool = false
             guard FileManager.default.fileExists(atPath: cwd, isDirectory: &directory), directory.boolValue,
-                  FileManager.default.isExecutableFile(atPath: shell), title.count <= 200 else {
+                  FileManager.default.isExecutableFile(atPath: resolvedShell), title.count <= 200 else {
                 throw TerminalError.invalid("Invalid working directory, shell or title")
             }
             let previous = try restoringID.map { try requireSession($0) }
-            let id = previous?.id ?? UUID().uuidString.lowercased()
+            let id = try TerminalCreationIdentity.resolve(restoringID: previous?.id, reservedID: reservedID,
+                existingPaneIDs: Set(try load().sessions.map(\.id)))
             let path = URL(fileURLWithPath: cwd).standardizedFileURL.path
-            var options = ["new-session", "-d", "-P", "-F", "#{pane_pid}", "-s", id, "-x", "100", "-y", "30", "-c", path,
-                           "-e", "TRANO_SESSION=" + id, "-e", "TRANO_LAUNCH_ID=", "-e", "TRANO_DATA_DIR=" + root.path, "-e", "COLORTERM=truecolor"]
-            if let helperExecutable { options += ["-e", "TRANO_CLI_PATH=" + helperExecutable] }
-            if shell == "/bin/zsh", arguments == ["-l"], helperExecutable != nil { options += try shellEnvironment().flatMap { ["-e", $0] } }
-            var command = [shell] + arguments
-            if previous?.remote == nil, previous != nil, helperExecutable != nil, try load().settings.persistScrollback {
-                command = ["/bin/sh", "-c", "\"$TRANO_CLI_PATH\" scrollback replay \"$TRANO_SESSION\"; exec \"$@\"", "trano-restore", shell] + arguments
+            var environment = ["TRANO_SESSION=" + id, "TRANO_REOPEN_ARCHIVE=" + (closedArchiveID ?? ""), "TRANO_LAUNCH_ID=", "TRANO_DATA_DIR=" + root.path, "COLORTERM=truecolor"]
+            if let helperExecutable { environment.append("TRANO_CLI_PATH=" + helperExecutable) }
+            let prepared = try prepareTerminalShell(selected, paneID: id, restoring: previous != nil)
+            environment += paneEnvironmentOverlay + prepared.environment
+            try rememberTerminalShell(selected, paneID: id)
+            let replayScrollback: Bool
+            if previous?.remote == nil, previous != nil, helperExecutable != nil {
+                replayScrollback = try load().settings.persistScrollback
+            } else {
+                replayScrollback = false
             }
-            let pidText = try tmux(options + ["--"] + command)
-            guard let pid = Int32(pidText.trimmingCharacters(in: .whitespacesAndNewlines)) else {
-                _ = try? tmux(["kill-session", "-t", "=" + id])
-                throw TerminalError.runtime("tmux did not return a child PID")
+            var command = TerminalLaunchSelection.argv(prepared.command, replayScrollback: replayScrollback && closedArchiveID == nil)
+            if let closedArchiveID, previous?.remote == nil {
+                let screen = try closedTerminalStore.screenFile(id: closedArchiveID)
+                command = ["/bin/sh", "-c", "/bin/cat \"$1\"; shift; exec \"$@\"", "trano-reopen", screen.path] + [prepared.command.executable] + prepared.command.arguments
             }
+            if let existing = try host.pane(id) {
+                guard !existing.alive else { throw TerminalError.invalid("Terminal is already running") }
+                try host.kill(id)
+            }
+            let pid = try host.create(id: id, argv: command, environment: environment, cwd: path)
             var state = try load()
             var item = previous ?? TerminalSession(id: id, title: title.isEmpty ? "Terminal" : title, cwd: path, pid: pid)
             item.pid = pid; item.alive = true; item.cwd = path
             if let index = state.sessions.firstIndex(where: { $0.id == id }) { state.sessions[index] = item }
             else { state.sessions.append(item) }
             do {
+                if let closedArchiveID {
+                    var ledger = try closedTerminalStore.ledger()
+                    guard ledger.panes[id]?.archiveID == closedArchiveID else { throw TerminalError.invalid("Reopen archive changed") }
+                    ledger.panes[id]?.restoredPID = pid
+                    ledger.panes[id]?.restoredProcess = SupervisorProcessIdentity.read(pid)
+                    try closedTerminalStore.save(ledger)
+                }
                 try save(state)
                 if let helperExecutable {
-                    let command = "exec /usr/bin/env " + ShellQuote.quote("TRANO_DATA_DIR=" + root.path) + " " + ShellQuote.quote(helperExecutable) + " monitor " + ShellQuote.quote(id)
-                    try tmux(["pipe-pane", "-O", "-t", id + ":0.0", command])
+                    let command = "exec /usr/bin/env " + ShellQuote.quote("TRANO_DATA_DIR=" + root.path) + " " + ShellQuote.quote(helperExecutable) + " monitor " + ShellQuote.quote(id) + " " + String(pid)
+                    try host.pipe(id, command: command)
                 }
             } catch {
-                _ = try? tmux(["kill-session", "-t", "=" + id])
+                try? host.kill(id)
                 state.sessions.removeAll { $0.id == id }
                 if let previous { state.sessions.append(previous) }
                 try? save(state)
@@ -192,13 +256,14 @@ public final class TerminalRuntime: @unchecked Sendable {
             let pane = try requireSession(id)
             guard pane.remote == nil else { throw TerminalError.invalid("Use remote reconnect for this pane") }
             if try list().first(where: { $0.id == id })?.alive == true { return }
-            _ = try tmux(["kill-session", "-t", "=" + id], allowFailure: true)
+            try host.kill(id)
             _ = try create(title: pane.title, cwd: cwd, restoringID: id)
         }
     }
 
     public func restoreRemoteBridge(_ id: String) throws {
         let (original, host): (TerminalSession, RemoteHost) = try transaction {
+            guard try !isTerminalIntentionallyClosed(id) else { throw TerminalError.invalid("Use Reopen Closed Terminal for this remote terminal") }
             let pane = try requireSession(id)
             guard let remote = pane.remote else { throw TerminalError.invalid("Not a remote pane") }
             return (pane, try remoteHost(remote.hostID))
@@ -215,35 +280,51 @@ public final class TerminalRuntime: @unchecked Sendable {
             let pane = try requireSession(id)
             guard pane.remote == original.remote, try remoteHost(host.id) == host else { throw TerminalError.invalid("Remote connection changed while reconnecting") }
             if try list().first(where: { $0.id == id })?.alive == true { return }
-            _ = try tmux(["kill-session", "-t", "=" + id], allowFailure: true)
+            try self.host.kill(id)
             _ = try create(title: pane.title, cwd: FileManager.default.homeDirectoryForCurrentUser.path, shell: "/usr/bin/ssh", arguments: RemoteClient(host: host).attachArguments(sessionID: remote.sessionID), restoringID: id)
             try update { state in if let index = state.sessions.firstIndex(where: { $0.id == id }) { state.sessions[index].cwd = pane.cwd } }
         }
     }
 
     public func list() throws -> [TerminalSession] {
-        try locked {
-            var sessions = try load().sessions
-            let rows = try tmux(["list-panes", "-a", "-F", "#{session_name}|#{pane_pid}|#{pane_dead}"], allowFailure: true)
-            let live = Dictionary(rows.split(separator: "\n").compactMap { row -> (String, (Int32, Bool))? in
-                let fields = row.split(separator: "|", omittingEmptySubsequences: false)
-                guard fields.count == 3, UUID(uuidString: String(fields[0])) != nil, let pid = Int32(fields[1]) else { return nil }
-                return (String(fields[0]), (pid, fields[2] == "0"))
-            }, uniquingKeysWith: { left, _ in left })
-            for i in sessions.indices {
-                sessions[i].alive = live[sessions[i].id]?.1 == true
-                if let pid = live[sessions[i].id]?.0 { sessions[i].pid = pid }
-            }
-            return sessions
+        var sessions = try state().sessions
+        let live = Dictionary(try host.list().compactMap { pane -> (String, (Int32, Bool, String?))? in
+            guard UUID(uuidString: pane.id) != nil else { return nil }
+            return (pane.id, (pane.pid, pane.alive, TerminalTitleMetadata.normalize(pane.title)))
+        }, uniquingKeysWith: { left, _ in left })
+        for i in sessions.indices {
+            sessions[i].alive = live[sessions[i].id]?.1 == true
+            if let pid = live[sessions[i].id]?.0 { sessions[i].pid = pid }
+            sessions[i].terminalTitle = live[sessions[i].id]?.2
         }
+        let programs = foregroundProgramProbe.programs(for: sessions, refreshIdentity: true)
+        for i in sessions.indices where sessions[i].remote == nil {
+            sessions[i].foregroundProgram = programs[sessions[i].id]
+        }
+        return sessions
+    }
+
+    public func foregroundPrograms(for sessions: [TerminalSession]) -> [String: TerminalProgram] {
+        foregroundProgramProbe.programs(for: sessions)
+    }
+
+    public func sessionLoadTargets() throws -> [SessionLoadTarget] {
+        let snapshot = try state()
+        return SessionLoadTargetResolver.resolve(sessions: snapshot.sessions, launches: snapshot.agentLaunches, panes: try host.list())
     }
 
     public func send(_ id: String, text: String, enter: Bool = false) throws {
+        try send(id, text: text, enter: enter, beforeWrite: nil)
+    }
+
+    func send(_ id: String, text: String, enter: Bool, beforeWrite: (() throws -> Void)?) throws {
         try locked {
             _ = try requireSession(id)
             guard text.utf8.count <= 65536, !text.contains("\0") else { throw TerminalError.invalid("Input exceeds 64 KiB or contains NUL") }
-            _ = try tmux(["send-keys", "-t", id + ":0.0", "-l", "--", text])
-            if enter { _ = try tmux(["send-keys", "-t", id + ":0.0", "Enter"]) }
+            if !text.isEmpty || enter { try markTerminalInputUncertain(paneID: id) }
+            try beforeWrite?()
+            if !text.isEmpty { try host.write(id, Data(text.utf8)) }
+            if enter { try host.write(id, Data([13])) }
         }
     }
 
@@ -251,7 +332,7 @@ public final class TerminalRuntime: @unchecked Sendable {
         try locked {
             _ = try requireSession(id)
             guard (1...10_000).contains(lines) else { throw TerminalError.invalid("Capture line limit is 1...10000") }
-            return try tmux(["capture-pane", "-p", "-t", id + ":0.0", "-S", "-\(lines)"], outputLimit: 4 * 1_048_576)
+            return try host.capture(id, lines: lines)
         }
     }
 
@@ -262,8 +343,7 @@ public final class TerminalRuntime: @unchecked Sendable {
         }
         return try locked {
             _ = try requireSession(id)
-            let value = try tmux(["display-message", "-p", "-t", id + ":0.0", "#{pane_current_path}"])
-            return value.hasSuffix("\n") ? String(value.dropLast()) : value
+            return try host.workingDirectory(id)
         }
     }
 
@@ -275,6 +355,12 @@ public final class TerminalRuntime: @unchecked Sendable {
             let previous = store.sessions[index]
             if clearsActive && ![.running, .blocked].contains(previous.activity.state) { return }
             if previous.activity.state == state && previous.activity.reason == reason && previous.agent == agent && previous.activity.source == source { return }
+            if source != "hook" || state != .done {
+                for turnIndex in store.followUpTurns.indices where store.followUpTurns[turnIndex].paneID == id {
+                    store.followUpTurns[turnIndex].completionID = nil
+                    if source != "hook" { store.followUpTurns[turnIndex].armed = false }
+                }
+            }
             store.sessions[index].activity.state = state
             store.sessions[index].activity.reason = reason
             store.sessions[index].activity.source = source
@@ -313,13 +399,15 @@ public final class TerminalRuntime: @unchecked Sendable {
     private func disconnectLocalSession(_ id: String) throws {
         try locked {
             _ = try requireSession(id)
-            _ = try tmux(["kill-session", "-t", "=" + id], allowFailure: true)
-            let remaining = try tmux(["list-sessions", "-F", "#{session_name}"], allowFailure: true)
-            guard !remaining.split(separator: "\n").contains(Substring(id)) else { throw TerminalError.runtime("Session did not terminate") }
+            try host.kill(id)
+            guard try host.pane(id) == nil else { throw TerminalError.runtime("Session did not terminate") }
             var store = try load()
             store.sessions.removeAll { $0.id == id }
             store.agentLaunches.removeAll { $0.paneID == id }
             store.recoveryResults.removeAll { $0.paneID == id }
+            store.followUpInputs.removeAll { $0.paneID == id }
+            store.followUpTurns.removeAll { $0.paneID == id }
+            store.followUpPasteStates.removeAll { $0.paneID == id }
             let generations = Set(store.agentLaunches.map(\.id))
             store.supervision.removeAll { !generations.contains($0.generation) }
             try ScrollbackStore(runtimeRoot: root).remove(paneID: id)
@@ -334,16 +422,23 @@ public final class TerminalRuntime: @unchecked Sendable {
         let arguments = try RemoteClient(host: remoteHost(reference.hostID)).attachArguments(sessionID: reference.sessionID)
         try locked {
             _ = try requireSession(id)
-            try tmux(["respawn-pane", "-k", "-t", id + ":0.0", "--", "/usr/bin/ssh"] + arguments)
+            guard try !isTerminalIntentionallyClosed(id) else { throw TerminalError.invalid("Use Reopen Closed Terminal for this remote terminal") }
+            let pid = try host.respawn(id: id, argv: ["/usr/bin/ssh"] + arguments, environment: nil, cwd: nil)
+            try update { state in
+                if let index = state.sessions.firstIndex(where: { $0.id == id }) { state.sessions[index].pid = pid; state.sessions[index].alive = true }
+            }
             if let helperExecutable {
-                let command = "exec /usr/bin/env " + ShellQuote.quote("TRANO_DATA_DIR=" + root.path) + " " + ShellQuote.quote(helperExecutable) + " monitor " + ShellQuote.quote(id)
-                try tmux(["pipe-pane", "-O", "-t", id + ":0.0", command])
+                let command = "exec /usr/bin/env " + ShellQuote.quote("TRANO_DATA_DIR=" + root.path) + " " + ShellQuote.quote(helperExecutable) + " monitor " + ShellQuote.quote(id) + " " + String(pid)
+                try host.pipe(id, command: command)
             }
         }
     }
 
-    public func attachArguments(_ id: String) throws -> [String] {
+    public func attachCommand(_ id: String) throws -> (executable: String, arguments: [String]) {
         try validateID(id)
-        return ["-u", "-S", socketPath, "attach-session", "-t", "=" + id]
+        guard let executable = PaneHostClient.resolveExecutable(helperExecutable) else {
+            throw TerminalError.runtime("The trano helper is required to attach to a terminal")
+        }
+        return (executable, host.attachArguments(id))
     }
 }

@@ -16,7 +16,38 @@ public struct WorkspaceLayout: Codable, Equatable {
     public var selectedWorkspaceID: String?
     public var selectedTabID: String?
     public var focusedPaneID: String?
-    public var currentTabs: [TerminalTab] { tabs.filter { $0.workspaceID == selectedWorkspaceID } }
+    /// Derived from `master-view.json` and session activity when state is read; not part of the stored layout.
+    public var masterView: MasterViewProjection?
+    public var currentTabs: [TerminalTab] {
+        let own = tabs.filter { $0.workspaceID == selectedWorkspaceID }
+        guard let presented = presentedTabIDs, !presented.isEmpty else { return own }
+        let byID = Dictionary(tabs.map { ($0.id, $0) }, uniquingKeysWith: { first, _ in first })
+        return own + presented.compactMap { byID[$0] }
+    }
+    /// Tabs of other workspaces shown in the selected workspace because it is the Master View.
+    public var presentedTabIDs: [String]? {
+        guard let masterView, masterView.workspaceID == selectedWorkspaceID else { return nil }
+        return masterView.tabIDs
+    }
+    public func isPresentedInMasterView(_ tabID: String) -> Bool { presentedTabIDs?.contains(tabID) == true }
+    /// Tabs whose workspace is open; tabs of a closed workspace stay retained but are not presented.
+    public var openTabs: [TerminalTab] {
+        let closed = Set(workspaces.filter(\.closed).map(\.id))
+        return tabs.filter { $0.workspaceID.map { !closed.contains($0) } ?? true }
+    }
+    /// Panes whose only placements are retained closed tabs or closed-workspace tabs; they need an explicit reopen.
+    /// A split-close snapshot keeps its still-open siblings, so only its focused pane counts while that tab exists.
+    public var closedPaneIDs: Set<String> {
+        let open = Set(openTabs.flatMap(\.panes))
+        let liveTabIDs = Set(tabs.map(\.id))
+        var closed = Set(tabs.flatMap(\.panes))
+        for snapshot in closedTabs {
+            if liveTabIDs.contains(snapshot.id) { if let pane = snapshot.focusedPaneID { closed.insert(pane) } }
+            else { closed.formUnion(snapshot.panes) }
+        }
+        return closed.subtracting(open)
+    }
+    public func isClosedPane(_ paneID: String) -> Bool { closedPaneIDs.contains(paneID) }
     public init() {}
 
     private enum CodingKeys: String, CodingKey { case workspaces, tabs, closedTabs, selectedWorkspaceID, selectedTabID, focusedPaneID }
@@ -93,11 +124,33 @@ public struct WorkspaceLayout: Codable, Equatable {
     public mutating func selectTab(_ id: String) throws {
         guard let tab = tabs.first(where: { $0.id == id }) else { throw TerminalError.invalid("Unknown tab") }
         rememberSelection()
-        selectedWorkspaceID = tab.workspaceID
-        if let index = workspaces.firstIndex(where: { $0.id == tab.workspaceID }) { workspaces[index].closed = false }
+        if !isPresentedInMasterView(id) {
+            selectedWorkspaceID = tab.workspaceID
+            if let index = workspaces.firstIndex(where: { $0.id == tab.workspaceID }) { workspaces[index].closed = false }
+        }
         selectedTabID = id
         focusedPaneID = tab.panes.contains(tab.focusedPaneID ?? "") ? tab.focusedPaneID : tab.panes.first
         rememberSelection()
+    }
+
+    /// Selects a tab the caller saw presented in the Master View. Membership is not re-derived here: reading the tab can
+    /// remove it from the projection before this commits. Falls back to an ordinary selection once the view is gone.
+    public mutating func selectPresentedTab(_ id: String) throws {
+        guard let tab = tabs.first(where: { $0.id == id }) else { throw TerminalError.invalid("Unknown tab") }
+        guard let master = masterView?.workspaceID, selectedWorkspaceID == master, tab.workspaceID != master,
+              workspaces.contains(where: { $0.id == tab.workspaceID && !$0.closed }) else { return try selectTab(id) }
+        rememberSelection()
+        if masterView?.tabIDs.contains(id) == false { masterView?.tabIDs.append(id) }
+        selectedTabID = id
+        focusedPaneID = tab.panes.contains(tab.focusedPaneID ?? "") ? tab.focusedPaneID : tab.panes.first
+        rememberSelection()
+    }
+
+    /// A selected tab of another workspace that the Master View no longer presents gives way to a tab the view shows.
+    mutating func repairPresentedSelection() {
+        guard let id = selectedTabID, let tab = tabs.first(where: { $0.id == id }), tab.workspaceID != selectedWorkspaceID,
+              !isPresentedInMasterView(id), workspaces.contains(where: { $0.id == selectedWorkspaceID }) else { return }
+        repairSelection()
     }
 
     public mutating func focusPane(_ id: String) throws {
@@ -123,7 +176,7 @@ public struct WorkspaceLayout: Codable, Equatable {
 
     @discardableResult public mutating func addTab(paneID: String) -> String {
         if let tab = tabs.first(where: { $0.panes.contains(paneID) }) { try? focusPane(paneID); return tab.id }
-        if !workspaces.contains(where: { $0.id == selectedWorkspaceID }) { addWorkspace(title: "Workspace") }
+        if !workspaces.contains(where: { $0.id == selectedWorkspaceID }) { addWorkspace(title: randomWorkspaceTitle()) }
         rememberSelection()
         var tab = TerminalTab(paneID: paneID)
         tab.workspaceID = selectedWorkspaceID
@@ -186,20 +239,60 @@ public struct WorkspaceLayout: Codable, Equatable {
     public mutating func closeTab(_ id: String) {
         guard let index = tabs.firstIndex(where: { $0.id == id }) else { return }
         rememberSelection()
-        closedTabs.append(tabs.remove(at: index))
+        let tab = tabs.remove(at: index)
+        rememberClosedTab(tab)
+        if let workspaceID = tab.workspaceID, workspaceID != masterView?.workspaceID, !tabs.contains(where: { $0.workspaceID == workspaceID }) {
+            closeWorkspace(workspaceID)
+            if selectedWorkspaceID != nil, !currentTabs.contains(where: { $0.id == selectedTabID }) { repairSelection() }
+        } else { repairSelection() }
+    }
+
+    public mutating func closePane(_ id: String) {
+        guard let tab = tabs.first(where: { $0.panes.contains(id) }) else { return }
+        if tab.panes.count == 1 { closeTab(tab.id) }
+        else {
+            var snapshot = tab
+            snapshot.focusedPaneID = id
+            rememberClosedTab(snapshot)
+            detach(id)
+        }
+    }
+
+    private mutating func rememberClosedTab(_ tab: TerminalTab) {
+        closedTabs.append(tab)
         if closedTabs.count > 20 { closedTabs.removeFirst(closedTabs.count - 20) }
-        repairSelection()
     }
 
     public mutating func restoreTab() {
-        guard var tab = closedTabs.popLast() else { return }
-        var tree: PaneTree? = tab.tree
-        for id in tabs.flatMap(\.panes) { tree = tree?.removing(id) }
-        guard let tree else { return }
-        tab.tree = tree
-        if !workspaces.contains(where: { $0.id == tab.workspaceID }) { tab.workspaceID = addWorkspace(title: "Restored") }
-        tabs.append(tab)
-        try? selectTab(tab.id)
+        while var tab = closedTabs.popLast() {
+            let attached = Set(tabs.flatMap(\.panes))
+            if let index = tabs.firstIndex(where: { $0.id == tab.id }) {
+                if let workspace = tab.workspaceID, tabs[index].workspaceID == workspace,
+                   workspaces.contains(where: { $0.id == workspace && $0.closed }),
+                   let pane = tab.focusedPaneID, tabs[index].panes.contains(pane) {
+                    try? selectTab(tab.id)
+                    try? focusPane(pane)
+                    return
+                }
+                guard let pane = tab.focusedPaneID, !attached.contains(pane), tab.panes.contains(pane) else { continue }
+                if var placement = tab.tree.restorationPlacement(for: pane, available: Set(tabs[index].panes)) {
+                    if tabs.contains(where: { $0.tree.ratio(for: placement.splitID) != nil }) { placement.splitID = UUID().uuidString }
+                    tabs[index].tree = tabs[index].tree.restoringPane(pane, at: placement)
+                } else if let anchor = tabs[index].panes.last {
+                    tabs[index].tree = tabs[index].tree.inserting(pane, beside: anchor, axis: .horizontal)
+                }
+                try? focusPane(pane)
+                return
+            }
+            var tree: PaneTree? = tab.tree
+            for id in attached { tree = tree?.removing(id) }
+            guard let tree else { continue }
+            tab.tree = tree
+            if !workspaces.contains(where: { $0.id == tab.workspaceID }) { tab.workspaceID = addWorkspace(title: "Restored") }
+            tabs.append(tab)
+            try? selectTab(tab.id)
+            return
+        }
     }
 
     public mutating func reorderTab(_ id: String, delta: Int) {
@@ -210,13 +303,66 @@ public struct WorkspaceLayout: Codable, Equatable {
         tabs.swapAt(first, second)
     }
 
+    public mutating func reorderWorkspace(_ id: String, delta: Int) throws {
+        guard delta == -1 || delta == 1 else { throw TerminalError.invalid("Workspace reorder delta must be -1 or 1") }
+        guard let index = workspaces.firstIndex(where: { $0.id == id }), !workspaces[index].closed else {
+            throw TerminalError.invalid("Unknown or closed workspace")
+        }
+        let openIndices = workspaces.indices.filter { !workspaces[$0].closed }
+        guard let position = openIndices.firstIndex(of: index), openIndices.indices.contains(position + delta) else { return }
+        workspaces.swapAt(index, openIndices[position + delta])
+    }
+
     public mutating func closeWorkspace(_ id: String) {
+        guard let index = workspaces.firstIndex(where: { $0.id == id }), !workspaces[index].closed else { return }
         rememberSelection()
-        if let index = workspaces.firstIndex(where: { $0.id == id }) { workspaces[index].closed = true }
+        let selected = workspaces[index].selectedTabID
+        if var snapshot = tabs.first(where: { $0.workspaceID == id && $0.id == selected }) ?? tabs.first(where: { $0.workspaceID == id }) {
+            if let focus = workspaces[index].focusedPaneID, snapshot.panes.contains(focus) { snapshot.focusedPaneID = focus }
+            else if !snapshot.panes.contains(snapshot.focusedPaneID ?? "") { snapshot.focusedPaneID = snapshot.panes.first }
+            rememberClosedTab(snapshot)
+        }
+        workspaces[index].closed = true
         if selectedWorkspaceID == id {
-            if let next = workspaces.first(where: { !$0.closed }) { try? selectWorkspace(next.id) }
+            if let next = nextOpenWorkspace(after: id) { try? selectWorkspace(next.id) }
             else { selectedWorkspaceID = nil; selectedTabID = nil; focusedPaneID = nil }
         }
+    }
+
+    func nextOpenWorkspace(after id: String) -> WorkspaceRecord? {
+        guard let index = workspaces.firstIndex(where: { $0.id == id }) else { return workspaces.first { !$0.closed } }
+        for offset in 1...workspaces.count {
+            let next = workspaces[(index + offset) % workspaces.count]
+            if !next.closed { return next }
+        }
+        return nil
+    }
+}
+
+private typealias PaneRestorationPlacement = (splitID: String, axis: SplitAxis, ratio: Double, before: Bool, anchors: Set<String>)
+
+private extension PaneTree {
+    func restorationPlacement(for paneID: String, available: Set<String>) -> PaneRestorationPlacement? {
+        guard case .split(let id, let axis, let ratio, let first, let second) = self else { return nil }
+        let before = first.panes.contains(paneID)
+        guard before || second.panes.contains(paneID) else { return nil }
+        let branch = before ? first : second
+        if let deeper = branch.restorationPlacement(for: paneID, available: available) { return deeper }
+        let anchors = Set((before ? second : first).panes).intersection(available)
+        return anchors.isEmpty ? nil : (id, axis, ratio, before, anchors)
+    }
+
+    func restoringPane(_ paneID: String, at placement: PaneRestorationPlacement) -> PaneTree {
+        if case .split(let id, let axis, let ratio, let first, let second) = self {
+            if placement.anchors.isSubset(of: Set(first.panes)) {
+                return .split(id: id, axis: axis, ratio: ratio, first: first.restoringPane(paneID, at: placement), second: second)
+            }
+            if placement.anchors.isSubset(of: Set(second.panes)) {
+                return .split(id: id, axis: axis, ratio: ratio, first: first, second: second.restoringPane(paneID, at: placement))
+            }
+        }
+        return .split(id: placement.splitID, axis: placement.axis, ratio: placement.ratio,
+                      first: placement.before ? .pane(paneID) : self, second: placement.before ? self : .pane(paneID))
     }
 }
 
@@ -243,5 +389,17 @@ public enum PathInsertion {
             throw TerminalError.invalid("Select paths without newline or NUL characters")
         }
         return paths.map(ShellQuote.quote).joined(separator: " ") + " "
+    }
+}
+
+public enum TabSide: Sendable { case left, right }
+
+extension WorkspaceLayout {
+    /// Tabs of the same workspace on one side of `id`, in strip order.
+    public func tabIDs(beside id: String, side: TabSide) -> [String] {
+        guard let tab = tabs.first(where: { $0.id == id }) else { return [] }
+        let row = tabs.filter { $0.workspaceID == tab.workspaceID }
+        guard let index = row.firstIndex(where: { $0.id == id }) else { return [] }
+        return (side == .left ? Array(row[..<index]) : Array(row[(index + 1)...])).map(\.id)
     }
 }

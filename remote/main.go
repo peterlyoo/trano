@@ -40,16 +40,19 @@ type AgentTask struct {
 	Generation string   `json:"generation,omitempty"`
 }
 type Session struct {
-	ID         string      `json:"id"`
-	Title      string      `json:"title"`
-	Cwd        string      `json:"cwd"`
-	PID        int         `json:"pid"`
-	Host       string      `json:"host"`
-	Agent      string      `json:"agent"`
-	Activity   Activity    `json:"activity"`
-	AgentTasks []AgentTask `json:"agentTasks,omitempty"`
-	CreatedAt  float64     `json:"createdAt"`
-	Alive      bool        `json:"alive"`
+	ID                   string      `json:"id"`
+	Title                string      `json:"title"`
+	Cwd                  string      `json:"cwd"`
+	PID                  int         `json:"pid"`
+	Host                 string      `json:"host"`
+	Agent                string      `json:"agent"`
+	Activity             Activity    `json:"activity"`
+	AgentTasks           []AgentTask `json:"agentTasks,omitempty"`
+	ForegroundProgram    string      `json:"foregroundProgram,omitempty"`
+	ShellInputIdentity   *string     `json:"shellInputIdentity,omitempty"`
+	InputBackendIdentity *string     `json:"inputBackendIdentity,omitempty"`
+	CreatedAt            float64     `json:"createdAt"`
+	Alive                bool        `json:"alive"`
 }
 type State struct {
 	SchemaVersion     int              `json:"schemaVersion"`
@@ -68,7 +71,12 @@ type Response struct {
 	Result     any    `json:"result,omitempty"`
 	Error      string `json:"error,omitempty"`
 }
-type Runtime struct{ root, socket, tmux, helper string }
+type Runtime struct {
+	root, socket, tmux, helper string
+	historyExecute             func(...string) (string, error)
+	commandOverride            func(int, ...string) (string, error)
+	closedProcesses            closedProcessController
+}
 
 func NewRuntime(root string) (*Runtime, error) {
 	root, err := filepath.Abs(root)
@@ -203,6 +211,9 @@ func environment() []string {
 }
 func (r *Runtime) command(args ...string) (string, error) { return r.commandLimit(maxFrame, args...) }
 func (r *Runtime) commandLimit(limit int, args ...string) (string, error) {
+	if r.commandOverride != nil {
+		return r.commandOverride(limit, args...)
+	}
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 	args = append([]string{"-u", "-S", r.socket, "-f", filepath.Join(r.root, "tmux.conf")}, args...)
@@ -343,7 +354,7 @@ func (r *Runtime) List() ([]Session, error) {
 			return nil, err
 		}
 	}
-	return s.Sessions, nil
+	return projectForegroundPrograms(s.Sessions, linuxForegroundProgram, linuxInputIdentities), nil
 }
 func (r *Runtime) Capture(id string, lines int) (string, error) {
 	file, err := r.lock()
@@ -463,6 +474,10 @@ func (r *Runtime) route(request Request) (any, error) {
 		}
 	}
 	switch request.Method {
+	case "close.prepare", "close.commit", "close.status", "close.reopen", "close.cancel":
+		return r.routeClosedTerminal(request)
+	case "panes.history.scroll", "panes.history.cancel":
+		return routeTerminalHistory(request, r.TerminalHistory)
 	case "scrollback.settings":
 		var enabled bool
 		if err := json.Unmarshal(request.Params["enabled"], &enabled); err != nil {
@@ -478,7 +493,7 @@ func (r *Runtime) route(request Request) (any, error) {
 	case "paths.list":
 		return r.ListPaths(path)
 	case "health", "server.info":
-		return map[string]any{"apiVersion": 1, "version": "0.1.0-dev", "transport": "ssh", "persistent": true}, nil
+		return map[string]any{"apiVersion": 1, "version": "0.1.0-dev", "transport": "ssh", "persistent": true, "closedTerminalProtocol": 1}, nil
 	case "list", "sessions.list":
 		return r.List()
 	case "new", "sessions.create":
@@ -521,6 +536,21 @@ func run() error {
 		return err
 	}
 	switch os.Args[1] {
+	case "closed-start":
+		if len(os.Args) != 3 {
+			return errors.New("closed-start requires operation ID")
+		}
+		return runtime.StartClosedTerminal(os.Args[2])
+	case "closed-replay":
+		if len(os.Args) != 3 {
+			return errors.New("closed-replay requires operation ID")
+		}
+		text, err := runtime.ReplayClosedTerminal(os.Args[2])
+		if err != nil {
+			return err
+		}
+		_, err = io.WriteString(os.Stdout, text)
+		return err
 	case "agent-exec":
 		return executeGatedProvider()
 	case "agent":

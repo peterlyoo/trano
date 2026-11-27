@@ -39,6 +39,12 @@ public struct TerminalSession: Codable, Identifiable, Equatable {
     public var alive = true
     public var remote: RemoteReference?
     public var agentTasks: [AgentTask]?
+    public var terminalTitle: String?
+    public var foregroundProgram: TerminalProgram?
+    public var inputBackendIdentity: String?
+
+    public var displayTitle: String { TerminalTitleMetadata.normalize(terminalTitle) ?? title }
+    public var displayProgram: TerminalProgram { foregroundProgram ?? TerminalProgram(agent: agent) }
 }
 
 public indirect enum PaneTree: Codable, Equatable {
@@ -194,6 +200,7 @@ public struct RuntimeState: Codable {
     public var revision = 0
     public var events: [ActivityEvent] = []
     public var eventsDiscardedThrough = 0
+    public var activityReadAt: [String: Date] = [:]
     public var navigationRequest: NavigationRequest?
     public var remoteHosts: [RemoteHost] = []
     public var accounts: [AccountProfile] = []
@@ -201,9 +208,12 @@ public struct RuntimeState: Codable {
     public var agentLaunches: [AgentLaunch] = []
     public var recoveryResults: [RecoveryResult] = []
     public var supervision: [AgentSupervision] = []
+    public var followUpInputs: [FollowUpInput] = []
+    public var followUpTurns: [FollowUpTurn] = []
+    public var followUpPasteStates: [FollowUpPasteState] = []
     public init() {}
 
-    private enum CodingKeys: String, CodingKey { case schemaVersion, sessions, layout, settings, revision, events, eventsDiscardedThrough, navigationRequest, remoteHosts, accounts, extensions, agentLaunches, recoveryResults, supervision }
+    private enum CodingKeys: String, CodingKey { case schemaVersion, sessions, layout, settings, revision, events, eventsDiscardedThrough, activityReadAt, navigationRequest, remoteHosts, accounts, extensions, agentLaunches, recoveryResults, supervision, followUpInputs, followUpTurns, followUpPasteStates }
     public init(from decoder: Decoder) throws {
         let box = try decoder.container(keyedBy: CodingKeys.self)
         schemaVersion = try box.decode(Int.self, forKey: .schemaVersion)
@@ -213,6 +223,7 @@ public struct RuntimeState: Codable {
         revision = try box.decodeIfPresent(Int.self, forKey: .revision) ?? 0
         events = try box.decodeIfPresent([ActivityEvent].self, forKey: .events) ?? []
         eventsDiscardedThrough = try box.decodeIfPresent(Int.self, forKey: .eventsDiscardedThrough) ?? 0
+        activityReadAt = try box.decodeIfPresent([String: Date].self, forKey: .activityReadAt) ?? [:]
         navigationRequest = try box.decodeIfPresent(NavigationRequest.self, forKey: .navigationRequest)
         remoteHosts = try box.decodeIfPresent([RemoteHost].self, forKey: .remoteHosts) ?? []
         accounts = try box.decodeIfPresent([AccountProfile].self, forKey: .accounts) ?? []
@@ -220,6 +231,9 @@ public struct RuntimeState: Codable {
         agentLaunches = try box.decodeIfPresent([AgentLaunch].self, forKey: .agentLaunches) ?? []
         recoveryResults = try box.decodeIfPresent([RecoveryResult].self, forKey: .recoveryResults) ?? []
         supervision = try box.decodeIfPresent([AgentSupervision].self, forKey: .supervision) ?? []
+        followUpInputs = try box.decodeIfPresent([FollowUpInput].self, forKey: .followUpInputs) ?? []
+        followUpTurns = try box.decodeIfPresent([FollowUpTurn].self, forKey: .followUpTurns) ?? []
+        followUpPasteStates = try box.decodeIfPresent([FollowUpPasteState].self, forKey: .followUpPasteStates) ?? []
     }
 }
 

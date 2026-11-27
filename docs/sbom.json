@@ -242,7 +242,7 @@
       "version" : "4.5.2"
     },
     {
-      "bom-ref" : "pkg:github\/migueldeicaza\/SwiftTerm@1.99.1",
+      "bom-ref" : "pkg:generic\/trano\/swiftterm@1.99.1%2Btrano.f54584b21dfc",
       "externalReferences" : [
         {
           "type" : "vcs",
@@ -251,6 +251,23 @@
         {
           "type" : "license",
           "url" : "https:\/\/github.com\/migueldeicaza\/SwiftTerm\/blob\/2f573f73af5e768d90847dce20c97fa9535d7164\/LICENSE"
+        },
+        {
+          "comment" : "Unmodified upstream source archive",
+          "hashes" : [
+            {
+              "alg" : "SHA-256",
+              "content" : "b7bd5d65ea4e2ad0a8776878ae9b873e80c25747e437df494e5d9fceba54affe"
+            }
+          ],
+          "type" : "distribution",
+          "url" : "https:\/\/github.com\/migueldeicaza\/SwiftTerm\/archive\/2f573f73af5e768d90847dce20c97fa9535d7164.tar.gz"
+        }
+      ],
+      "hashes" : [
+        {
+          "alg" : "SHA-256",
+          "content" : "f54584b21dfc83958eb40145430c8b4bcb5fd68c6fb75e3bd627181b6d3d1815"
         }
       ],
       "licenses" : [
@@ -261,20 +278,84 @@
         }
       ],
       "name" : "swiftterm",
+      "pedigree" : {
+        "ancestors" : [
+          {
+            "bom-ref" : "pkg:github\/migueldeicaza\/SwiftTerm@1.99.1",
+            "externalReferences" : [
+              {
+                "type" : "vcs",
+                "url" : "https:\/\/github.com\/migueldeicaza\/SwiftTerm\/tree\/2f573f73af5e768d90847dce20c97fa9535d7164"
+              },
+              {
+                "type" : "license",
+                "url" : "https:\/\/github.com\/migueldeicaza\/SwiftTerm\/blob\/2f573f73af5e768d90847dce20c97fa9535d7164\/LICENSE"
+              }
+            ],
+            "licenses" : [
+              {
+                "license" : {
+                  "id" : "MIT"
+                }
+              }
+            ],
+            "name" : "swiftterm",
+            "properties" : [
+              {
+                "name" : "trano:role",
+                "value" : "runtime"
+              },
+              {
+                "name" : "trano:vcsRevision",
+                "value" : "2f573f73af5e768d90847dce20c97fa9535d7164"
+              }
+            ],
+            "purl" : "pkg:github\/migueldeicaza\/SwiftTerm@1.99.1",
+            "scope" : "required",
+            "type" : "library",
+            "version" : "1.99.1"
+          }
+        ],
+        "notes" : "Locally modified vendored fork: Embedding-only Package.swift with library and build generator targets; Pinned fork build metadata, preventing accidental ancestor repository identity; Disabled debug Buffer.dump raw-terminal file logging; retained internal no-op method; Public renderer hooks and real implementation for font style permissions, pixel spacing, ligature shaping and cache identity; Render-only foreground theme remapping in dictionary\/plain\/underline\/caret paths without changing terminal cell attributes; Display P3 frame\/native\/Metal color path and cache\/surface\/backing-layer continuity; Configurable native and Metal cursor blink interval and visual-only forced cursor style; Render-only inactive pane background\/content multipliers; parser palette and OSC state preserved; Forced missing-face bold\/italic with native-face preservation, captured style permissions, fallback metadata and CG\/caret\/Metal cache identity; Rounded selection backgrounds in Core Graphics and Metal before independent inactive-content dimming; Optional fractional pixel viewport scrolling with overscan, hit-test\/caret alignment and warm row placement caches; Optional server-output-paced local resize reflow with requested backend dimensions retained before parsing; Shared cursor geometry and screen-correct NSTextInputClient anchors preserve marked-text alignment across fractional viewport scroll and resize without a visible native Metal caret; Host typography reflow preserves program modes and marked text while retaining only selections whose content survives reflow; Explicit blink suppression governs native CA and Metal without changing program cursor metadata; Font smoothing changes invalidate warm Metal row and glyph bitmap caches; Bounded native point-to-link accessor uses one terminal lock and the same Unicode and fractional-scroll hit testing as terminal mouse input; Explicit user\/protocol-response transport classification, bounded raw-writer process generation and deferred Kitty paste classification for host input ownership"
+      },
       "properties" : [
         {
           "name" : "trano:role",
           "value" : "runtime"
         },
         {
+          "name" : "trano:sourceType",
+          "value" : "vendored-modified"
+        },
+        {
+          "name" : "trano:dirty",
+          "value" : "true"
+        },
+        {
+          "name" : "trano:localPath",
+          "value" : "vendor\/SwiftTerm"
+        },
+        {
+          "name" : "trano:upstreamVersion",
+          "value" : "1.99.1"
+        },
+        {
           "name" : "trano:vcsRevision",
           "value" : "2f573f73af5e768d90847dce20c97fa9535d7164"
+        },
+        {
+          "name" : "trano:upstreamArchiveSHA256",
+          "value" : "b7bd5d65ea4e2ad0a8776878ae9b873e80c25747e437df494e5d9fceba54affe"
+        },
+        {
+          "name" : "trano:hashSubject",
+          "value" : "vendored path\/content tree; sorted UTF-8 relative path + NUL + raw file SHA-256 + NUL"
         }
       ],
-      "purl" : "pkg:github\/migueldeicaza\/SwiftTerm@1.99.1",
+      "purl" : "pkg:generic\/trano\/swiftterm@1.99.1%2Btrano.f54584b21dfc",
       "scope" : "required",
       "type" : "library",
-      "version" : "1.99.1"
+      "version" : "1.99.1+trano.f54584b21dfc"
     },
     {
       "bom-ref" : "pkg:github\/tmux\/tmux@3.6a",

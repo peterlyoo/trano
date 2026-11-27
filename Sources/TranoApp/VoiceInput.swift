@@ -9,12 +9,14 @@ import SwiftUI
     @Published var authorizing = false
     @Published var finishing = false
     @Published var error: String?
+    var canBeginRecording: () -> Bool = { true }
     @Published var locale = "ko-KR"
     @Published var allowNetwork = false
     private var engine: AVAudioEngine?
     private var request: SFSpeechAudioBufferRecognitionRequest?
     private var task: SFSpeechRecognitionTask?
     private var generation = 0
+    private var boundPresentationID: UUID?
     private let authorizeSpeech: (@escaping (SFSpeechRecognizerAuthorizationStatus) -> Void) -> Void
     private let authorizeMicrophone: (@escaping (Bool) -> Void) -> Void
 
@@ -23,8 +25,24 @@ import SwiftUI
         self.authorizeSpeech = authorizeSpeech; self.authorizeMicrophone = authorizeMicrophone
     }
 
+    @discardableResult func bind(to presentationID: UUID) -> Bool {
+        guard boundPresentationID != presentationID else { return false }
+        stop()
+        boundPresentationID = presentationID
+        return true
+    }
+    func setDraft(_ value: String, for presentationID: UUID) {
+        guard boundPresentationID == presentationID else { return }
+        text = value
+    }
+    func stop(presentationID: UUID) {
+        guard boundPresentationID == presentationID else { return }
+        stop()
+    }
+
     func start() {
         guard !listening, !authorizing, !finishing else { return }
+        guard canBeginRecording() else { error = "The original terminal changed. Review or copy your draft before closing."; return }
         generation += 1
         let current = generation
         error = nil
@@ -34,6 +52,9 @@ import SwiftUI
                 guard let self, self.generation == current else { return }
                 guard status == .authorized else {
                     self.authorizing = false; self.error = "Speech recognition permission is required in System Settings."; return
+                }
+                guard self.canBeginRecording() else {
+                    self.error = "The original terminal changed. Review or copy your draft before closing."; self.stop(); return
                 }
                 self.authorizeMicrophone { [weak self] allowed in
                     Task { @MainActor in
@@ -48,6 +69,7 @@ import SwiftUI
     }
 
     private func record(generation current: Int) {
+        guard canBeginRecording() else { error = "The original terminal changed. Review or copy your draft before closing."; stop(); return }
         guard let recognizer = SFSpeechRecognizer(locale: Locale(identifier: locale)), recognizer.isAvailable else {
             error = "Speech recognition is unavailable for this language."; return
         }
@@ -107,38 +129,61 @@ import SwiftUI
 struct VoiceInputView: View {
     @ObservedObject var store: AppStore
     @StateObject private var voice = VoiceInput()
-    @State private var targetPaneID: String?
-    init(store: AppStore) { self.store = store; _targetPaneID = State(initialValue: store.focusedID) }
+    @StateObject private var presentation = VoiceInputPresentation()
+    private let presentationID: UUID
+    init(store: AppStore) { self.store = store; presentationID = store.voiceInputPresentationID ?? UUID() }
     private var busy: Bool { voice.listening || voice.authorizing || voice.finishing }
     var body: some View {
-        VStack(alignment: .leading, spacing: 18) {
-            HStack {
-                Image(systemName: voice.listening ? "waveform" : "mic").foregroundStyle(.mint)
-                Text("Voice Input").font(.system(size: 20, weight: .semibold))
-                Spacer()
+        VStack(spacing: 0) {
+            ToolPanelHeader("Voice Input", symbol: voice.listening ? "waveform" : "mic", trailing: AnyView(
                 Picker("Language", selection: $voice.locale) { Text("한국어").tag("ko-KR"); Text("English").tag("en-US") }.labelsHidden().frame(width: 120).disabled(busy)
+            ), closeLabel: "Cancel", onClose: cancelVoiceInput)
+            VStack(alignment: .leading, spacing: ToolPanelMetrics.sectionSpacing) {
+                Text(store.voiceInputInitialDraft.isEmpty ? "Record, review, then insert into your terminal." : "Recovered voice draft. Review it before inserting into your terminal.").font(.system(size: 12)).foregroundStyle(.secondary)
+                TextEditor(text: Binding(get: { voice.text }, set: { if store.voiceInputPresentationID == presentationID { voice.setDraft($0, for: presentationID) } })).font(.system(size: 14)).frame(height: 170).padding(8).overlay { RoundedRectangle(cornerRadius: ToolPanelMetrics.cornerRadius).stroke(store.toolPanelTheme.border) }.disabled(busy).accessibilityLabel("Voice transcript")
+                Toggle("Allow Apple network recognition", isOn: $voice.allowNetwork).font(.system(size: 12)).disabled(busy)
+                if let error = voice.error { Text(error).font(.system(size: 12)).foregroundStyle(.orange) }
+                HStack {
+                    Button(voice.authorizing ? "Requesting Permission…" : voice.finishing ? "Finishing…" : voice.listening ? "Stop Recording" : "Start Recording") { guard store.voiceInputPresentationID == presentationID else { return }; voice.listening ? voice.finish() : voice.start() }.disabled(voice.authorizing || voice.finishing)
+                    Text("Hold to Talk").font(.callout).padding(.horizontal, 10).padding(.vertical, 5).background(store.toolPanelTheme.foreground.opacity(0.08)).clipShape(RoundedRectangle(cornerRadius: ToolPanelMetrics.cornerRadius))
+                        .gesture(DragGesture(minimumDistance: 0).onChanged { _ in if store.voiceInputPresentationID == presentationID { voice.start() } }.onEnded { _ in if store.voiceInputPresentationID == presentationID { voice.finish() } })
+                        .accessibilityHidden(true)
+                    Spacer()
+                    Button("Cancel", action: cancelVoiceInput).keyboardShortcut(.cancelAction)
+                    Button("Insert Text") {
+                        guard store.voiceInputPresentationID == presentationID, presentation.id == presentationID,
+                              presentation.permitsRecording(store: store), let target = presentation.target else {
+                            voice.error = "The original terminal changed. Review or copy your draft before closing."; return
+                        }
+                        voice.stop()
+                        let text = voice.text
+                        guard store.voiceInputRecovery.remember(text, presentationID: presentationID, currentID: store.voiceInputPresentationID) else {
+                            voice.error = "Voice input is limited to 1 MiB. Review or copy your draft before closing."; return
+                        }
+                        store.showVoice = false
+                        target.completeVoice(text, presentationID: presentation.id, closingSheet: presentation.window)
+                    }.keyboardShortcut(.defaultAction).disabled(busy || voice.text.isEmpty || presentation.target == nil)
+                }
+            }.padding(ToolPanelMetrics.contentInset)
+        }.frame(width: 560).toolPanelSurface(store.toolPanelTheme)
+            .dismissOnOutsideClick("voice-input-sheet-" + presentationID.uuidString,
+                canDismiss: { store.voiceInputPresentationID == presentationID }, perform: cancelVoiceInput)
+            .background { VoiceInputWindowAnchor(presentation: presentation) }
+            .onAppear {
+                guard store.voiceInputPresentationID == presentationID else { return }
+                presentation.begin(store: store, id: presentationID)
+                if voice.bind(to: presentationID) { voice.setDraft(store.voiceInputInitialDraft, for: presentationID) }
+                voice.canBeginRecording = { [weak presentation, weak store] in
+                    guard let presentation, let store, store.voiceInputPresentationID == presentationID else { return false }
+                    return presentation.permitsRecording(store: store)
+                }
             }
-            Text("Record, review, then insert into your terminal.").font(.system(size: 12)).foregroundStyle(.secondary)
-            TextEditor(text: $voice.text).font(.system(size: 14)).frame(height: 170).padding(8).overlay { RoundedRectangle(cornerRadius: 8).stroke(.white.opacity(0.1)) }.disabled(busy).accessibilityLabel("Voice transcript")
-            Toggle("Allow Apple network recognition", isOn: $voice.allowNetwork).font(.system(size: 12)).disabled(busy)
-            if let error = voice.error { Text(error).font(.system(size: 12)).foregroundStyle(.orange) }
-            HStack {
-                Button(voice.authorizing ? "Requesting Permission…" : voice.finishing ? "Finishing…" : voice.listening ? "Stop Recording" : "Start Recording") { voice.listening ? voice.finish() : voice.start() }.disabled(voice.authorizing || voice.finishing)
-                Text("Hold to Talk").font(.callout).padding(.horizontal, 10).padding(.vertical, 5).background(.white.opacity(0.08)).clipShape(RoundedRectangle(cornerRadius: 5))
-                    .gesture(DragGesture(minimumDistance: 0).onChanged { _ in voice.start() }.onEnded { _ in voice.finish() })
-                    .accessibilityHidden(true)
-                Spacer()
-                Button("Cancel") { voice.stop(); store.showVoice = false }.keyboardShortcut(.cancelAction)
-                Button("Insert Text") {
-                    guard let id = targetPaneID, let target = store.terminalViews[id] else {
-                        voice.error = "The original terminal is no longer open. Copy your draft before closing this window."; return
-                    }
-                    voice.stop()
-                    let text = voice.text
-                    store.showVoice = false
-                    DispatchQueue.main.async { target.pasteDraft(text) }
-                }.keyboardShortcut(.defaultAction).disabled(busy || voice.text.isEmpty || targetPaneID == nil)
-            }
-        }.padding(28).frame(width: 560).preferredColorScheme(.dark).onDisappear { voice.stop() }
+            .onDisappear { voice.stop(presentationID: presentationID) }
+    }
+
+    private func cancelVoiceInput() {
+        guard store.voiceInputPresentationID == presentationID else { return }
+        voice.stop(presentationID: presentationID)
+        store.showVoice = false
     }
 }

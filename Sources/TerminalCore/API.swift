@@ -52,8 +52,8 @@ public struct APIResponse: Codable {
     init(result: JSONValue? = nil, error: String? = nil) { apiVersion = 1; self.result = result; self.error = error }
 }
 
-private enum UnixSocket {
-    static func make() throws -> Int32 {
+public enum UnixSocket {
+    public static func make() throws -> Int32 {
         #if os(Linux)
         let fd = socket(AF_UNIX, Int32(SOCK_STREAM.rawValue), 0)
         #else
@@ -63,7 +63,7 @@ private enum UnixSocket {
         configure(fd)
         return fd
     }
-    static func configure(_ fd: Int32) {
+    public static func configure(_ fd: Int32) {
         _ = fcntl(fd, F_SETFD, FD_CLOEXEC)
         _ = fcntl(fd, F_SETFL, fcntl(fd, F_GETFL) & ~O_NONBLOCK)
         var timeout = timeval(tv_sec: 5, tv_usec: 0)
@@ -74,7 +74,22 @@ private enum UnixSocket {
         _ = setsockopt(fd, SOL_SOCKET, SO_NOSIGPIPE, &one, socklen_t(MemoryLayout<Int32>.size))
         #endif
     }
-    static func address<T>(_ path: String, _ body: (UnsafePointer<sockaddr>, socklen_t) throws -> T) throws -> T {
+    public static func peerUID(_ fd: Int32) -> uid_t? {
+        var uid: uid_t = 0, gid: gid_t = 0
+        return getpeereid(fd, &uid, &gid) == 0 ? uid : nil
+    }
+    public static func peerPID(_ fd: Int32) -> Int32? {
+        #if canImport(Darwin)
+        var pid: pid_t = 0
+        var length = socklen_t(MemoryLayout<pid_t>.size)
+        guard getsockopt(fd, SOL_LOCAL, LOCAL_PEERPID, &pid, &length) == 0,
+              length == MemoryLayout<pid_t>.size, pid > 1 else { return nil }
+        return pid
+        #else
+        return nil
+        #endif
+    }
+    public static func address<T>(_ path: String, _ body: (UnsafePointer<sockaddr>, socklen_t) throws -> T) throws -> T {
         var address = sockaddr_un()
         address.sun_family = sa_family_t(AF_UNIX)
         let bytes = Array(path.utf8CString)
@@ -86,7 +101,7 @@ private enum UnixSocket {
             try pointer.withMemoryRebound(to: sockaddr.self, capacity: 1) { try body($0, socklen_t(MemoryLayout<sockaddr_un>.size)) }
         }
     }
-    static func sendLine(_ data: Data, fd: Int32) throws {
+    public static func sendLine(_ data: Data, fd: Int32) throws {
         guard data.count <= 1_048_576 else { throw TerminalError.invalid("API message exceeds 1 MiB") }
         var line = data
         line.append(10)
@@ -104,7 +119,7 @@ private enum UnixSocket {
             }
         }
     }
-    static func receiveLine(fd: Int32) throws -> Data {
+    public static func receiveLine(fd: Int32) throws -> Data {
         var result = Data()
         var bytes = [UInt8](repeating: 0, count: 8192)
         while result.count <= 1_048_576 {
@@ -128,7 +143,7 @@ public struct APIClient {
         let fd = try UnixSocket.make()
         defer { close(fd) }
         guard try UnixSocket.address(path, { connect(fd, $0, $1) }) == 0 else { throw TerminalError.runtime("API server is not available") }
-        if request.method.hasPrefix("remote.") || request.method == "accounts.usage.refresh" || request.method.hasPrefix("recovery.") {
+        if request.method.hasPrefix("remote.") || request.method == "accounts.usage.refresh" || request.method.hasPrefix("recovery.") || request.method == "actions.perform" {
             var timeout = timeval(tv_sec: 90, tv_usec: 0)
             _ = setsockopt(fd, SOL_SOCKET, SO_RCVTIMEO, &timeout, socklen_t(MemoryLayout.size(ofValue: timeout)))
         }
@@ -138,21 +153,41 @@ public struct APIClient {
 }
 
 public final class APIService {
-    public var path: String { runtime.root.appendingPathComponent("api.sock").path }
+    public var path: String { twinScope.flatMap { try? runtime.twinSocketPath(runID: $0.runID) } ?? runtime.root.appendingPathComponent("api.sock").path }
+    private let twinScope: TwinAPIScope?
+    private var twinWorker: PessimisticTwinWorker?
     private let runtime: TerminalRuntime
     private var source: DispatchSourceRead?
     private var stopped: DispatchSemaphore?
+    private var followUpTimer: DispatchSourceTimer?
+    private var worktreeCleanupWorker: WorktreeCleanupWorker?
+    private let followUpQueue = DispatchQueue(label: "trano.followups", qos: .utility)
     private let lifecycle = NSLock()
     private let acceptQueue = DispatchQueue(label: "trano.api.accept")
     private let acceptQueueKey = DispatchSpecificKey<Bool>()
     private let clients = DispatchSemaphore(value: 16)
     private let identity = BuildIdentity.process
+    private let startedAt = ProcessInfo.processInfo.systemUptime
+    private var remoteCoordinator: RemoteServingCoordinator?
+    private let remoteLock = NSLock()
+    private var remoteServiceStopped = false
+    private var remoteGeneration: UInt64 = 0
+    private let tailscaleEvents = TailscaleStatusEvents()
     private let responseDidSend: ((APIRequest, APIResponse) -> Void)?
     private let customHandler: ((APIRequest) throws -> JSONValue?)?
-    public init(runtime: TerminalRuntime, customHandler: ((APIRequest) throws -> JSONValue?)? = nil, responseDidSend: ((APIRequest, APIResponse) -> Void)? = nil) {
+    private let serverStatus: (() -> JSONValue)?
+    private var sessionLoadSampler: SessionLoadSampler
+    private var sessionLoadTimer: DispatchSourceTimer?
+    private let sessionLoadQueue = DispatchQueue(label: "trano.session-load.targets", qos: .utility)
+    private var sessionLoadStopped = false
+    public init(runtime: TerminalRuntime, customHandler: ((APIRequest) throws -> JSONValue?)? = nil, responseDidSend: ((APIRequest, APIResponse) -> Void)? = nil,
+                sessionLoadSampler: SessionLoadSampler? = nil, serverStatus: (() -> JSONValue)? = nil, twinScope: TwinAPIScope? = nil) {
         self.runtime = runtime
+        self.twinScope = twinScope
+        self.serverStatus = serverStatus
         self.customHandler = customHandler
         self.responseDidSend = responseDidSend
+        self.sessionLoadSampler = sessionLoadSampler ?? SessionLoadSampler(source: SessionLoadNativeSource(bindings: { (try? runtime.sessionLoadHookBindings()) ?? [] }))
         acceptQueue.setSpecific(key: acceptQueueKey, value: true)
     }
 
@@ -160,7 +195,8 @@ public final class APIService {
         lifecycle.lock()
         defer { lifecycle.unlock() }
         guard source == nil else { throw TerminalError.invalid("API server already started") }
-        let lease = open(runtime.root.appendingPathComponent("api.lock").path, O_CREAT | O_RDWR | O_NOFOLLOW | O_CLOEXEC, 0o600)
+        if let twinScope { _ = try runtime.twinSocketPath(runID: twinScope.runID) }
+        let lease = open(runtime.root.appendingPathComponent(twinScope.map { "twin-" + $0.runID + ".lock" } ?? "api.lock").path, O_CREAT | O_RDWR | O_NOFOLLOW | O_CLOEXEC, 0o600)
         guard lease >= 0 else { throw TerminalError.runtime("Cannot open API lease") }
         guard flock(lease, LOCK_EX | LOCK_NB) == 0 else { close(lease); throw TerminalError.runtime("API server is already running") }
         var fd: Int32 = -1
@@ -197,10 +233,28 @@ public final class APIService {
                     DispatchQueue.global(qos: .userInitiated).async { [self] in
                         defer { close(client); self.clients.signal() }
                         do {
-                            let request = try JSONDecoder().decode(APIRequest.self, from: UnixSocket.receiveLine(fd: client))
-                            let response = self.route(request)
-                            try UnixSocket.sendLine(JSONEncoder().encode(response), fd: client)
-                            self.responseDidSend?(request, response)
+                            let data = try UnixSocket.receiveLine(fd: client)
+                            let raw = try JSONDecoder().decode(JSONValue.self, from: data)
+                            if raw["type"] != nil {
+                                let response: JSONValue
+                                do {
+                                    guard data.count <= 512 * 1024 else { throw TerminalError.invalid("Decision frame exceeds 512 KiB") }
+                                    let peerPID = UnixSocket.peerPID(client)
+                                    if raw["type"] == .string("submit"), peerPID == nil { throw TerminalError.invalid("Cannot verify decision socket peer") }
+                                    if let scope = self.twinScope { response = try self.runtime.scopedTwinDecision(raw, scope: scope, originPID: peerPID) }
+                                    else {
+                                        if let peerPID, try self.runtime.isTwinPeer(peerPID) { throw TerminalError.invalid("Use the twin scoped decision socket") }
+                                        response = try self.runtime.decisionAdapter(raw, originPID: peerPID)
+                                    }
+                                }
+                                catch { response = .object(["ok": .bool(false), "error": .string("INBOX_UNAVAILABLE"), "detail": .string(error.localizedDescription)]) }
+                                try UnixSocket.sendLine(JSONEncoder().encode(response), fd: client)
+                            } else {
+                                let request = try JSONDecoder().decode(APIRequest.self, from: data)
+                                let response = self.route(request, originPID: UnixSocket.peerPID(client))
+                                try UnixSocket.sendLine(JSONEncoder().encode(response), fd: client)
+                                self.responseDidSend?(request, response)
+                            }
                         } catch {
                             if let response = try? JSONEncoder().encode(APIResponse(error: error.localizedDescription)) {
                                 try? UnixSocket.sendLine(response, fd: client)
@@ -221,36 +275,184 @@ public final class APIService {
             stopped = done
             self.source = source
             source.resume()
+            if twinScope != nil { return }
+            let worker = PessimisticTwinWorker(runtime: runtime)
+            twinWorker = worker
+            worker.start()
+            let timer = DispatchSource.makeTimerSource(queue: followUpQueue)
+            timer.schedule(deadline: .now(), repeating: .milliseconds(500), leeway: .milliseconds(100))
+            timer.setEventHandler { [weak self] in try? self?.runtime.processPendingFollowUps() }
+            followUpTimer = timer
+            timer.resume()
+            let worktreeWorker = WorktreeCleanupWorker(runtime: runtime)
+            worktreeCleanupWorker = worktreeWorker
+            worktreeWorker.start()
+            if sessionLoadStopped {
+                sessionLoadSampler = SessionLoadSampler(source: SessionLoadNativeSource(bindings: { [runtime] in (try? runtime.sessionLoadHookBindings()) ?? [] }))
+                sessionLoadStopped = false
+            }
+            let loadTimer = DispatchSource.makeTimerSource(queue: sessionLoadQueue)
+            let sampler = sessionLoadSampler
+            loadTimer.schedule(deadline: .now(), repeating: .seconds(2), leeway: .milliseconds(250))
+            loadTimer.setEventHandler { [weak self] in
+                guard let self, let targets = try? self.runtime.sessionLoadTargets() else { return }
+                sampler.requestRefresh(targets: targets)
+            }
+            sessionLoadTimer = loadTimer
+            loadTimer.resume()
+            remoteLock.lock()
+            remoteServiceStopped = false; remoteGeneration &+= 1
+            let generation = remoteGeneration
+            remoteLock.unlock()
+            DispatchQueue.global(qos: .utility).async { [weak self] in
+                guard let self, self.remoteActivationIsCurrent(generation),
+                      (try? self.runtime.serverPreferences().serveOverTailscale) == true else { return }
+                do { try self.remoteServing(generation: generation).restoreIfEnabled() }
+                catch {
+                    guard self.remoteActivationIsCurrent(generation) else { return }
+                    try? TerminalRuntime.atomicWrite(Data((error.localizedDescription + "\n").utf8), to: self.runtime.root.appendingPathComponent("remote-service-diagnostic"))
+                }
+            }
         } catch { if fd >= 0 { close(fd) }; close(lease); throw error }
     }
 
     public func stop() {
         lifecycle.lock()
         defer { lifecycle.unlock() }
+        twinWorker?.stop(); twinWorker = nil
+        worktreeCleanupWorker?.stop(); worktreeCleanupWorker = nil
+        followUpTimer?.cancel()
+        followUpTimer = nil
+        sessionLoadTimer?.cancel()
+        sessionLoadTimer = nil
+        sessionLoadSampler.stop()
+        sessionLoadStopped = true
+        remoteLock.lock()
+        remoteServiceStopped = true; remoteGeneration &+= 1
+        let remote = remoteCoordinator; remoteCoordinator = nil
+        remoteLock.unlock()
+        remote?.invalidate()
         source?.cancel()
         if DispatchQueue.getSpecific(key: acceptQueueKey) == nil { stopped?.wait() }
         source = nil; stopped = nil
     }
     deinit { stop() }
 
-    public func route(_ request: APIRequest) -> APIResponse {
+    public func route(_ request: APIRequest, originPID: Int32? = nil) -> APIResponse {
         do {
             guard request.apiVersion == 1 else { throw TerminalError.invalid("Unsupported API version") }
+            if twinScope == nil, let originPID, try runtime.isTwinPeer(originPID) { throw TerminalError.invalid("Twin processes must use their scoped API") }
+            if let value = try runtime.twinAPI(request, originPID: originPID, scope: twinScope) { return APIResponse(result: value) }
+            if twinScope != nil { throw TerminalError.invalid("Method unavailable on the twin scoped API") }
+            if let notifications = try NotificationPreferencesAPI.handle(request, runtime: runtime) { return APIResponse(result: notifications) }
             func required(_ key: String) throws -> String {
                 guard let value = request.params[key]?.text else { throw TerminalError.invalid("Missing string parameter: \(key)") }
                 return value
             }
+            func optionalOrganizationString(_ key: String) throws -> String? {
+                guard let value = request.params[key], value != .null else { return nil }
+                guard let text = value.text else { throw TerminalError.invalid(key + " must be a string") }
+                return text
+            }
+            func organizationSelection() throws -> ClaudeOrganizationSelection? {
+                let uuid = try optionalOrganizationString("organizationUUID")
+                let name = try optionalOrganizationString("organizationName")
+                guard let uuid else {
+                    guard name == nil else { throw TerminalError.invalid("An organization name requires its UUID") }
+                    return nil
+                }
+                return try ClaudeOrganizationSelection(uuid: uuid, name: name)
+            }
             var result: JSONValue = .object(["ok": .bool(true)])
             switch request.method {
-            case "server.info": result = .object(["apiVersion": .number(1), "version": .string(identity.version), "buildNumber": .string(identity.buildNumber), "buildID": .string(identity.buildID), "pid": .number(Double(getpid())), "serviceKind": .string(CommandLine.arguments.contains("--service") ? "background" : "cli")])
+            case "worktrees.status":
+                result = .object(["enabled": .bool(try runtime.integrationsPreferences().automaticallyCleanWorktrees),
+                    "trackingAvailable": .bool(GitTrackingShell.isInstalled(root: runtime.root)),
+                    "scope": .string("future-local-session-creations"),
+                    "graceSeconds": .number(30),
+                    "records": try .encoded(WorktreeCleanupStore(root: runtime.root).load().records)])
+            case "worktrees.configure":
+                guard originPID != nil, case .bool(let enabled)? = request.params["enabled"] else {
+                    throw TerminalError.invalid("Worktree configuration requires a boolean and the local Unix API")
+                }
+                let preferences = try SecureSettingsSidecar<IntegrationsPreferences>(root: runtime.root, filename: "integrations-settings.json").update { $0.automaticallyCleanWorktrees = enabled }
+                result = .object(["enabled": .bool(preferences.automaticallyCleanWorktrees)])
+            case "worktrees.retry":
+                guard originPID != nil else { throw TerminalError.invalid("Worktree cleanup requires the local Unix API") }
+                try runtime.worktreeCleanupCoordinator().retry(id: required("id"))
+            case "worktrees.keep":
+                guard originPID != nil else { throw TerminalError.invalid("Worktree cleanup requires the local Unix API") }
+                try runtime.keepWorktree(id: required("id"))
+            case "worktrees.diagnostics":
+                guard originPID != nil else { throw TerminalError.invalid("Worktree diagnostics require the local Unix API") }
+                let census = try WorktreeNativeGitProcessProbe().snapshot(limit: 16_384)
+                result = .object(["processCensusComplete": .bool(census.complete), "processCount": .number(Double(census.records.count)),
+                    "trackingAvailable": .bool(GitTrackingShell.isInstalled(root: runtime.root))])
+            case "supervisor.state", "supervisor.start", "supervisor.stop", "supervisor.continue":
+                guard let value = try SupervisorAPI.route(request, operations: runtime.supervisorOperations()) else {
+                    throw TerminalError.invalid("Unsupported Supervisor API method")
+                }
+                result = value
+            case "server.info":
+                var information: [String: JSONValue] = ["apiVersion": .number(1), "version": .string(identity.version), "buildNumber": .string(identity.buildNumber), "buildID": .string(identity.buildID), "pid": .number(Double(getpid())), "serviceKind": .string(CommandLine.arguments.contains("--service") ? "background" : "cli"), "uptime": .number(max(0, ProcessInfo.processInfo.systemUptime - startedAt))]
+                if request.params["healthOnly"] != .bool(true) {
+                    information["label"] = .string(try runtime.serverPreferences().clientLabel)
+                    information["localAPIURL"] = .string("unix://" + path)
+                    information["remoteReady"] = .bool(remoteTarget != nil)
+                }
+                if let serverStatus { information["serverStatus"] = serverStatus() }
+                result = .object(information)
+            case "agent.name-session":
+                try runtime.nameAgentSession(paneID: required("paneID"), generation: required("generation"), expectedTitle: required("expectedTitle"), title: required("title"), originPID: originPID)
+            case "server.preferences.get": result = try .encoded(runtime.serverPreferences())
+            case "server.tailscale.observe":
+                guard originPID != nil else { throw TerminalError.invalid("Network status reports require the local Unix API") }
+                publishTailscale(state: request.params["state"]?.text, failed: request.params["failed"] == .bool(true))
+            case "server.remote.status": result = .object(["ready": .bool(remoteTarget != nil), "target": remoteTarget.map { .string($0) } ?? .null])
+            case "server.remote.start":
+                guard originPID != nil else { throw TerminalError.invalid("Remote serving requires the local Unix API") }
+                result = .object(["target": .string(try remoteServing().start()), "ready": .bool(true)])
+            case "server.remote.stop":
+                guard originPID != nil else { throw TerminalError.invalid("Remote serving requires the local Unix API") }
+                remoteLock.lock(); let remote = remoteCoordinator; remoteLock.unlock(); remote?.stop()
+            case "server.clients.list": result = try .encoded(RemotePairingStore(root: runtime.root).clients())
+            case "server.clients.revoke":
+                guard originPID != nil else { throw TerminalError.invalid("Client administration requires the local Unix API") }
+                try RemotePairingStore(root: runtime.root).revoke(id: required("id"))
+            case "server.clients.remote-control":
+                guard originPID != nil, case .bool(let allowed)? = request.params["allowed"] else { throw TerminalError.invalid("Client administration requires a boolean and the local Unix API") }
+                try RemotePairingStore(root: runtime.root).setRemoteControl(id: required("id"), allowed: allowed)
+            case "server.pairing.invite":
+                guard originPID != nil, try runtime.serverPreferences().serveOverTailscale, remoteTarget != nil else { throw TerminalError.invalid("Enable remote serving before pairing a client") }
+                let invitation = try remoteServing().pairing.invite()
+                result = .object(["code": .string(invitation.code), "expiresAt": .number(invitation.expiresAt.timeIntervalSince1970)])
             case "sessions.list":
                 let query = request.params["query"]?.text ?? ""
                 result = try .encoded(runtime.list().filter { query.isEmpty || ($0.title + " " + $0.cwd).localizedCaseInsensitiveContains(query) })
+            case "sessions.load":
+                if let paneID = request.params["paneID"], paneID.text == nil { throw TerminalError.invalid("paneID must be a string") }
+                let paneID = request.params["paneID"]?.text
+                func pageValue(_ key: String, fallback: Int, range: ClosedRange<Int>) throws -> Int {
+                    guard let value = request.params[key] else { return fallback }
+                    guard case .number(let number) = value, number.isFinite, number.rounded() == number,
+                          number >= Double(range.lowerBound), number <= Double(range.upperBound) else {
+                        throw TerminalError.invalid(key + " is outside the supported page range")
+                    }
+                    return Int(number)
+                }
+                let offset = try pageValue("offset", fallback: 0, range: 0...4096)
+                let limit = try pageValue("limit", fallback: 64, range: 1...64)
+                lifecycle.lock()
+                let sampler = sessionLoadSampler
+                lifecycle.unlock()
+                result = try .encoded(Array(sampler.snapshots().filter { paneID == nil || $0.paneID == paneID }.dropFirst(offset).prefix(limit)))
             case "sessions.create": result = try .encoded(runtime.create(title: request.params["title"]?.text ?? "Terminal", cwd: required("cwd")))
             case "sessions.terminate": try runtime.terminate(required("id"))
             case "sessions.attach":
                 let id = try required("id")
                 try runtime.update { state in
+                    try runtime.requireOrdinaryPane(id,
+                        attachedPaneIDs: Set((state.layout.tabs + state.layout.closedTabs).flatMap(\.panes)))
                     guard state.sessions.contains(where: { $0.id == id }) else { throw TerminalError.invalid("Unknown session") }
                     if state.layout.tabs.contains(where: { $0.panes.contains(id) }) { try state.layout.focusPane(id) }
                     else { state.layout.addTab(paneID: id) }
@@ -258,16 +460,28 @@ public final class APIService {
                 }
             case "panes.capture": result = try .object(["text": .string(runtime.capture(required("id")))])
             case "panes.send": try runtime.send(required("id"), text: required("text"), enter: request.params["enter"] == .bool(true))
+            case "followups.list": result = try .encoded(runtime.followUps(paneID: required("paneID")))
+            case "followups.add": result = try .encoded(runtime.addFollowUp(paneID: required("paneID"), text: required("text")))
+            case "followups.update": result = try .encoded(runtime.updateFollowUp(id: required("id"), text: required("text")))
+            case "followups.remove": try runtime.removeFollowUp(id: required("id"))
             case "activity.report":
                 guard let state = ActivityState(rawValue: try required("state")), let agent = AgentKind(rawValue: request.params["agent"]?.text ?? "shell") else { throw TerminalError.invalid("Invalid state or agent") }
                 try runtime.report(required("id"), state: state, reason: request.params["reason"]?.text ?? "", agent: agent)
             case "state.get": result = try .encoded(runtime.state())
+            case "decisions.list": result = try .encoded(runtime.decisionInbox(paneID: request.params["paneID"]?.text))
+            case "decisions.resolve":
+                result = try .encoded(runtime.resolveDecision(required("id"), generation: required("generation"), action: required("action"), optionID: request.params["optionID"]?.text, instruction: request.params["instruction"]?.text, locale: request.params["locale"]?.text))
+            case "decisions.delete": try runtime.deleteDecision(required("id"))
+            case "decisions.abandon": result = try runtime.decisionAdapter(.object(["type": .string("abandon"), "request_id": .string(required("id"))]))
             case "scrollback.list": result = try .encoded(runtime.scrollbackMetadata())
             case "scrollback.settings":
                 guard case .bool(let enabled)? = request.params["enabled"] else { throw TerminalError.invalid("enabled must be a boolean") }
                 try runtime.setScrollbackPersistence(enabled)
             case "recovery.list": result = try .encoded(runtime.state().recoveryResults)
-            case "recovery.run", "recovery.retry": result = try .encoded(runtime.recoverSessions(paneID: request.params["id"]?.text))
+            case "recovery.run": result = try .encoded(runtime.recoverSessions(paneID: request.params["id"]?.text))
+            case "recovery.retry":
+                guard let id = request.params["id"]?.text else { result = try .encoded(runtime.recoverSessions()); break }
+                result = try .encoded(runtime.retryRecovery(paneID: id))
             case "recovery.settings":
                 guard case .bool(let enabled)? = request.params["automaticRestore"] else { throw TerminalError.invalid("automaticRestore must be a boolean") }
                 try runtime.update { $0.settings.automaticRestore = enabled }
@@ -293,7 +507,15 @@ public final class APIService {
                 try runtime.update { $0.settings.automaticAccountSwitching = enabled }
             case "accounts.add":
                 guard let provider = AgentKind(rawValue: try required("provider")) else { throw TerminalError.invalid("Unknown provider") }
-                result = try .encoded(runtime.addAccount(provider: provider, label: required("label")))
+                result = try .encoded(runtime.addAccount(provider: provider, label: required("label"), organization: organizationSelection()))
+            case "accounts.organizations": result = try .encoded(runtime.knownAccountOrganizations())
+            case "accounts.organization.set":
+                guard request.params["organizationUUID"] != nil else { throw TerminalError.invalid("Provide organizationUUID or null to clear") }
+                let id = try required("id")
+                try runtime.setAccountOrganization(id, selection: organizationSelection(), expectedBindingID: optionalOrganizationString("expectedBindingID"))
+                result = try .encoded(runtime.state().accounts.first { $0.id == id }?.organization)
+            case "accounts.organization.refresh":
+                result = try .encoded(runtime.refreshAccountOrganization(accountID: required("id"), expectedBindingID: optionalOrganizationString("expectedBindingID")))
             case "accounts.command": result = try .encoded(runtime.accountCommand(required("id"), login: request.params["login"] == .bool(true)))
             case "accounts.launch": result = try .encoded(runtime.launchAccount(required("id"), cwd: required("cwd"), login: request.params["login"] == .bool(true)))
             case "extensions.list": result = try .encoded(runtime.state().extensions)
@@ -337,6 +559,17 @@ public final class APIService {
             case "workspaces.select":
                 let id = try required("id")
                 try runtime.update { try $0.layout.selectWorkspace(id); $0.navigationRequest = NavigationRequest(workspaceID: id) }
+            case "workspaces.master":
+                if let value = request.params["id"] {
+                    switch value {
+                    case .null: try runtime.setMasterWorkspace(nil)
+                    case .string(let id): try runtime.setMasterWorkspace(id)
+                    default: throw TerminalError.invalid("id must be a workspace ID or null")
+                    }
+                }
+                let master = try runtime.state().layout.masterView
+                result = .object(["workspaceID": master.map { .string($0.workspaceID) } ?? .null,
+                                  "tabIDs": .array((master?.tabIDs ?? []).map(JSONValue.string))])
             case "actions.list": result = try .encoded(ActionCatalog.resolved(overrides: runtime.state().settings.keyBindings))
             case "actions.perform":
                 guard let action = ActionID(rawValue: try required("id")) else { throw TerminalError.invalid("Unknown action") }
@@ -368,5 +601,37 @@ public final class APIService {
             }
             return APIResponse(result: result)
         } catch { return APIResponse(error: error.localizedDescription) }
+    }
+
+    private var remoteTarget: String? {
+        remoteLock.lock(); let coordinator = remoteCoordinator; remoteLock.unlock()
+        return coordinator?.target
+    }
+
+    private func remoteActivationIsCurrent(_ generation: UInt64) -> Bool {
+        remoteLock.lock(); defer { remoteLock.unlock() }
+        return !remoteServiceStopped && remoteGeneration == generation
+    }
+
+    private func remoteServing(generation expected: UInt64? = nil) throws -> RemoteServingCoordinator {
+        remoteLock.lock(); defer { remoteLock.unlock() }
+        guard !remoteServiceStopped, expected == nil || expected == remoteGeneration else { throw TerminalError.runtime("Server is stopping") }
+        let generation = remoteGeneration
+        if let remoteCoordinator { return remoteCoordinator }
+        let coordinator = try RemoteServingCoordinator(root: runtime.root, listener: PrivateUnixRemoteHTTPListener(root: runtime.root), preferences: { [runtime] in try runtime.serverPreferences() }, identity: { [runtime] in
+            guard let executable = BoundedTailscaleExecutor.installedExecutable() else { return nil }
+            return try TailscaleAdministration(root: runtime.root, executor: BoundedTailscaleExecutor(executable: executable, timeout: 5)).refresh()
+        }, route: { [weak self] request in self?.route(request) ?? APIResponse(error: "Server is stopping") }, statusObserver: { [weak self] snapshot, error in
+            guard let self, self.remoteActivationIsCurrent(generation) else { return }
+            self.publishTailscale(state: snapshot?.backendState, failed: error != nil)
+        })
+        remoteCoordinator = coordinator
+        return coordinator
+    }
+
+    private func publishTailscale(state: String?, failed: Bool) {
+        for message in tailscaleEvents.observe(state: state, failed: failed) {
+            _ = route(APIRequest(method: "notifications.publish", params: ["kind": .string(message.kind.rawValue), "title": .string(message.title), "body": .string(message.body)]))
+        }
     }
 }

@@ -49,19 +49,75 @@ final class NavigationTests: XCTestCase {
         try withSessionRuntime { runtime, root in
             try runtime.update { $0.layout.addWorkspace(title: "Session 2") }
             let service = APIService(runtime: runtime)
-            for (name, expected) in [(nil, "Session 1"), (Optional(""), "Session 3"), (Optional("  \n  "), "Session 4")] {
+            var generatedNames = Set<String>()
+            for name in [nil, "", "  \n  "] as [String?] {
                 var params: [String: JSONValue] = ["id": .string("session.new"), "cwd": .string(root.path)]
                 if let name { params["title"] = .string(name) }
                 let response = service.route(APIRequest(method: "actions.perform", params: params))
                 XCTAssertNil(response.error, response.error ?? "")
                 let state = try runtime.state()
-                XCTAssertEqual(state.layout.workspaces.first { $0.id == state.layout.selectedWorkspaceID }?.title, expected)
+                let title = try XCTUnwrap(state.layout.workspaces.first { $0.id == state.layout.selectedWorkspaceID }?.title)
+                XCTAssertNotNil(title.range(of: "^[a-z]+-[a-z]+$", options: .regularExpression), title)
+                XCTAssertTrue(generatedNames.insert(title).inserted, title)
             }
             let state = try runtime.state()
             XCTAssertEqual(state.layout.workspaces.count, 4)
             XCTAssertEqual(Set(state.layout.workspaces.map(\.title)).count, 4)
+            XCTAssertEqual(state.layout.workspaces.first?.title, "Session 2")
             XCTAssertEqual(state.layout.tabs.count, 3)
             XCTAssertTrue(try runtime.list().allSatisfy(\.alive))
+        }
+    }
+
+    // Implements: FR-NAV-1, FR-NAV-5
+    func testNewSessionActionUsesRandomNamesForNilAndBlankTitlesAndReusesExplicitNames() throws {
+        try withSessionRuntime { runtime, root in
+            var names = Set<String>()
+            var workspaceIDs = Set<String>()
+            var firstWorkspaceID = ""
+            var firstTitle = ""
+            var firstPaneID: String?
+            for name in [nil, "", "  \n\t  "] as [String?] {
+                let beforePIDs = Dictionary(uniqueKeysWithValues: try runtime.list().map { ($0.id, $0.pid) })
+                try runtime.performAction(.newSession, cwd: root.path, title: name)
+                let state = try runtime.state()
+                let workspace = try XCTUnwrap(state.layout.workspaces.first { $0.id == state.layout.selectedWorkspaceID })
+                XCTAssertNotNil(workspace.title.range(of: "^[a-z]+-[a-z]+$", options: .regularExpression), workspace.title)
+                XCTAssertTrue(names.insert(workspace.title).inserted)
+                XCTAssertTrue(workspaceIDs.insert(workspace.id).inserted)
+                let after = try runtime.list()
+                XCTAssertEqual(after.count, beforePIDs.count + 1)
+                XCTAssertTrue(after.allSatisfy(\.alive))
+                XCTAssertEqual(Dictionary(uniqueKeysWithValues: after.filter { beforePIDs[$0.id] != nil }.map { ($0.id, $0.pid) }), beforePIDs)
+                if firstTitle.isEmpty {
+                    firstWorkspaceID = workspace.id
+                    firstTitle = workspace.title
+                    firstPaneID = state.layout.focusedPaneID
+                }
+            }
+            let before = try runtime.state()
+            let beforePIDs = Dictionary(uniqueKeysWithValues: try runtime.list().map { ($0.id, $0.pid) })
+            try runtime.performAction(.newSession, cwd: root.path, title: "  " + firstTitle.uppercased() + "  ")
+            let reused = try runtime.state()
+            XCTAssertEqual(reused.layout.workspaces, before.layout.workspaces)
+            XCTAssertEqual(reused.layout.tabs, before.layout.tabs)
+            XCTAssertEqual(reused.layout.selectedWorkspaceID, firstWorkspaceID)
+            XCTAssertEqual(reused.layout.focusedPaneID, firstPaneID)
+            XCTAssertEqual(Dictionary(uniqueKeysWithValues: try runtime.list().map { ($0.id, $0.pid) }), beforePIDs)
+        }
+    }
+
+    // Implements: FR-NAV-1, FR-NAV-5
+    func testUnnamedSessionCreationFailureLeavesNoWorkspaceOrOrphanShell() throws {
+        try withSessionRuntime { runtime, root in
+            let before = try runtime.state()
+            let beforePIDs = Dictionary(uniqueKeysWithValues: try runtime.list().map { ($0.id, $0.pid) })
+            for name in [nil, "  \n  "] as [String?] {
+                XCTAssertThrowsError(try runtime.performAction(.newSession, cwd: root.appendingPathComponent("missing").path, title: name))
+                XCTAssertEqual(try runtime.state().layout, before.layout)
+                XCTAssertEqual(try runtime.state().sessions, before.sessions)
+                XCTAssertEqual(Dictionary(uniqueKeysWithValues: try runtime.list().map { ($0.id, $0.pid) }), beforePIDs)
+            }
         }
     }
 
@@ -125,16 +181,11 @@ final class NavigationTests: XCTestCase {
         let runtime = try TerminalRuntime(root: root)
         defer {
             for pane in (try? runtime.list()) ?? [] { try? runtime.terminate(pane.id) }
+            runtime.shutdownTestHost()
             try? FileManager.default.removeItem(at: root)
         }
+        runtime.isolatePaneHome(root)
         _ = try runtime.create(title: "Fixture", cwd: root.path, shell: "/bin/sleep", arguments: ["60"])
-        for name in ["HOME", "ZDOTDIR"] {
-            let process = Process()
-            process.executableURL = URL(fileURLWithPath: runtime.executable)
-            process.arguments = ["-S", runtime.socketPath, "set-environment", "-g", name, root.path]
-            try process.run(); process.waitUntilExit()
-            XCTAssertEqual(process.terminationStatus, 0)
-        }
         try body(runtime, root)
     }
 
@@ -144,6 +195,7 @@ final class NavigationTests: XCTestCase {
         let runtime = try TerminalRuntime(root: root)
         defer {
             for pane in (try? runtime.list()) ?? [] { try? runtime.terminate(pane.id) }
+            runtime.shutdownTestHost()
             try? FileManager.default.removeItem(at: root)
         }
         let first = try runtime.launch(cwd: root.path)
@@ -160,6 +212,7 @@ final class NavigationTests: XCTestCase {
         let runtime = try TerminalRuntime(root: root)
         defer {
             for pane in (try? runtime.list()) ?? [] { try? runtime.terminate(pane.id) }
+            runtime.shutdownTestHost()
             try? FileManager.default.removeItem(at: root)
         }
         let service = APIService(runtime: runtime)
@@ -199,6 +252,7 @@ final class NavigationTests: XCTestCase {
         let runtime = try TerminalRuntime(root: root)
         defer {
             for pane in (try? runtime.list()) ?? [] { try? runtime.terminate(pane.id) }
+            runtime.shutdownTestHost()
             try? FileManager.default.removeItem(at: root)
         }
         let directory = root.appendingPathComponent("한글 folder")

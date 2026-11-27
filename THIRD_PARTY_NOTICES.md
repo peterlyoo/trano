@@ -6,7 +6,7 @@
 
 | Component | Version | License | Scope and Preservation |
 | --- | --- | --- | --- |
-| [SwiftTerm](https://github.com/migueldeicaza/SwiftTerm/tree/1.99.1) | 1.99.1 | MIT (with xterm.js, SourceLair, Christopher Jeffrey notices) | Linked in macOS app; full notice in `licenses/SwiftTerm.txt` |
+| [SwiftTerm](https://github.com/migueldeicaza/SwiftTerm/tree/2f573f73af5e768d90847dce20c97fa9535d7164) | Upstream 1.99.1; locally modified | MIT (with xterm.js, SourceLair, Christopher Jeffrey notices) | Vendored in `vendor/SwiftTerm`; preserved notices in its `LICENSE` and `licenses/SwiftTerm.txt` |
 | [Sparkle](https://github.com/sparkle-project/Sparkle/tree/2.10.1) | 2.10.1 | MIT (plus bundled BSD/zlib notices) | Linked in macOS app; full license in `licenses/Sparkle.txt` |
 | [Go runtime](https://github.com/golang/go/blob/go1.24.10/LICENSE) | 1.24.10 | BSD-3-Clause | Runtime in built Linux helpers (not a vendored Go source tree); `licenses/Go.txt` |
 | swift-argument-parser | 1.8.2 | Apache-2.0 with Swift Runtime Library Exception | Resolved tool/doc graph only; `licenses/swift-argument-parser.txt` |
@@ -14,6 +14,8 @@
 | swift-docc-symbolkit | 1.0.0 | Apache-2.0 with Swift Runtime Library Exception | Resolved tool/doc graph only; `licenses/swift-docc-symbolkit.txt` |
 | swift-png & h | 4.5.2 / 1.0.1 | Apache-2.0 | Resolved non-Apple graphics graph, not linked into macOS target; `licenses/swift-png.txt`, `licenses/h.txt` |
 | ordo-one/dollup ([source](https://github.com/rarestype/dollup/tree/1.3.0)) | 1.3.0 | Unverified in wrapper; upstream source is Apache-2.0 | Resolved formatter wrapper retained for deterministic resolution; no Dollup code/binary shipped; upstream in `licenses/Dollup-source.txt` & `licenses/Dollup-NOTICE.txt` |
+
+SwiftTerm is a modified source fork of the pinned upstream release. `vendor/SwiftTerm/TranoVendor.json` records the upstream revision, original-file hashes and local changes. The upstream archive SHA-256 is `b7bd5d65ea4e2ad0a8776878ae9b873e80c25747e437df494e5d9fceba54affe`; the generated SBOM separately identifies the modified vendored tree and its digest.
 
 ## External Prerequisites, Platform Assets, and Marks
 

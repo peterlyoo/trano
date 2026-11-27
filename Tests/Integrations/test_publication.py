@@ -8,6 +8,15 @@ ROOT = pathlib.Path(__file__).resolve().parents[2]
 
 
 class PublicationTests(unittest.TestCase):
+    def test_only_reviewed_program_artwork_bytes_are_allowed(self):
+        scanner = self.scanner()
+        for name in ["zsh", "k9s", "kubernetes"]:
+            path = f"Sources/TranoApp/Resources/ProgramIcons/{name}.png"
+            data = (ROOT / path).read_bytes()
+            self.assertEqual(scanner.scan_file(path, data), [])
+            self.assertIn("unreviewed binary asset", scanner.scan_file(path, data + b"tampered"))
+            self.assertIn("unreviewed binary asset", scanner.scan_file("Sources/Unreviewed.png", data))
+
     def scanner(self):
         path = ROOT / "scripts/check-publication.py"
         self.assertTrue(path.exists(), "Publication gate must exist")

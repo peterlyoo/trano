@@ -38,6 +38,10 @@ func (r *Runtime) shellIntegration(shell string) ([]string, []string, error) {
 			}
 			if name == ".zshrc" {
 				text += "_trano_cwd() { if [[ \"$PWD\" != \"${TRANO_LAST_CWD:-}\" ]]; then \"$TRANO_REMOTE_HELPER\" cwd \"$TRANO_SESSION\" \"$PWD\" >/dev/null 2>&1; TRANO_LAST_CWD=\"$PWD\"; fi }\nautoload -Uz add-zsh-hook\nadd-zsh-hook precmd _trano_cwd\n"
+				text += closedHistoryStartup("zsh")
+			}
+			if name == ".zlogin" {
+				text += closedAgentStartup()
 			}
 			if err := atomicWrite(filepath.Join(dir, name), []byte(text)); err != nil {
 				return nil, nil, err
@@ -52,6 +56,7 @@ func (r *Runtime) shellIntegration(shell string) ([]string, []string, error) {
 		return env, []string{"-l"}, nil
 	case "bash":
 		text := "if [ -r /etc/profile ]; then . /etc/profile; fi\nfor p in \"$HOME/.bash_profile\" \"$HOME/.bash_login\" \"$HOME/.profile\"; do if [ -r \"$p\" ]; then . \"$p\"; break; fi; done\n[ ! -r \"$HOME/.bashrc\" ] || . \"$HOME/.bashrc\"\nexport PATH=\"$TRANO_SHIM_DIR:$PATH\"\n_trano_cwd() { if [ \"$PWD\" != \"${TRANO_LAST_CWD:-}\" ]; then \"$TRANO_REMOTE_HELPER\" cwd \"$TRANO_SESSION\" \"$PWD\" >/dev/null 2>&1; TRANO_LAST_CWD=\"$PWD\"; fi; }\nif [[ $(declare -p PROMPT_COMMAND 2>/dev/null) == 'declare -a'* ]]; then PROMPT_COMMAND+=(_trano_cwd); else PROMPT_COMMAND=\"${PROMPT_COMMAND:+$PROMPT_COMMAND;} _trano_cwd\"; fi\n"
+		text += closedHistoryStartup("bash")
 		path := filepath.Join(dir, "bashrc")
 		if err := atomicWrite(path, []byte(text)); err != nil {
 			return nil, nil, err
@@ -60,6 +65,7 @@ func (r *Runtime) shellIntegration(shell string) ([]string, []string, error) {
 	default:
 		path := filepath.Join(dir, "shrc")
 		text := "[ -z \"$TRANO_ORIGINAL_ENV\" ] || [ ! -r \"$TRANO_ORIGINAL_ENV\" ] || . \"$TRANO_ORIGINAL_ENV\"\nexport PATH=\"$TRANO_SHIM_DIR:$PATH\"\n"
+		text += closedHistoryStartup(filepath.Base(shell))
 		if err := atomicWrite(path, []byte(text)); err != nil {
 			return nil, nil, err
 		}

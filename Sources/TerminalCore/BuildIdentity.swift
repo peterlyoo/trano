@@ -29,3 +29,14 @@ public enum ServiceHandoffPolicy {
         return expected == running ? .keep : .replace
     }
 }
+
+public enum InstalledBuildCheck {
+    /// The build now installed at the running app's bundle path, when it differs from the running build.
+    public static func pendingRestart(bundleURL: URL, running: BuildIdentity) -> BuildIdentity? {
+        guard running.isBundled,
+              let installed = try? BuildIdentity(metadataURL: bundleURL.appendingPathComponent("Contents/Info.plist")),
+              installed.isBundled, installed.buildID != running.buildID,
+              FileManager.default.isExecutableFile(atPath: bundleURL.appendingPathComponent("Contents/MacOS/TranoApp").path) else { return nil }
+        return installed
+    }
+}

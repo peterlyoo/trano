@@ -1,19 +1,22 @@
 import Foundation
 
-public enum ActionID: String, Codable, CaseIterable {
+public enum ActionID: String, Codable, CaseIterable, Sendable {
     case newWindow = "client.window.new", fullscreen = "client.window.fullscreen.toggle"
     case palette = "client.palette.toggle", settings = "client.settings"
     case newSession = "session.new", switchSession = "session.switch", nextSession = "session.next", previousSession = "session.previous", renameSession = "session.rename", closeSession = "session.close", refresh = "session.refresh"
+    case resumeConversation = "agent.conversation.resume", pessimisticTwin = "agent.pessimistic-twin"
     case restoreSessions = "session.restore"
-    case newTab = "client.tab.new", closeTab = "client.tab.close", closeOtherTabs = "client.tab.close_others", restoreTab = "client.tab.restore", renameTab = "client.tab.rename", nextTab = "client.tab.next", previousTab = "client.tab.previous", moveTabBackward = "client.tab.move.backward", moveTabForward = "client.tab.move.forward"
+    case newTab = "client.tab.new", closeTab = "client.tab.close", closeOtherTabs = "client.tab.close_others", closeTabsToLeft = "client.tab.close_left", closeTabsToRight = "client.tab.close_right", restoreTab = "client.tab.restore", renameTab = "client.tab.rename", nextTab = "client.tab.next", previousTab = "client.tab.previous", moveTabBackward = "client.tab.move.backward", moveTabForward = "client.tab.move.forward"
     case splitRight = "pane.split.right", splitDown = "pane.split.down", splitLeft = "pane.split.left", splitUp = "pane.split.up"
     case focusLeft = "pane.focus.left", focusRight = "pane.focus.right", focusUp = "pane.focus.up", focusDown = "pane.focus.down", nextPane = "pane.focus_next", previousPane = "pane.focus_previous"
     case zoom = "pane.zoom", closePane = "pane.close", closeOtherPanes = "pane.close_others", balance = "pane.balance"
+    case floatPane = "pane.float"
     case resizeLeft = "pane.resize.left", resizeRight = "pane.resize.right", resizeUp = "pane.resize.up", resizeDown = "pane.resize.down"
     case movePaneNewTab = "pane.move_to_new_tab", movePaneTab = "pane.move_to_tab", renamePane = "pane.rename", copyPaneID = "pane.copy_id"
     case insertPath = "pane.insert_path", goToDirectory = "pane.go_to_directory", goToAnything = "pane.go_to", activity = "pane.view_activity"
     case copy = "pane.copy", paste = "pane.paste", selectAll = "pane.select_all", clear = "terminal.clear", find = "terminal.find", findNext = "terminal.find.next", findPrevious = "terminal.find.previous"
-    case increaseFont = "font.increase", decreaseFont = "font.decrease", resetFont = "font.reset", voice = "input.voice"
+    case increaseFont = "font.increase", decreaseFont = "font.decrease", resetFont = "font.reset", voice = "input.voice", queuedInput = "input.queued"
+    case urlHints = "terminal.url_hints"
 }
 
 public struct TerminalAction: Encodable, Identifiable {
@@ -50,12 +53,16 @@ public enum ActionCatalog {
         .init(.nextSession, "Next Session", "Session", ["cmd+alt+]"]),
         .init(.previousSession, "Previous Session", "Session", ["cmd+alt+["]),
         .init(.renameSession, "Rename Session…", "Session", ui: true),
-        .init(.closeSession, "Close Session View", "Session"),
+        .init(.closeSession, "Close Workspace", "Session", keywords: "session close hide"),
         .init(.refresh, "Refresh Sessions", "Session"),
         .init(.restoreSessions, "Restore Sessions", "Session"),
+        .init(.resumeConversation, "Resume Conversation…", "Session", ["cmd+shift+r"], ui: true, keywords: "claude codex resume history conversation continue 이어하기 대화"),
+        .init(.pessimisticTwin, "Pessimistic Twin…", "Agent", ui: true, keywords: "비관 쌍둥이 review security pessimistic twin fork"),
         .init(.newTab, "New Tab", "Tab", ["cmd+t"]),
-        .init(.closeTab, "Close Tab · keep running", "Tab", ["cmd+shift+w"]),
-        .init(.closeOtherTabs, "Close Other Tabs · keep running", "Tab"),
+        .init(.closeTab, "Close Tab", "Tab", ["cmd+shift+w"]),
+        .init(.closeOtherTabs, "Close Other Tabs", "Tab"),
+        .init(.closeTabsToLeft, "Close Tabs to the Left", "Tab"),
+        .init(.closeTabsToRight, "Close Tabs to the Right", "Tab"),
         .init(.restoreTab, "Reopen Closed Tab", "Tab", ["cmd+shift+t"]),
         .init(.renameTab, "Rename Tab…", "Tab", ui: true),
         .init(.nextTab, "Show Next Tab", "Tab", ["cmd+shift+]", "ctrl+tab"]),
@@ -73,8 +80,9 @@ public enum ActionCatalog {
         .init(.nextPane, "Focus Next Pane", "Pane", ["cmd+]"]),
         .init(.previousPane, "Focus Previous Pane", "Pane", ["cmd+["]),
         .init(.zoom, "Zoom Pane", "Pane", ["cmd+shift+enter"], ui: true),
-        .init(.closePane, "Close Pane · keep running", "Pane", ["cmd+w"]),
-        .init(.closeOtherPanes, "Close Other Panes · keep running", "Pane"),
+        .init(.floatPane, "Float Pane", "Pane", ui: true, keywords: "floating window return dock"),
+        .init(.closePane, "Close Pane", "Pane", ["cmd+w"]),
+        .init(.closeOtherPanes, "Close Other Panes", "Pane"),
         .init(.balance, "Balance Splits", "Pane"),
         .init(.resizeLeft, "Resize Pane Left", "Pane", ["cmd+ctrl+left"], ui: true),
         .init(.resizeRight, "Resize Pane Right", "Pane", ["cmd+ctrl+right"], ui: true),
@@ -85,26 +93,28 @@ public enum ActionCatalog {
         .init(.renamePane, "Rename Pane…", "Pane", ui: true),
         .init(.copyPaneID, "Copy Pane ID", "Pane", ui: true),
         .init(.insertPath, "Insert Path…", "Input", ui: true, keywords: "file folder directory path cursor insert paste"),
-        .init(.goToDirectory, "Go to Directory…", "Input", ui: true, keywords: "folder new tab cwd"),
-        .init(.goToAnything, "Go to Anything…", "Navigation", ["cmd+p"], ui: true, keywords: "pane tab session workspace search"),
-        .init(.activity, "Show Activity", "Navigation", ui: true),
+        .init(.goToDirectory, "Go to Directory…", "Input", ["cmd+shift+g"], ui: true, keywords: "folder new tab cwd"),
+        .init(.goToAnything, "Go to Anything…", "Navigation", ui: true, keywords: "pane tab session workspace search"),
+        .init(.activity, "View Activity", "Navigation", ["cmd+."], ui: true),
         .init(.copy, "Copy", "Edit", ["cmd+c"], ui: true),
         .init(.paste, "Paste", "Edit", ["cmd+v"], ui: true),
         .init(.selectAll, "Select All", "Edit", ["cmd+a"], ui: true),
         .init(.clear, "Clear Local Scrollback", "Edit", ui: true),
         .init(.find, "Find in Terminal…", "Edit", ["cmd+f"], ui: true),
         .init(.findNext, "Find Next", "Edit", ["cmd+g"], ui: true),
-        .init(.findPrevious, "Find Previous", "Edit", ["cmd+shift+g"], ui: true),
+        .init(.findPrevious, "Find Previous", "Edit", ui: true),
         .init(.increaseFont, "Increase Font Size", "Appearance", ["cmd+=", "cmd+shift+="]),
         .init(.decreaseFont, "Decrease Font Size", "Appearance", ["cmd+-"]),
         .init(.resetFont, "Reset Font Size", "Appearance", ["cmd+0"]),
         .init(.voice, "Voice Input…", "Input", ui: true),
+        .init(.queuedInput, "Queued Input", "Input", ["cmd+shift+u"], ui: true, keywords: "queue follow up pending edit done"),
+        .init(.urlHints, "Open URL Hints…", "Navigation", ["ctrl+shift+e"], ui: true, keywords: "url link hint"),
         .init(.palette, "Command Palette…", "App", ["cmd+shift+p"], ui: true),
         .init(.settings, "Settings…", "App", ["cmd+,"], ui: true)
     ]
     public static func action(for binding: String) -> TerminalAction? { all.first { $0.bindings.contains(binding) } }
     public static func resolved(overrides: [String: [String]]) throws -> [TerminalAction] {
-        let map = try KeyBindingMap(overrides: overrides)
+        let map = try TerminalKeySequenceMap(overrides: overrides)
         return all.map { action in
             TerminalAction(action.action, action.title, action.category, map.bindings[action.id] ?? [], ui: action.requiresUI, keywords: action.keywords)
         }
@@ -114,6 +124,7 @@ public enum ActionCatalog {
 extension TerminalRuntime {
     public func performAction(_ action: ActionID, cwd: String? = nil, title: String? = nil, workspaceID: String? = nil, tabID: String? = nil, paneID: String? = nil, requestNavigation: Bool = false) throws {
         guard let definition = ActionCatalog.all.first(where: { $0.action == action }), !definition.requiresUI else { throw TerminalError.invalid("requiresUI: This action needs an active Trano window") }
+        if try performClosedTerminalAction(action, workspaceID: workspaceID, tabID: tabID, paneID: paneID, requestNavigation: requestNavigation) { return }
         let sessionTitle = action == .newSession ? try WorkspaceLayout.normalizedSessionTitle(title) : nil
         var restoreNavigation: NavigationRequest?
         try transaction {
@@ -156,7 +167,7 @@ extension TerminalRuntime {
 
     private func openSession(title: String?, cwd: String?) throws {
         let before = try state()
-        let name = title ?? before.layout.nextSessionTitle()
+        let name = title ?? before.layout.randomWorkspaceTitle()
         let existing = before.layout.workspace(named: name)
         if let existing, before.layout.tabs.contains(where: { $0.workspaceID == existing.id }) {
             try update { try $0.layout.selectWorkspace(existing.id) }
@@ -205,17 +216,9 @@ extension TerminalRuntime {
             case .previousSession: state.layout.cycleWorkspace(-1)
             case .nextTab: state.layout.cycleTab(1)
             case .previousTab: state.layout.cycleTab(-1)
-            case .closeTab: if let id = state.layout.selectedTabID { state.layout.closeTab(id) }
             case .closeSession: if let id = state.layout.selectedWorkspaceID { state.layout.closeWorkspace(id) }
-            case .closeOtherTabs:
-                for tab in state.layout.currentTabs where tab.id != state.layout.selectedTabID { state.layout.closeTab(tab.id) }
-            case .restoreTab: state.layout.restoreTab()
             case .moveTabBackward, .moveTabForward:
                 if let id = state.layout.selectedTabID { state.layout.reorderTab(id, delta: action == .moveTabBackward ? -1 : 1) }
-            case .closePane: if let id = state.layout.focusedPaneID { state.layout.detach(id) }
-            case .closeOtherPanes:
-                let panes = state.layout.tabs.first { $0.id == state.layout.selectedTabID }?.panes ?? []
-                for id in panes where id != state.layout.focusedPaneID { state.layout.detach(id) }
             case .movePaneNewTab:
                 if let id = state.layout.focusedPaneID { state.layout.detach(id); state.layout.addTab(paneID: id) }
             case .nextPane, .previousPane:

@@ -1,6 +1,9 @@
 import AppKit
+import OSLog
 import SwiftUI
 import TerminalCore
+
+let hoverLog = Logger(subsystem: "trano.hover", category: "tab")
 
 struct TabActivitySnapshot: Equatable {
     enum Availability: String { case live, closed, disconnected, unavailable }
@@ -31,10 +34,10 @@ struct TabActivitySnapshot: Equatable {
     let title: String
     let panes: [Pane]
 
-    init(tab: TerminalTab, sessions: [TerminalSession]) {
+    init(tab: TerminalTab, sessions: [TerminalSession], focusedPaneID: String? = nil, preferGeneratedTitles: Bool = false) {
         id = tab.id
         let byID = Dictionary(sessions.map { ($0.id, $0) }, uniquingKeysWith: { first, _ in first })
-        title = tab.title == "Terminal" ? tab.panes.first.flatMap { byID[$0]?.title } ?? tab.title : tab.title
+        title = TabPresentation(tab: tab, sessions: sessions, focusedPaneID: focusedPaneID, preferGeneratedTitles: preferGeneratedTitles).title
         panes = tab.panes.map { paneID in
             guard let session = byID[paneID] else {
                 return Pane(id: paneID, title: "Unavailable pane", host: "", availability: .unavailable,
@@ -42,7 +45,7 @@ struct TabActivitySnapshot: Equatable {
                                            reason: "", source: "unavailable", updatedAt: nil, depth: 0), children: [])
             }
             let activity = session.activity
-            return Pane(id: paneID, title: session.title, host: session.host,
+            return Pane(id: paneID, title: session.displayTitle(preferGeneratedTitles: preferGeneratedTitles), host: session.host,
                         availability: session.alive ? .live : session.remote == nil ? .closed : .disconnected,
                         root: AgentRow(id: paneID, parentID: nil, name: "\(session.agent.rawValue.capitalized) · root", agent: session.agent,
                                        state: activity.state, reason: activity.reason, source: activity.source,
@@ -70,9 +73,26 @@ struct TabActivitySnapshot: Equatable {
         return rows
     }
 
+    /// Fits the longest row: icon, title and state label, plus insets; titles past the cap truncate in the middle.
+    var preferredWidth: CGFloat {
+        let title = NSFont.systemFont(ofSize: 12, weight: .semibold), row = NSFont.systemFont(ofSize: 11, weight: .medium), state = NSFont.systemFont(ofSize: 10)
+        func width(_ text: String, _ font: NSFont) -> CGFloat { (text as NSString).size(withAttributes: [.font: font]).width }
+        var widest = width(self.title, title) + 20
+        for pane in panes {
+            for entry in [pane.root] + pane.children {
+                let label = pane.availability == .live ? entry.state.rawValue.capitalized : pane.availability.rawValue.capitalized
+                let name = entry.depth == 0 ? pane.title : entry.name
+                widest = max(widest, 20 + CGFloat(min(4, entry.depth)) * 14 + 18 + width(name, row) + 12 + width(label, state))
+            }
+        }
+        return min(300, max(200, ceil(widest)))
+    }
+
+    static func showsReason(_ row: AgentRow) -> Bool { !row.reason.isEmpty && (row.state == .blocked || row.state == .error) }
+
     var preferredHeight: CGFloat {
-        min(460, 49 + panes.reduce(0) { total, pane in
-            total + 49 + ([pane.root] + pane.children).reduce(0) { $0 + ($1.reason.isEmpty ? 40 : 65) } + (pane.children.isEmpty ? 20 : 0)
+        min(460, 42 + panes.reduce(0) { total, pane in
+            total + ([pane.root] + pane.children).reduce(0) { $0 + (Self.showsReason($1) ? 37 : 22) }
         })
     }
 }
@@ -129,8 +149,11 @@ private struct TabActivityHoverAnchor: NSViewRepresentable {
     }
 
     override func updateTrackingAreas() {
+        hoverLog.debug("updateTrackingAreas window=\(self.window != nil) bounds=\(NSStringFromRect(self.bounds)) visible=\(NSStringFromRect(self.visibleRect))")
         if let hoverTrackingArea { removeTrackingArea(hoverTrackingArea) }
-        let area = NSTrackingArea(rect: .zero, options: [.mouseEnteredAndExited, .activeInKeyWindow, .inVisibleRect], owner: self)
+        // SwiftUI scroll and tab insertion move this view without refreshing tracking rects, so the area spans the
+        // visible strip and each event is hit-tested against the current bounds.
+        let area = NSTrackingArea(rect: .zero, options: [.mouseEnteredAndExited, .mouseMoved, .activeInKeyWindow, .inVisibleRect], owner: self)
         addTrackingArea(area)
         hoverTrackingArea = area
         super.updateTrackingAreas()
@@ -141,8 +164,18 @@ private struct TabActivityHoverAnchor: NSViewRepresentable {
         presenter.reposition()
     }
 
-    override func mouseEntered(with event: NSEvent) { presenter.enterAnchor() }
-    override func mouseExited(with event: NSEvent) { presenter.exitAnchor() }
+    private var pointerInside = false
+    private func track(_ event: NSEvent, exited: Bool = false) {
+        let inside = !exited && clippedVisibleBounds.contains(convert(event.locationInWindow, from: nil))
+        hoverLog.debug("track type=\(event.type.rawValue) inside=\(inside) was=\(self.pointerInside) bounds=\(NSStringFromRect(self.clippedVisibleBounds)) point=\(NSStringFromPoint(self.convert(event.locationInWindow, from: nil)))")
+        guard inside != pointerInside else { return }
+        pointerInside = inside
+        if inside { presenter.enterAnchor() } else { presenter.exitAnchor() }
+    }
+
+    override func mouseEntered(with event: NSEvent) { pointerInside = false; track(event) }
+    override func mouseMoved(with event: NSEvent) { track(event) }
+    override func mouseExited(with event: NSEvent) { track(event, exited: true) }
 }
 
 @MainActor final class TabActivityHoverPanel: NSPanel {
@@ -223,6 +256,7 @@ private struct TabActivityHoverAnchor: NSViewRepresentable {
     }
 
     func enterAnchor() {
+        hoverLog.debug("enterAnchor panel=\(self.panel != nil) pendingOpen=\(self.openWork != nil)")
         overAnchor = true
         closeWork?.cancel()
         closeWork = nil
@@ -264,8 +298,9 @@ private struct TabActivityHoverAnchor: NSViewRepresentable {
     }
 
     private func show() {
+        hoverLog.debug("show snapshot=\(self.snapshot != nil) anchor=\(self.anchor != nil) owner=\(self.owner != nil) sameWindow=\(self.anchor?.window === self.owner) key=\(self.owner?.isKeyWindow ?? false) visible=\(NSStringFromRect(self.anchor?.clippedVisibleBounds ?? .zero))")
         guard let snapshot, let anchor, let owner, anchor.window === owner, owner.isKeyWindow,
-              !anchor.visibleRect.isEmpty else { return }
+              !anchor.clippedVisibleBounds.isEmpty else { return }
         let panel = TabActivityHoverPanel(contentRect: .zero, styleMask: [.borderless, .nonactivatingPanel], backing: .buffered, defer: false)
         panel.isReleasedWhenClosed = false
         panel.isOpaque = false
@@ -285,11 +320,12 @@ private struct TabActivityHoverAnchor: NSViewRepresentable {
 
     func reposition() {
         guard let panel, let snapshot, let anchor, let owner else { return }
-        guard anchor.window === owner, !anchor.visibleRect.isEmpty else { dismiss(); return }
-        let rect = owner.convertToScreen(anchor.convert(anchor.visibleRect, to: nil))
+        let visibleBounds = anchor.clippedVisibleBounds
+        guard anchor.window === owner, !visibleBounds.isEmpty else { dismiss(); return }
+        let rect = owner.convertToScreen(anchor.convert(visibleBounds, to: nil))
         let screen = NSScreen.screens.first { $0.frame.contains(NSPoint(x: rect.midX, y: rect.midY)) } ?? owner.screen
         let visible = screen?.visibleFrame.insetBy(dx: 8, dy: 8) ?? owner.frame
-        let size = NSSize(width: min(380, visible.width), height: min(snapshot.preferredHeight, visible.height))
+        let size = NSSize(width: min(snapshot.preferredWidth, visible.width), height: min(snapshot.preferredHeight, visible.height))
         var origin = NSPoint(x: rect.minX, y: rect.minY - size.height - 4)
         if placement == .trailing {
             origin = NSPoint(x: rect.maxX + 4, y: rect.maxY - size.height)
@@ -323,33 +359,16 @@ struct TabActivityHoverCard: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
-            HStack(spacing: 8) {
-                Text(snapshot.title).font(.system(size: 12, weight: .semibold)).lineLimit(1)
-                Spacer(minLength: 4)
-                Text("\(snapshot.panes.count) pane\(snapshot.panes.count == 1 ? "" : "s")")
-                    .font(.system(size: 10)).foregroundStyle(.secondary)
-            }.padding(12)
-            Divider().overlay(Color.white.opacity(0.08))
+            Text(snapshot.title).font(.system(size: 12, weight: .semibold)).lineLimit(1)
+                .padding(.horizontal, 10).padding(.top, 9).padding(.bottom, 6)
             ScrollView {
-                VStack(alignment: .leading, spacing: 14) {
-                    ForEach(Array(snapshot.panes.enumerated()), id: \.element.id) { index, pane in
-                        VStack(alignment: .leading, spacing: 7) {
-                            HStack(spacing: 6) {
-                                Text("\(index + 1) · \(pane.title)").font(.system(size: 10, weight: .semibold)).lineLimit(1)
-                                Spacer(minLength: 2)
-                                Text(pane.availability == .live ? pane.host : pane.availability.rawValue.capitalized)
-                                    .font(.system(size: 9)).foregroundStyle(.secondary).lineLimit(1)
-                            }
-                            row(pane.root, historical: pane.availability == .closed || pane.availability == .disconnected)
-                            ForEach(pane.children) { child in
-                                row(child, historical: pane.availability != .live)
-                            }
-                            if pane.children.isEmpty {
-                                Text(pane.childSummary).font(.system(size: 10)).foregroundStyle(.secondary).padding(.leading, 21)
-                            }
-                        }
+                VStack(alignment: .leading, spacing: 2) {
+                    ForEach(snapshot.panes) { pane in
+                        let historical = pane.availability == .live ? nil : pane.availability.rawValue.capitalized
+                        row(pane.root, title: pane.title, historical: historical)
+                        ForEach(pane.children) { child in row(child, title: child.name, historical: historical) }
                     }
-                }.padding(12).frame(maxWidth: .infinity, alignment: .leading)
+                }.padding(.horizontal, 10).padding(.bottom, 9).frame(maxWidth: .infinity, alignment: .leading)
             }
         }
         .foregroundStyle(Color(white: 0.92))
@@ -359,32 +378,21 @@ struct TabActivityHoverCard: View {
         .preferredColorScheme(.dark)
     }
 
-    private func row(_ row: TabActivitySnapshot.AgentRow, historical: Bool) -> some View {
-        HStack(alignment: .top, spacing: 7) {
-            if row.depth > 0 {
-                Image(systemName: "arrow.turn.down.right").font(.system(size: 9)).foregroundStyle(.tertiary).frame(width: 10).padding(.top, 2)
+    private func row(_ row: TabActivitySnapshot.AgentRow, title: String, historical: String?) -> some View {
+        VStack(alignment: .leading, spacing: 1) {
+            HStack(spacing: 6) {
+                Group {
+                    if let agent = row.agent { AgentBadge(agent: agent) }
+                    else { Image(systemName: "terminal").font(.system(size: 9)).foregroundStyle(.secondary) }
+                }.frame(width: 12, height: 12)
+                Text(title).font(.system(size: 11, weight: row.depth == 0 ? .medium : .regular)).lineLimit(1).truncationMode(.middle)
+                Spacer(minLength: 6)
+                Text(historical ?? row.state.rawValue.capitalized)
+                    .font(.system(size: 10)).foregroundStyle(historical == nil ? activityColor(row.state) : Color.secondary)
             }
-            Group {
-                if let agent = row.agent { AgentBadge(agent: agent) }
-                else { Image(systemName: "questionmark.circle").foregroundStyle(.secondary) }
-            }.frame(width: 13, height: 13).padding(.top, 1)
-            VStack(alignment: .leading, spacing: 3) {
-                HStack(spacing: 6) {
-                    Text(row.name).font(.system(size: 11, weight: .medium)).lineLimit(1)
-                    Spacer(minLength: 2)
-                    Text((historical ? "Last: " : "") + row.state.rawValue.capitalized)
-                        .font(.system(size: 10, weight: .medium))
-                        .foregroundStyle(historical ? Color.secondary : activityColor(row.state))
-                }
-                HStack(spacing: 5) {
-                    Text(row.source).lineLimit(1)
-                    Spacer(minLength: 0)
-                    if let timestamp = row.updatedAt {
-                        Text(timestamp, format: .dateTime.month(.abbreviated).day().hour().minute().second()).lineLimit(1)
-                    } else { Text("No timestamp") }
-                }.font(.system(size: 9)).foregroundStyle(.secondary)
-                if !row.reason.isEmpty { Text(row.reason).font(.system(size: 10)).foregroundStyle(.secondary).lineLimit(2) }
+            if TabActivitySnapshot.showsReason(row) {
+                Text(row.reason).font(.system(size: 10)).foregroundStyle(.secondary).lineLimit(1).padding(.leading, 18)
             }
-        }.padding(.leading, CGFloat(min(4, max(0, row.depth - 1))) * 12)
+        }.frame(minHeight: 20).padding(.leading, CGFloat(min(4, row.depth)) * 14)
     }
 }

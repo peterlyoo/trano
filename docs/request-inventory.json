@@ -1,0 +1,3360 @@
+{
+  "schemaVersion": 1,
+  "scope": "All accumulated accepted Trano requests, consolidated into 73 acceptance groups.",
+  "excluded": [
+    "Explicitly withdrawn AgentBoost launchpad-count request",
+    "Credential text"
+  ],
+  "installedBuild": "bc326bb0cc1e0c37598319c2a43a28f44844733995b2f24dfd772efe88a00d52",
+  "signature": "Apple Development",
+  "installation": {
+    "status": "passed",
+    "path": "/Applications/Trano.app",
+    "signature": "Apple Development",
+    "buildID": "bc326bb0cc1e0c37598319c2a43a28f44844733995b2f24dfd772efe88a00d52",
+    "mainExecutableSHA256": "7f96387ae00ebbd0b25d4f740b646e227dfda863756529f28bc6df77efdb9a6d",
+    "guiPIDs": [
+      21616
+    ],
+    "previousGUIPIDs": [
+      82558
+    ],
+    "helperPID": 21547,
+    "helperReplaced": true,
+    "preservedLiveShells": 68,
+    "sameShellPIDs": true,
+    "sameLayout": true,
+    "sameSettings": true,
+    "sourceAndInstalledIdentityMatch": true,
+    "runningExecutablePathsVerified": true,
+    "helperAPIBuildIDVerified": true,
+    "builtAndInstalledFileHashesVerified": 129,
+    "verifiedAt": "2026-11-16T23:16:52.318399+00:00",
+    "preservedProviderPIDs": 24,
+    "sameProviderPIDs": true,
+    "preferenceSidecarsUnchanged": 4
+  },
+  "verification": {
+    "e2e": "paused_by_user",
+    "unitScope": "Pure, file, fake transport and native components only",
+    "selectedTestClasses": [
+      "AccountAuthenticationContextTests",
+      "AccountAuthenticationFingerprintTests",
+      "AccountOrganizationContextTests",
+      "AccountOrganizationGuardTests",
+      "AccountOrganizationIdentityTests",
+      "AccountOrganizationLegacyBarrierTests",
+      "AccountOrganizationProofFreshnessTests",
+      "AccountOrganizationRollbackTests",
+      "AccountOrganizationTests",
+      "AccountOrganizationUsageGenerationTests",
+      "ActivityShortcutTests",
+      "AgentIntegrationGateTests",
+      "AppearanceKeyBindingTests",
+      "AsyncTerminalLinksTests",
+      "CommandPaletteShortcutTests",
+      "DeveloperActionPolicyTests",
+      "DeveloperNativeEffectsTests",
+      "DeveloperSettingsNativeViewTests",
+      "DeveloperSettingsTests",
+      "ExtendedSettingsDraftTests",
+      "FontMenuLoadingTests",
+      "FontSelectionTests",
+      "GitTrackingShellTests",
+      "GlyphMetricsCacheTests",
+      "GlyphMetricsParityTests",
+      "HostTypographyAndBlinkTests",
+      "IMEViewportTests",
+      "InterfaceControlTests",
+      "InterfacePreferencesTests",
+      "InterfaceRuntimeTests",
+      "KittyClipboardTests",
+      "ManagedAccountCommandPathTests",
+      "ManagedAccountPathTests",
+      "MergedRendererPolicyTests",
+      "NotificationActivityProjectionTests",
+      "NotificationBannerInboxTests",
+      "NotificationDeliveryTests",
+      "NotificationPreferencesTests",
+      "NotificationSettingsDraftTests",
+      "OutsideClickDismissalTests",
+      "PessimisticTwinAPITests",
+      "PessimisticTwinAliasAdmissionTests",
+      "PessimisticTwinArtifactFileTests",
+      "PessimisticTwinArtifactTests",
+      "PessimisticTwinAuthenticationTests",
+      "PessimisticTwinBridgeCLITests",
+      "PessimisticTwinCoordinatorTests",
+      "PessimisticTwinDecisionGuardTests",
+      "PessimisticTwinDecisionPruningTests",
+      "PessimisticTwinDecisionQueueTests",
+      "PessimisticTwinEmptyCleanupTests",
+      "PessimisticTwinGitPathTests",
+      "PessimisticTwinGitPlumbingTests",
+      "PessimisticTwinGitTests",
+      "PessimisticTwinHookAdmissionTests",
+      "PessimisticTwinInvocationInputTests",
+      "PessimisticTwinLaunchFileTests",
+      "PessimisticTwinLaunchPreparationTests",
+      "PessimisticTwinLifecycleTests",
+      "PessimisticTwinModelTests",
+      "PessimisticTwinNativeButtonTests",
+      "PessimisticTwinNativeFileTests",
+      "PessimisticTwinPresentationTests",
+      "PessimisticTwinPrivateReadTests",
+      "PessimisticTwinProfileCleanupTests",
+      "PessimisticTwinProfileProcessUseTests",
+      "PessimisticTwinProfileTests",
+      "PessimisticTwinProviderTests",
+      "PessimisticTwinReservationTests",
+      "PessimisticTwinRestrictedStartupTests",
+      "PessimisticTwinRetirementTests",
+      "PessimisticTwinRunCLITests",
+      "PessimisticTwinRuntimeGateTests",
+      "PessimisticTwinRuntimeGitWorkTests",
+      "PessimisticTwinSandboxTests",
+      "PessimisticTwinSourceExpectationTests",
+      "PessimisticTwinSourceIdleTests",
+      "PessimisticTwinStoreTests",
+      "PessimisticTwinWorkerIsolationTests",
+      "PixelViewportTests",
+      "QuickLookHoverHostTests",
+      "QuickLookVendorLinkTests",
+      "QuotaAlarmDispatchTests",
+      "RendererAdditionalTests",
+      "RoundedSelectionTests",
+      "ServerControlTests",
+      "ServerIntegrationsSettingsTests",
+      "ServerRemoteRuntimeTests",
+      "ServerSettingsControllerTests",
+      "ServerSettingsTests",
+      "ServerStatusMenuTests",
+      "ServerStatusTests",
+      "SessionLoadAPITests",
+      "SessionLoadClientCacheTests",
+      "SessionLoadNativeSourceTests",
+      "SessionLoadPresentationTests",
+      "SessionLoadRuntimeTests",
+      "SessionLoadSamplerTests",
+      "SessionLoadStripTests",
+      "SessionLoadTests",
+      "SettingsKeySequenceDraftTests",
+      "SettingsNavigationTests",
+      "SettingsOutsideClickNativeTests",
+      "SettingsServerConnectionTests",
+      "SupervisorBootstrapTests",
+      "SupervisorCommandTests",
+      "SupervisorExternalPanePolicyTests",
+      "SupervisorInstructionsTests",
+      "SupervisorLoadAccessoryTests",
+      "SupervisorNavigationTests",
+      "SupervisorRendererIdentityTests",
+      "SupervisorTests",
+      "SupervisorWatchTests",
+      "SupervisorWindowControllerTests",
+      "SyntheticInterfaceLayoutTests",
+      "TailscaleStatusEventsTests",
+      "TerminalCursorPreferencesTests",
+      "TerminalFontAdapterTests",
+      "TerminalFontAuthorityTests",
+      "TerminalFontSynthesisTests",
+      "TerminalInactiveFadeTests",
+      "TerminalInteractionTests",
+      "TerminalKeySequenceNativeTests",
+      "TerminalKeySequenceTests",
+      "TerminalLaunchSelectionTests",
+      "TerminalNavigationPolicyTests",
+      "TerminalNotificationScannerTests",
+      "TerminalPreferenceDefaultsTests",
+      "TerminalPreferenceRendererTests",
+      "TerminalPreferenceRuntimeTests",
+      "TerminalPreferenceSecurityTests",
+      "TerminalPreferencesTests",
+      "TerminalProfileFontAdapterTests",
+      "TerminalSettingsFormTests",
+      "TerminalThemeConfigurationTests",
+      "TerminalTitlePresentationPolicyTests",
+      "ThemeImportTests",
+      "ThemePreferencesTests",
+      "ThemeRenderingTests",
+      "ToolPanelDesignTests",
+      "TrackedGitCommandTests",
+      "TranoRendererOptionsTests",
+      "URLHintMatchesTests",
+      "UnisessionAppearanceTests",
+      "UnisessionEditorOwnershipTests",
+      "UnisessionInputOwnershipTests",
+      "UnisessionIntegrationTests",
+      "UnisessionLaunchDirectoryTests",
+      "UnisessionNativeFindBarTests",
+      "UnisessionPresentationTests",
+      "UnisessionResumeLivenessTests",
+      "UnisessionTests",
+      "WorktreeCleanupAPITests",
+      "WorktreeCleanupErrorPresentationTests",
+      "WorktreeCleanupPreferencesTests",
+      "WorktreeCleanupPresentationTests",
+      "WorktreeCleanupSettingsTests",
+      "WorktreeCleanupTests",
+      "WorktreeExitedProcessTests",
+      "WorktreeGitTests",
+      "WorktreeRuntimeGateTests",
+      "WorkspaceFooterTests",
+      "TerminalBottomViewportTests"
+    ],
+    "physicalOSAndAuthenticatedProviderQualification": "not_run",
+    "fullProductQualification": "incomplete; performance and external/physical gates retained",
+    "productUnits": {
+      "status": "passed",
+      "xctest": {
+        "TranoCLITests.xctest": 38,
+        "TerminalUITests.xctest": 508,
+        "TerminalCoreTests.xctest": 828
+      },
+      "swiftTesting": 26,
+      "total": 1400,
+      "failures": 0,
+      "e2e": "paused_by_user",
+      "log": ".local/tool-panel-design/final-unit.log",
+      "scopeManifest": ".local/tool-panel-design/unit-scope.json",
+      "receipt": ".local/tool-panel-design/unit-receipt.json",
+      "twinSubset": 299,
+      "outsideClickSubset": 13,
+      "actualSettingsNativeSubset": 8,
+      "activityShortcutNewTests": 4,
+      "paletteShortcutNewTests": 2,
+      "toolPanelNewTests": 8
+    },
+    "packagingUnitTests": 45,
+    "remoteHistoryGoUnitTests": 8,
+    "serverStatusProof": ".local/server-status/status-proof.json",
+    "unisessionReceipt": ".local/unisession/installed-receipt.json",
+    "worktreeCleanupProof": ".local/worktree-cleanup/runtime-proof.json",
+    "pessimisticTwinProof": ".local/pessimistic-twin/installed-receipt.json",
+    "outsideClickDismissalProof": {
+      "status": "passed",
+      "unitReceipt": ".local/outside-dismissal/unit-receipt.json",
+      "review": ".local/outside-dismissal/final-review.json",
+      "installationReceipt": ".local/outside-dismissal/installed-receipt.json",
+      "sameShellPIDs": true,
+      "sameLayout": true,
+      "sameSettings": true,
+      "physicalE2E": "paused_by_user",
+      "supersededBy": "settingsOutsideDismissalProof"
+    },
+    "settingsOutsideDismissalProof": {
+      "status": "passed",
+      "review": ".local/settings-outside-dismissal/final-review.json",
+      "installationReceipt": ".local/settings-outside-dismissal/installed-receipt.json",
+      "unitReceipt": ".local/settings-outside-dismissal/unit-receipt.json",
+      "nativePresentation": "owned_nonmodal_child",
+      "physicalE2E": "paused_by_user",
+      "rexPointerComparison": "tool_unavailable"
+    },
+    "activityShortcutProof": {
+      "status": "passed",
+      "unitReceipt": ".local/activity-shortcut/unit-receipt.json",
+      "installationReceipt": ".local/activity-shortcut/installed-receipt.json",
+      "installedAPI": ".local/activity-shortcut/installed-action-proof.json",
+      "review": ".local/activity-shortcut/final-review.json"
+    },
+    "paletteShortcutProof": {
+      "status": "passed",
+      "unitReceipt": ".local/palette-shortcut/unit-receipt.json",
+      "installationReceipt": ".local/palette-shortcut/installed-receipt.json",
+      "installedAPI": ".local/palette-shortcut/installed-action-proof.json",
+      "review": ".local/palette-shortcut/final-review.json"
+    },
+    "toolPanelDesignProof": {
+      "status": "unit_and_signed_local_install_verified",
+      "productUnitTests": 1400,
+      "newNativeComponentTests": 8,
+      "packagingUnitTests": 45,
+      "renderedTools": 13,
+      "themeModes": [
+        "light",
+        "dark",
+        "custom_theme_tint"
+      ],
+      "offscreenCaptures": 39,
+      "buildID": "9b374e36a7e09622ec452244c47bdda15e3f90a0df741173d69be481304f9e24",
+      "receipt": ".local/tool-panel-design/installed-receipt.json",
+      "unitReceipt": ".local/tool-panel-design/unit-receipt.json",
+      "sameShellPIDs": true,
+      "sameLayout": true,
+      "sameSettings": true,
+      "liveShellsPreserved": 26,
+      "installedFileHashes": 123,
+      "e2e": "paused_by_user",
+      "physicalUIQualification": "not_run",
+      "captureInspection": "representative_only",
+      "sourceReviewedExtras": [
+        "workspace picker branch",
+        "automatic OS appearance to Unisession controller/anchor propagation"
+      ],
+      "captureExport": "opt_in_TRANO_TOOL_PANEL_CAPTURE_DIR",
+      "portableNoExportProof": ".local/tool-panel-design/portable-no-export-proof.json",
+      "finalReview": ".local/tool-panel-design/final-review.json"
+    },
+    "interruptHandoffProof": {
+      "status": "unit_and_signed_local_install_verified",
+      "buildID": "895e13a842a732d7ae191ee4b668042700f78b02ea0f3ff47c2f3e719a93ec14",
+      "productUnitTests": 1420,
+      "newHandoffTests": 20,
+      "packagingUnitTests": 45,
+      "remoteFileTests": 14,
+      "unitReceipt": ".local/interrupt-handoff/unit-receipt.json",
+      "sourceManifest": ".local/interrupt-handoff/source-manifest.json",
+      "review": ".local/interrupt-handoff/final-review.json",
+      "e2e": "paused_by_user",
+      "limits": [
+        "Physical keys only; clipboard/API/pointer input outside buffer guarantee.",
+        "Foreground identity and stable parsed modes are not full output-drain or arbitrary shell-plugin proof.",
+        "Older remote helpers require update and metadata refresh; live remote/provider qualification paused."
+      ],
+      "receipt": ".local/interrupt-handoff/installed-receipt.json",
+      "sameShellPIDs": true,
+      "sameLayout": true,
+      "sameSettings": true,
+      "liveShellsPreserved": 29,
+      "installedFileHashes": 123
+    },
+    "imeReviewWorkspaceActivityProof": {
+      "status": "unit_and_signed_local_install_verified",
+      "buildID": "416d9e3d074ae45409f092acd1873f3de72943bd1bd24506a3dcf0bd78b8455b",
+      "productUnitTests": 1433,
+      "newTests": 8,
+      "packagingUnitTests": 45,
+      "unitReceipt": ".local/workspace-activity-dot/unit-receipt.json",
+      "sourceManifest": ".local/workspace-activity-dot/source-manifest.json",
+      "receipt": ".local/workspace-activity-dot/installed-receipt.json",
+      "sameShellPIDs": true,
+      "sameLayout": true,
+      "sameSettings": true,
+      "liveShellsPreserved": 32,
+      "installedFileHashes": 123,
+      "e2e": "paused_by_user",
+      "review": ".local/workspace-activity-dot/final-review.json"
+    },
+    "activityUnreadIndicatorProof": {
+      "status": "unit_and_signed_local_install_verified",
+      "buildID": "7d8001229aa039bfcd3657904bd8e6c450ffe4fc974667e5685f41ea7956d7db",
+      "productUnitTests": 1435,
+      "newNativeTests": 2,
+      "packagingUnitTests": 45,
+      "unitReceipt": ".local/activity-unread/unit-receipt.json",
+      "sourceManifest": ".local/activity-unread/source-manifest.json",
+      "review": ".local/activity-unread/final-review.json",
+      "receipt": ".local/activity-unread/installed-receipt.json",
+      "sameShellPIDs": true,
+      "sameLayout": true,
+      "sameSettings": true,
+      "liveShellsPreserved": 32,
+      "installedFileHashes": 123,
+      "e2e": "paused_by_user",
+      "physicalDisappearanceCause": "unreproduced"
+    },
+    "activitySeenUnreadProof": {
+      "status": "unit_and_signed_local_install_verified",
+      "buildID": "e2a0bf44ed1461a207ba223d4dcc900c270bfac020aaf041879996c5f06ea698",
+      "productUnitTests": 1439,
+      "newNativeTests": 4,
+      "packagingUnitTests": 45,
+      "unitReceipt": ".local/activity-seen/unit-receipt.json",
+      "sourceManifest": ".local/activity-seen/source-manifest.json",
+      "review": ".local/activity-seen/final-review.json",
+      "receipt": ".local/activity-seen/installed-receipt.json",
+      "sameShellPIDs": true,
+      "sameLayout": true,
+      "sameSettings": true,
+      "liveShellsPreserved": 32,
+      "installedFileHashes": 123,
+      "e2e": "paused_by_user"
+    },
+    "workspaceNewSessionFooterProof": {
+      "status": "targeted_unit_and_signed_local_install_verified",
+      "buildID": "6142e93ca38572b267cc0bb1621cbfcf127a9842d8c283289d0277dd15888dbb",
+      "productUnitTests": 9,
+      "newNativeTests": 1,
+      "packagingUnitTests": 45,
+      "fullProductSuiteRerun": false,
+      "unitReceipt": ".local/workspace-new-session/unit-receipt.json",
+      "sourceManifest": ".local/workspace-new-session/source-manifest.json",
+      "review": ".local/workspace-new-session/final-review.json",
+      "receipt": ".local/workspace-new-session/installed-receipt.json",
+      "sameShellPIDs": true,
+      "sameLayout": true,
+      "sameSettings": true,
+      "liveShellsPreserved": 32,
+      "installedFileHashes": 123,
+      "e2e": "paused_by_user"
+    },
+    "terminalInputRetirementProof": {
+      "status": "targeted_unit_and_signed_local_install_verified",
+      "buildID": "d4186d2bebca23c7545114f05aa987aee34d3af08f6b2f1eff0e5a4bac12204a",
+      "productUnitTests": 58,
+      "newNativeTests": 7,
+      "packagingUnitTests": 45,
+      "fullProductSuiteRerun": false,
+      "unitReceipt": ".local/closed-tab-input/unit-receipt.json",
+      "sourceManifest": ".local/closed-tab-input/source-manifest.json",
+      "review": ".local/closed-tab-input/final-review.json",
+      "receipt": ".local/closed-tab-input/installed-receipt.json",
+      "sameShellPIDs": true,
+      "sameLayout": true,
+      "sameSettings": true,
+      "liveShellsPreserved": 35,
+      "installedFileHashes": 123,
+      "e2e": "paused_by_user"
+    },
+    "imeCompositionUnderlineProof": {
+      "status": "targeted_native_pixel_units_and_signed_local_install_verified",
+      "buildID": "065e175253ed58a55ef6d74069a3650258cbe94172be00f49175fa3d4325af6f",
+      "productUnitTests": 43,
+      "newNativeTests": 4,
+      "packagingUnitTests": 45,
+      "fullProductSuiteRerun": false,
+      "unitReceipt": ".local/ime-underline/unit-receipt.json",
+      "sourceManifest": ".local/ime-underline/source-manifest.json",
+      "review": ".local/ime-underline/final-review.json",
+      "receipt": ".local/ime-underline/installed-receipt.json",
+      "sameShellPIDs": true,
+      "sameLayout": true,
+      "sameSettings": true,
+      "liveShellsPreserved": 40,
+      "installedFileHashes": 123,
+      "e2e": "paused_by_user",
+      "rendering": "CG/MTKView/background Metal composition lifecycle; actual 1x/2x underline pixels and offscreen GPU cursor suppression/restoration",
+      "captures": ".local/ime-underline/final-captures"
+    },
+    "latestUnitScope": "55 notification projection/policy, native unread/workspace acknowledgement and settings units; physical E2E paused.",
+    "inputErgonomicsProof": {
+      "status": "targeted_units_and_signed_local_install_verified",
+      "buildID": "42a9acdc61e05a3bc17db763b051fef896f899b6bf6e764f5448f398fe295dec",
+      "productUnitTests": 66,
+      "nativeUnitTests": 59,
+      "coreUnitTests": 7,
+      "newRegressionTests": 18,
+      "packagingUnitTests": 45,
+      "fullProductSuiteRerun": false,
+      "unitReceipt": ".local/input-ergonomics/unit-receipt.json",
+      "sourceManifest": ".local/input-ergonomics/source-manifest.json",
+      "review": ".local/input-ergonomics/final-review.json",
+      "receipt": ".local/input-ergonomics/installed-receipt.json",
+      "sameShellPIDs": true,
+      "sameLayout": true,
+      "sameSettings": true,
+      "liveShellsPreserved": 40,
+      "installedFileHashes": 123,
+      "e2e": "paused_by_user",
+      "nativeScope": "Native search/IME ownership, distinct Return/keypad events, edited Unicode transport, final ownership/size limits, footer geometry and opacity components",
+      "captureLimits": "Footer before/after and editor-only bitmap inspected; full-alert material capture incomplete and not a visual qualification",
+      "serviceRecovery": "Previous installed API unavailable before replacement; recovered with installed --ensure-service before continuity snapshot"
+    },
+    "bottomViewportProof": {
+      "status": "targeted_units_and_signed_local_install_verified",
+      "buildID": "597b39f1956f48409682ad5aa583eb1fc99ce5c6a0bd82ddf3ad379620d6a43a",
+      "productUnitTests": 45,
+      "nativeUnitTests": 36,
+      "coreUnitTests": 9,
+      "packagingUnitTests": 45,
+      "newRegressionTests": 2,
+      "fullProductSuiteRerun": false,
+      "unitReceipt": ".local/footer-residual/unit-receipt.json",
+      "sourceManifest": ".local/footer-residual/source-manifest.json",
+      "review": ".local/footer-residual/final-review.json",
+      "receipt": ".local/footer-residual/installed-receipt.json",
+      "sameShellPIDs": true,
+      "sameLayout": true,
+      "sameSettings": true,
+      "liveShellsPreserved": 40,
+      "installedFileHashes": 123,
+      "e2e": "paused_by_user",
+      "nativeGeometry": "Populated single/split workspace, resize, bottom hit target, unchanged rows and explicit padding; old gaps2/15/7pt now0/0/0pt",
+      "compositing": "Real CoreGraphics paint plus actual layer color at1x/2x, opacity1/.8/.45/0, first/last-row glyph positive controls",
+      "captures": ".local/footer-residual/green-captures",
+      "captureLimits": "Deterministic component compositing only; raw full-window cacheDisplay omits backing colors; physical display/compositor not qualified"
+    },
+    "sessionSearchShellIconProof": {
+      "status": "targeted_units_and_signed_local_install_verified",
+      "buildID": "1c1ae3961a9ecdf27e785899937161360e2975c5c273cd5a36e66577e999b2ce",
+      "productUnitTests": 67,
+      "nativeUnitTests": 31,
+      "coreUnitTests": 36,
+      "packagingUnitTests": 45,
+      "newRegressionTests": 4,
+      "regressionsFailedBeforeFix": 3,
+      "fullProductSuiteRerun": false,
+      "unitReceipt": ".local/closed-session-search/unit-receipt.json",
+      "sourceManifest": ".local/closed-session-search/source-manifest.json",
+      "review": ".local/closed-session-search/final-review.json",
+      "receipt": ".local/closed-session-search/installed-receipt.json",
+      "sameShellPIDs": true,
+      "sameLayout": true,
+      "sameSettings": true,
+      "liveShellsPreserved": 48,
+      "installedFileHashes": 123,
+      "e2e": "paused_by_user",
+      "scope": "Closed session search filtering; whole visible marked Hangul query uses contiguous matching; shared dark/green shell/zsh icon; existing Dock badge preference enabled",
+      "emptySessionRepair": ".local/closed-session-search/empty-session-repair.json",
+      "dockPreference": ".local/closed-session-search/dock-preference-receipt.json"
+    },
+    "textRenderingBrandBuildProof": {
+      "status": "targeted_units_and_signed_local_install_verified",
+      "buildID": "f09009a24b5a6893d25e797fc28e5e02fa9248235bc035dd2c1a77aceaa85482",
+      "nativeUnitTests": 47,
+      "packagingUnitTests": 49,
+      "unitReceipt": ".local/text-rendering/unit-receipt.json",
+      "sourceManifest": ".local/text-rendering/source-manifest.json",
+      "review": ".local/text-rendering/final-review.json",
+      "receipt": ".local/text-rendering/installed-receipt.json",
+      "sameShellPIDs": true,
+      "sameLayout": true,
+      "sameSettings": true,
+      "preferenceSidecarsPreserved": true,
+      "liveShellsPreserved": 55,
+      "installedFileHashes": 129,
+      "e2e": "paused_by_user",
+      "fullProductSuiteRerun": false,
+      "warmBuildSeconds": 2.579,
+      "warmBuildNewInvocation": true,
+      "pluginCacheReused": true,
+      "skipBuildNativeCommandSeconds": 8.36,
+      "warmSignedPackagingSeconds": 14.81,
+      "performanceScope": "Unchanged compiled source and warmed caches; not full rebuild timing"
+    },
+    "workspaceActivityReadProof": {
+      "status": "passed",
+      "buildID": "34515380e980cb64fdc8a07dc2688d6025a33714249955da31ec03ec84ca63e9",
+      "unitCount": 45,
+      "nativeUnitCount": 16,
+      "coreUnitCount": 29,
+      "unitReceipt": ".local/workspace-read-receipts/unit-receipt.json",
+      "installationReceipt": ".local/workspace-read-receipts/installed-receipt.json",
+      "liveShellsPreserved": 58,
+      "sameShellPIDs": true,
+      "sameLayout": true,
+      "sameSettings": true,
+      "samePreferenceSidecars": true,
+      "physicalE2E": "paused by user"
+    },
+    "newTabFocusProof": {
+      "status": "passed",
+      "buildID": "1645abdd7d246c4f942b52540625a78b485aef909583cdcf45041bdd34e426c7",
+      "unitCount": 26,
+      "unitReceipt": ".local/new-tab-focus/unit-receipt.json",
+      "installationReceipt": ".local/new-tab-focus/installed-receipt.json",
+      "liveShellsPreserved": 59,
+      "sameShellPIDs": true,
+      "sameLayout": true,
+      "sameSettings": true,
+      "samePreferenceSidecars": true,
+      "nativeFocusAndFirstByteVerified": true,
+      "physicalE2E": "paused by user"
+    },
+    "splitPaneFocusProof": {
+      "status": "passed",
+      "buildID": "a03a2bb2f4e4fdc9a8531ff1afea27302b768e687262e3dac5ff6ba30d54627d",
+      "unitCount": 34,
+      "splitUnitCount": 8,
+      "unitReceipt": ".local/split-pane-focus/unit-receipt.json",
+      "installationReceipt": ".local/split-pane-focus/installed-receipt.json",
+      "liveShellsPreserved": 60,
+      "sameShellPIDs": true,
+      "sameLayout": true,
+      "sameSettings": true,
+      "samePreferenceSidecars": true,
+      "nativeShortcutAndFirstByteVerified": true,
+      "reparentingRegressionVerified": true,
+      "physicalE2E": "paused by user"
+    },
+    "hangulCompositionSelectionProof": {
+      "status": "passed",
+      "buildID": "72b910001481888906ba983e28cd293f7c30f2f90a4c47a2d56135f1342ab06f",
+      "unitCount": 34,
+      "unitReceipt": ".local/hangul-syllable-transition/unit-receipt.json",
+      "installationReceipt": ".local/hangul-syllable-transition/installed-receipt.json",
+      "review": ".local/hangul-syllable-transition/final-review.json",
+      "evidenceClassification": ".local/hangul-syllable-transition/evidence-index.json",
+      "liveShellsPreserved": 62,
+      "sameShellPIDs": true,
+      "sameLayout": true,
+      "sameSettings": true,
+      "samePreferenceSidecars": true,
+      "confirmedDefect": "Composition-local UTF16 selectedRange was inconsistent with markedRange and substring queries",
+      "rendererChanged": false,
+      "physicalOverlapCausality": "unverified",
+      "physicalE2E": "paused by user"
+    },
+    "runningSessionDotProof": {
+      "status": "passed",
+      "buildID": "f9659fd4c3f2252f3f1d9efb7524b358c0b8249abdab7abed91af8caa7d92ec8",
+      "unitCount": 55,
+      "nativeUnitCount": 23,
+      "coreUnitCount": 32,
+      "unitReceipt": ".local/running-session-dots/unit-receipt.json",
+      "installationReceipt": ".local/running-session-dots/installed-receipt.json",
+      "review": ".local/running-session-dots/final-review.json",
+      "liveShellsPreserved": 62,
+      "sameShellPIDs": true,
+      "sameLayout": true,
+      "sameSettings": true,
+      "samePreferenceSidecars": true,
+      "legacyRunningIndicatorsSuppressed": true,
+      "mixedTabAttentionPreserved": true,
+      "physicalE2E": "paused by user"
+    },
+    "activityNativeKeyboardFocusProof": {
+      "status": "passed_with_explicit_skips",
+      "buildID": "236375f231d1b475170ef09201d0cf122c1469fddfb3f8a1ee655b1ffe140e54",
+      "executed": 76,
+      "passed": 73,
+      "skipped": 3,
+      "failures": 0,
+      "receipt": ".local/activity-owned-focus/unit-receipt.json",
+      "installation": ".local/activity-owned-focus/installed-receipt.json",
+      "scope": "Inert native window/menu/field-editor/Close, Up/Down/Tab and Enter exact target renderer native input; physical/provider/PTY E2E paused. Three existing background SwiftUI padding tests explicitly skip. Hangul units simulate callbacks, not selected OS input source.",
+      "fullProductQualification": "pending_gates_retained"
+    },
+    "panePointerFirstByteOwnershipProof": ".local/pane-click-focus/unit-receipt.json",
+    "activityDirectNativeKeyboardProof": {
+      "status": "passed_with_explicit_skips",
+      "buildID": "2017f0fc6b1e8df7d4a77d67e6b486bf820e73836f900e7b80a91431a5e5d0bb",
+      "executed": 82,
+      "passed": 79,
+      "skipped": 3,
+      "failures": 0,
+      "receipt": ".local/activity-direct-focus/unit-receipt.json",
+      "installation": ".local/activity-direct-focus/installed-receipt.json",
+      "scope": "Inert native firstResponder.keyDown and nil-window keys;NSApp.sendEvent+counted local monitor;single row movement;Enter exact split renderer+fakebytes;Escape typing return;IME/editor/settings/URL hint guards. Physical/provider/PTY E2E paused. Existing three background SwiftUI padding cases skip. Live user event.window and precise observed failure cause unmeasured.",
+      "fullProductQualification": "pending_gates_retained"
+    },
+    "goToDirectoryShortcutProof": {
+      "status": "passed",
+      "buildID": "bc326bb0cc1e0c37598319c2a43a28f44844733995b2f24dfd772efe88a00d52",
+      "tests": 24,
+      "failures": 0,
+      "receipt": ".local/go-directory-shortcut/unit-receipt.json",
+      "installation": ".local/go-directory-shortcut/installed-receipt.json",
+      "scope": "Default/configured menu/native action dispatch and directory-only remote request,local NSOpenPanel folder-only/new-tab configuration;existing native tab-focus and explicit key/sequence units. No chooser confirmation or actual PTY/SSH/physical E2E;these remain paused."
+    }
+  },
+  "requests": [
+    {
+      "id": "REQ-001",
+      "key": "daemon",
+      "request": "Closing the terminal/app preserves running shells and coding agents",
+      "implementation": "source_connected",
+      "repairedInThisBatch": false,
+      "sourceFiles": [
+        "Sources/TerminalCore/Runtime.swift",
+        "Sources/TerminalCore/ServiceHandoff.swift",
+        "Sources/TranoApp/App.swift"
+      ],
+      "testContracts": [
+        "Tests/TerminalCoreTests/BuildIdentityTests.swift",
+        "Tests/TerminalCoreTests/ScrollbackTests.swift"
+      ],
+      "qualificationLimits": []
+    },
+    {
+      "id": "REQ-002",
+      "key": "zsh",
+      "request": "Fast loading and full zsh environment/job compatibility",
+      "implementation": "source_connected",
+      "repairedInThisBatch": false,
+      "sourceFiles": [
+        "Sources/TerminalCore/Runtime.swift",
+        "Sources/TerminalCore/ShellIntegration.swift",
+        "Sources/TerminalCore/TerminalLaunchSelection.swift"
+      ],
+      "testContracts": [
+        "Tests/TerminalCoreTests/TerminalLaunchSelectionTests.swift"
+      ],
+      "qualificationLimits": [
+        "Universal compatibility with every third-party zsh plugin is not established; current startup benchmarks are paused."
+      ]
+    },
+    {
+      "id": "REQ-003",
+      "key": "terminal_basics",
+      "request": "URL links, ANSI/truecolor and Korean/Unicode input; default black/dark mode",
+      "implementation": "source_connected",
+      "repairedInThisBatch": true,
+      "sourceFiles": [
+        "Sources/TerminalCore/InterfacePreferences.swift",
+        "Sources/TerminalCore/Model.swift",
+        "Sources/TranoApp/TerminalApplicationLinks.swift",
+        "Sources/TranoApp/TerminalPane.swift",
+        "Sources/TranoApp/TerminalPreferenceRenderer.swift",
+        "vendor/SwiftTerm/Sources/SwiftTerm/Apple/AppleTerminalView.swift",
+        "Sources/TranoApp/TerminalInterruptHandoff.swift",
+        "Sources/TranoApp/TerminalInterruptHandoffHost.swift",
+        "Sources/TranoApp/TerminalInterruptInputAdmission.swift",
+        "Sources/TerminalCore/TerminalShellHandoff.swift",
+        "vendor/SwiftTerm/Sources/SwiftTerm/Mac/MacTerminalView.swift",
+        "vendor/SwiftTerm/Sources/SwiftTerm/Apple/TerminalSnapshot.swift",
+        "vendor/SwiftTerm/Sources/SwiftTerm/Apple/TerminalRenderOwner.swift"
+      ],
+      "testContracts": [
+        "Tests/TerminalCoreTests/InterfacePreferencesTests.swift",
+        "Tests/TerminalCoreTests/ThemePreferencesTests.swift",
+        "Tests/TerminalUITests/InputTests.swift",
+        "Tests/TerminalUITests/TerminalColorTests.swift",
+        "Tests/TerminalUITests/InterruptHandoffNativeTests.swift",
+        "Tests/TerminalCoreTests/TerminalShellHandoffTests.swift",
+        "Tests/TerminalCoreTests/TerminalInputRelayTests.swift",
+        "remote/shell_input_identity_test.go",
+        "Tests/TerminalUITests/IMEViewportTests.swift",
+        "Tests/TerminalUITests/PixelViewportTests.swift",
+        "Tests/TerminalUITests/TerminalCursorPreferencesTests.swift"
+      ],
+      "qualificationLimits": [
+        "Physical OS Korean IME and actual remote Unicode interaction remain unrun under the E2E pause."
+      ],
+      "subsequentInputRepair": "Buffer immediate physical typing after double Ctrl+C in Claude/Codex until the same shell and current modes are verified; exact native owner/generation and guarded-batch admission remain required.",
+      "compositionCursorRepair": "While native IME text is marked, render an underline beneath it and suppress the ordinary CG/Metal cursor. Commit/cancel/empty preedit restores the original cursor mode/style; raw IME clause attributes, candidate geometry and Unicode commit bytes remain intact.",
+      "currentRepairVerification": {
+        "status": "targeted_units_and_signed_local_install_verified",
+        "buildID": "f09009a24b5a6893d25e797fc28e5e02fa9248235bc035dd2c1a77aceaa85482",
+        "nativeUnitTests": 47,
+        "packagingUnitTests": 49,
+        "unitReceipt": ".local/text-rendering/unit-receipt.json",
+        "sourceManifest": ".local/text-rendering/source-manifest.json",
+        "review": ".local/text-rendering/final-review.json",
+        "receipt": ".local/text-rendering/installed-receipt.json",
+        "sameShellPIDs": true,
+        "sameLayout": true,
+        "sameSettings": true,
+        "preferenceSidecarsPreserved": true,
+        "liveShellsPreserved": 55,
+        "installedFileHashes": 129,
+        "e2e": "paused_by_user",
+        "fullProductSuiteRerun": false,
+        "warmBuildSeconds": 2.579,
+        "warmBuildNewInvocation": true,
+        "pluginCacheReused": true,
+        "skipBuildNativeCommandSeconds": 8.36,
+        "warmSignedPackagingSeconds": 14.81,
+        "performanceScope": "Unchanged compiled source and warmed caches; not full rebuild timing"
+      },
+      "consecutiveSyllableSelectionRepair": "While composing, selectedRange uses the same local UTF16 space as markedRange and attributedSubstring; NSNotFound and oversized ranges are guarded. Renderer unchanged. Native consecutive-syllable and prefix pixel regressions pass; physical overlap causality remains unverified.",
+      "consecutiveSyllableSelectionVerification": {
+        "status": "passed",
+        "buildID": "72b910001481888906ba983e28cd293f7c30f2f90a4c47a2d56135f1342ab06f",
+        "unitCount": 34,
+        "unitReceipt": ".local/hangul-syllable-transition/unit-receipt.json",
+        "installationReceipt": ".local/hangul-syllable-transition/installed-receipt.json",
+        "review": ".local/hangul-syllable-transition/final-review.json",
+        "evidenceClassification": ".local/hangul-syllable-transition/evidence-index.json",
+        "liveShellsPreserved": 62,
+        "sameShellPIDs": true,
+        "sameLayout": true,
+        "sameSettings": true,
+        "samePreferenceSidecars": true,
+        "confirmedDefect": "Composition-local UTF16 selectedRange was inconsistent with markedRange and substring queries",
+        "rendererChanged": false,
+        "physicalOverlapCausality": "unverified",
+        "physicalE2E": "paused by user"
+      },
+      "preeditMaskRepair": {
+        "status": "targeted_units_and_signed_local_install_verified",
+        "buildID": "8a3bf2453d1e2a3144d7a08dd81dfc766af39e890180b513afa04c327e2f0909",
+        "nativeUnitTests": 48,
+        "redTests": 3,
+        "redAssertions": 5,
+        "beforeDifferingRGBAPixels": 244,
+        "afterDifferingRGBAPixels": 0,
+        "adjacentGlyphInkPixelsBeforeAndAfter": 273,
+        "unitReceipt": ".local/hangul-preedit-anchor/unit-receipt.json",
+        "pixelReceipt": ".local/hangul-preedit-anchor/pixel-receipt.json",
+        "review": ".local/hangul-preedit-anchor/final-review.json",
+        "installationReceipt": ".local/hangul-preedit-anchor/installed-receipt.json",
+        "scope": "Immediate CoreGraphics context and composition-only repaint invalidation; no predictive input changes.",
+        "physicalOSIME": "not_run_under_user_e2e_pause",
+        "fullProductSuiteRerun": false
+      },
+      "nativeInteractionRepair": {
+        "status": "focused_units_and_signed_install_verified",
+        "buildID": "5e1eeab11d7f7747c0aa78878a916ce2fa7d80f42b94615fb271a937014ad85b",
+        "passed": 180,
+        "native": 90,
+        "core": 90,
+        "unitReceipt": ".local/native-interaction-batch/unit-receipt.json",
+        "installationReceipt": ".local/native-interaction-batch/installed-receipt.json",
+        "review": ".local/native-interaction-batch/final-review.json",
+        "notificationAuthorization": "authorized",
+        "e2e": "paused_by_user_not_run",
+        "fullProductSuiteRerun": false,
+        "features": [
+          "native_UTF8_file_links",
+          "multiline_shift_enter",
+          "native_selection_copy",
+          "pointer_scroll_target"
+        ]
+      },
+      "commitToEchoAnchorRepair": {
+        "status": "focused_native_units_and_signed_install_verified",
+        "buildID": "d823ea598b27871b2db7cb96ce427de4e719f9fc68765942a46fda74db38a2d4",
+        "nativeUnits": 74,
+        "imeUnits": 32,
+        "otherNativeUnits": 42,
+        "log": ".local/hangul-commit-echo/final-release-green.log",
+        "red": {
+          "tests": 2,
+          "assertionFailures": 12,
+          "log": ".local/hangul-commit-echo/red.log"
+        },
+        "virtualScrollPointerRed": {
+          "tests": 1,
+          "assertionFailures": 12,
+          "log": ".local/hangul-commit-echo/pointer-red.log"
+        },
+        "sourceHashes": {
+          "vendor/SwiftTerm/Sources/SwiftTerm/Mac/MacTerminalView.swift": "57cccba27673bf126040fdd999a4806cb534592f32a784cca76020a8909097ce",
+          "vendor/SwiftTerm/Sources/SwiftTerm/Apple/AppleTerminalView.swift": "35e77736c28d290a12231f3576f99a4ef9806d951fe1dea6220f0cacfda922c8",
+          "vendor/SwiftTerm/Sources/SwiftTerm/Apple/TerminalRenderOwner.swift": "6c40fbed36f28eba847c0b5b3d2f509fa7d5caaf7e3d2298b110de81b9c61fc4",
+          "vendor/SwiftTerm/Sources/SwiftTerm/Apple/TerminalSnapshot.swift": "4bbcbcbfbc35b525cf3c92641d367140e54f51d00eaf5e1aa839ec935546677e",
+          "Tests/TerminalUITests/IMEViewportTests.swift": "346c678a5ebe15aa3fa0ab2757a74a01ca4ac27867217f0b22fec7d3b19a38df"
+        },
+        "e2e": "paused_by_user_not_run",
+        "scope": "Native inert IME callback sequences,CG/Metal/layer,pre-echo/candidate/occlusion,partial/multiple/sync echoes,cancel,wrap,full-bottom presentation,partial-region footer guard and pointer projection;no real jobs",
+        "boundedBehavior": "At a partial scrolling region bottom,ambiguous wrapped preedit projection waits for actual cursor output rather than overwriting fixed footer;marked input is retained.",
+        "unitReceipt": ".local/hangul-commit-echo/unit-receipt.json",
+        "pixelReceipt": ".local/hangul-commit-echo/pixel-receipt.json",
+        "review": ".local/hangul-commit-echo/final-review.json",
+        "installationReceipt": ".local/hangul-commit-echo/installed-receipt.json",
+        "sameShellPIDs": true,
+        "sameLayout": true,
+        "sameSettings": true,
+        "liveShellsPreserved": 65,
+        "samePreferenceSidecars": true,
+        "fullProductSuiteRerun": false
+      },
+      "idleInputLatencyRepair": {
+        "status": "focused_units_and_signed_install_verified",
+        "buildID": "e2bd921cd7978e710c492317fcd3e28754c1ece61409a4c82ea792f3db15de4f",
+        "total": 111,
+        "native": 55,
+        "core": 56,
+        "failures": 0,
+        "log": ".local/terminal-latency/final-unit.log",
+        "sourceHashes": {
+          "Sources/TerminalCore/TerminalInputRelay.swift": "78a6fc870e62ac841cecc4973ec19cdec394f8a733c55f43dd69aa7dd856a82d",
+          "Tests/TerminalCoreTests/TerminalInputRelayTests.swift": "725fd851c8fb51bff646bd6eef4c4fbd02a79730a7f31977738afd42257a08b2",
+          "Sources/TranoApp/DeveloperNativeEffects.swift": "95093c78b3184c77455dcb880824b123cf79756094ad674542a083792ef63ecc",
+          "Sources/TranoApp/TerminalPane.swift": "d7196f83bfbf9189b0d6e36e289d7059478c3dd6e7e5757dcc92003a9b4ba5c9"
+        },
+        "idleRelayLatencyMS": {
+          "mean": 0.058091999999999984,
+          "p50": 0.055,
+          "max": 0.092584
+        },
+        "baselineIdleRelayMeanMS": 10.680781291666667,
+        "measurementScope": "24 sequential fake-writer packets,not physical key-to-render or PTY/provider latency",
+        "change": "Default coalescing delay8→0;dispatch remains asynchronous and single-flight",
+        "e2e": "paused_by_user_not_run",
+        "renderRepair": "deferred_without_product_changes;invalid native fixtures excluded",
+        "unitReceipt": ".local/terminal-latency/unit-receipt.json",
+        "installationReceipt": ".local/terminal-latency/installed-receipt.json",
+        "review": ".local/terminal-latency/final-review.json",
+        "sameShellPIDs": true,
+        "sameLayout": true,
+        "sameSettings": true,
+        "samePreferenceSidecars": true,
+        "liveShellsPreserved": 65,
+        "fullProductSuiteRerun": false
+      },
+      "observationLockLatencyRepair": {
+        "status": "focused_units_and_signed_install_verified",
+        "buildID": "1d4e3ba0a5b3c6552c4d7be77789cd24299b64f8acd625a7dd96d210d5ace395",
+        "total": 124,
+        "core": 69,
+        "native": 55,
+        "failures": 0,
+        "log": ".local/terminal-latency/lock-repair/green.log",
+        "red": {
+          "tests": 4,
+          "assertionFailures": 4,
+          "failedTests": 2,
+          "positiveOuterTransactionTestsPassed": 2,
+          "log": ".local/terminal-latency/lock-repair/red.log"
+        },
+        "sourceHashes": {
+          "Sources/TerminalCore/Runtime.swift": "33c47caf403a46300af65194da6abed7fd163dee1b30e2e409eba0f86daeca68",
+          "Sources/TranoApp/Store.swift": "a2713ad64f4fe3162c0b869ecdb99f69933aaeb94e16086857606436fcb81ff4",
+          "Sources/TerminalCore/TerminalInputRelay.swift": "78a6fc870e62ac841cecc4973ec19cdec394f8a733c55f43dd69aa7dd856a82d",
+          "Tests/TerminalCoreTests/RuntimeObservationLockTests.swift": "a519fa051fd10ff8b63c1a529fdd55876bc62965b5dc8d65aede9be98fb2a239",
+          "Tests/TerminalCoreTests/TerminalInputRelayTests.swift": "725fd851c8fb51bff646bd6eef4c4fbd02a79730a7f31977738afd42257a08b2"
+        },
+        "scope": "Blockedfake external metadata no longer blocks same-runtime native fake input or second-runtime mutation;explicit caller locks and durable input reservation retained;55 native input/IME/pointer regressions",
+        "e2e": "paused_by_user_not_run",
+        "beforeLiveLockObservation": ".local/terminal-latency/live-lock-probe.json",
+        "beforeMaximumLockBusyMS": 256.01208399999996,
+        "beforeBusyFraction": 0.3284600389863548,
+        "unitReceipt": ".local/terminal-latency/lock-repair/unit-receipt.json",
+        "installationReceipt": ".local/terminal-latency/lock-repair/installed-receipt.json",
+        "review": ".local/terminal-latency/lock-repair/final-review.json",
+        "sameShellPIDs": true,
+        "sameLayout": true,
+        "sameSettings": true,
+        "samePreferenceSidecars": true,
+        "liveShellsPreserved": 65,
+        "fullProductSuiteRerun": false
+      }
+    },
+    {
+      "id": "REQ-004",
+      "key": "api_glass",
+      "request": "Public session/search/state/actions API usable by Glass Launcher",
+      "implementation": "source_connected",
+      "repairedInThisBatch": false,
+      "sourceFiles": [
+        "Sources/TerminalCore/API.swift",
+        "Sources/TranoCLI/main.swift",
+        "integrations/glass-launcher/trano.lua"
+      ],
+      "testContracts": [
+        "Tests/Integrations/glass-launcher.lua"
+      ],
+      "qualificationLimits": [
+        "Glass Launcher displays the focused pane per tab. The full state/search API exposes other panes; nonfocused conversation-title launcher rows are not implemented."
+      ]
+    },
+    {
+      "id": "REQ-005",
+      "key": "recovery",
+      "request": "Restore workspace/tab/pane layout, scrollback and exact Claude/Codex conversations after restart/reboot; automatic recovery",
+      "implementation": "source_connected",
+      "repairedInThisBatch": false,
+      "sourceFiles": [
+        "Sources/TerminalCore/Recovery.swift",
+        "Sources/TerminalCore/Runtime.swift",
+        "Sources/TerminalCore/RuntimeContinuity.swift"
+      ],
+      "testContracts": [
+        "Tests/TerminalCoreTests/RecoveryLockTests.swift",
+        "Tests/TerminalCoreTests/RuntimeContinuityTests.swift"
+      ],
+      "qualificationLimits": [
+        "Actual OS reboot and authenticated provider recovery remain unrun on this revision."
+      ]
+    },
+    {
+      "id": "REQ-006",
+      "key": "remote",
+      "request": "Visible Add Remote Host and simple user-space Linux installation/connect/reconnect",
+      "implementation": "source_connected",
+      "repairedInThisBatch": true,
+      "sourceFiles": [
+        "Sources/TerminalCore/Remote.swift",
+        "Sources/TerminalCore/RemoteInstaller.swift",
+        "Sources/TranoApp/HeaderContextMenu.swift",
+        "Sources/TranoApp/RemoteHostsView.swift",
+        "Sources/TranoApp/ToolPanelStyle.swift",
+        "Sources/TranoApp/WorkspaceView.swift",
+        "remote/agent.go",
+        "remote/agent_lifecycle_test.go",
+        "remote/agent_linux_test.go",
+        "remote/agent_tasks_linux_test.go",
+        "remote/hooks.go",
+        "remote/install_test.sh",
+        "remote/main.go",
+        "remote/main_test.go",
+        "remote/recovery.go",
+        "remote/shell.go",
+        "scripts/build-app.sh",
+        "scripts/build-remote.sh",
+        "scripts/install-remote.sh"
+      ],
+      "testContracts": [
+        "Tests/TerminalCoreTests/RemoteInstallerTests.swift",
+        "Tests/TerminalCoreTests/RemoteTests.swift",
+        "Tests/TerminalCoreTests/RemoteTransportSecurityTests.swift",
+        "Tests/TerminalUITests/ToolPanelDesignTests.swift",
+        "Tests/TerminalUITests/WorkspaceSearchCorrectionTests.swift"
+      ],
+      "qualificationLimits": [
+        "Remote install/connect, hooks, activity and exact mapped recovery are implemented. Local queued input, structured Decisions and managed account/extension libraries are not advertised as remotely supported."
+      ],
+      "toolPanelPresentation": "Shared current interface theme, header/Close/spacing/typography; existing guarded actions preserved.",
+      "keyboardFooterRepair": {
+        "status": "focused_units_and_signed_install_with_explicit_skips",
+        "buildID": "9781412387325071b8b3e1f3d284becf89a5f29a5c53f2855a9c5c5ce745369f",
+        "executed": 124,
+        "passed": 121,
+        "skipped": 3,
+        "failures": 0,
+        "unitReceipt": ".local/remote-footer-and-input-latency/unit-receipt.json",
+        "reviewReceipt": ".local/remote-footer-and-input-latency/final-review.json",
+        "installationReceipt": ".local/remote-footer-and-input-latency/installed-receipt.json",
+        "preservedLiveShells": 65,
+        "preservedActiveProviders": 19,
+        "scope": [
+          "All visible New Session/Add Remote Host footer actions selectable by arrows and Enter in empty/filtered session picker",
+          "Action/header presentation discovery outside mutation transaction",
+          "Coherent3file snapshot bytes under read transaction;decode after own lock release;explicit outer locks retained",
+          "Future supervisor polls cache unchanged persisted-file identity;old live supervisors retained",
+          "Confirmed tab title/icon selection presented before unrelated metadata;existing IME/modal/stale press guards retained"
+        ],
+        "qualificationLimits": [
+          "3 padding/background SwiftUI gesture cases skipped after harmless delivery control failed",
+          "Physical keyboard/provider/PTY E2E paused",
+          "19 retained provider processes preserve old supervisory code until natural lifecycle;no force restart",
+          "Passive lock observations do not establish physical typing latency"
+        ],
+        "lockObservation": {
+          "before": {
+            "busyFraction": 0.6780341023069207,
+            "maximumBusyMS": 395.353292,
+            "p95BusyMS": 164.628125
+          },
+          "after": {
+            "busyFraction": 0.23987034035656402,
+            "maximumBusyMS": 67.480416,
+            "p95BusyMS": 55.460333
+          },
+          "beforeReceipt": ".local/remote-footer-and-input-latency/diagnostics/live-lock-idle.json",
+          "afterReceipt": ".local/remote-footer-and-input-latency/diagnostics/live-lock-postinstall.json",
+          "scope": "Two compiler-idle10s passive lock observations,uncontrolled workload and helper recovery/startup;not physical key-to-render latency or full-product performance qualification"
+        }
+      }
+    },
+    {
+      "id": "REQ-007",
+      "key": "updates",
+      "request": "Automatic signed update tooling and user controls",
+      "implementation": "source_connected",
+      "repairedInThisBatch": true,
+      "sourceFiles": [
+        "Sources/TerminalCore/UpdatePolicy.swift",
+        "Sources/TranoApp/App.swift",
+        "Sources/TranoApp/PendingAutomaticUpdateInstall.swift",
+        "Sources/TranoApp/UpdateController.swift",
+        "scripts/configure-updates.py",
+        "scripts/release-update.sh"
+      ],
+      "testContracts": [
+        "Tests/TerminalCoreTests/DeveloperActionPolicyTests.swift",
+        "Tests/TerminalCoreTests/DeveloperSettingsTests.swift",
+        "Tests/TerminalCoreTests/UpdatePolicyTests.swift",
+        "Tests/TerminalUITests/AutomaticUpdateRetryTests.swift"
+      ],
+      "qualificationLimits": [
+        "Production appcast signing/feed and Developer ID notarized distribution are not configured."
+      ]
+    },
+    {
+      "id": "REQ-008",
+      "key": "resources",
+      "request": "Bounded CPU/memory usage and resource optimization",
+      "implementation": "source_connected",
+      "repairedInThisBatch": true,
+      "sourceFiles": [
+        "Sources/TerminalCore/ScrollbackStore.swift",
+        "Sources/TerminalCore/SessionLoadSampler.swift",
+        "Sources/TranoApp/AttachmentAdmissionBudget.swift",
+        "Sources/TranoApp/StoreAttachmentAdmission.swift",
+        "Sources/TranoApp/TerminalPane.swift",
+        "vendor/SwiftTerm/Sources/SwiftTerm/Apple/AppleTerminalView.swift",
+        "vendor/SwiftTerm/Sources/SwiftTerm/TerminalIOPipeline.swift"
+      ],
+      "testContracts": [
+        "Tests/TerminalCoreTests/SessionLoadSamplerTests.swift",
+        "Tests/TerminalUITests/AttachmentAdmissionBudgetTests.swift",
+        "Tests/TerminalUITests/AttachmentAdmissionNativeTests.swift",
+        "Tests/TerminalUITests/TranoRendererOptionsTests.swift",
+        "Tests/TerminalUITests/AppStoreObservationLockTests.swift",
+        "Tests/TerminalCoreTests/RuntimeStateSnapshotLockTests.swift",
+        "Tests/TranoCLITests/ProviderSupervisorBoundaryCacheTests.swift"
+      ],
+      "qualificationLimits": [
+        "An earlier measured build exceeded the idle maximum RSS target:251.484375MiB versus250MiB. Current revision performance qualification is paused."
+      ],
+      "inputContentionRepair": {
+        "status": "focused_units_and_signed_install_with_explicit_skips",
+        "buildID": "9781412387325071b8b3e1f3d284becf89a5f29a5c53f2855a9c5c5ce745369f",
+        "executed": 124,
+        "passed": 121,
+        "skipped": 3,
+        "failures": 0,
+        "unitReceipt": ".local/remote-footer-and-input-latency/unit-receipt.json",
+        "reviewReceipt": ".local/remote-footer-and-input-latency/final-review.json",
+        "installationReceipt": ".local/remote-footer-and-input-latency/installed-receipt.json",
+        "preservedLiveShells": 65,
+        "preservedActiveProviders": 19,
+        "scope": [
+          "All visible New Session/Add Remote Host footer actions selectable by arrows and Enter in empty/filtered session picker",
+          "Action/header presentation discovery outside mutation transaction",
+          "Coherent3file snapshot bytes under read transaction;decode after own lock release;explicit outer locks retained",
+          "Future supervisor polls cache unchanged persisted-file identity;old live supervisors retained",
+          "Confirmed tab title/icon selection presented before unrelated metadata;existing IME/modal/stale press guards retained"
+        ],
+        "qualificationLimits": [
+          "3 padding/background SwiftUI gesture cases skipped after harmless delivery control failed",
+          "Physical keyboard/provider/PTY E2E paused",
+          "19 retained provider processes preserve old supervisory code until natural lifecycle;no force restart",
+          "Passive lock observations do not establish physical typing latency"
+        ],
+        "lockObservation": {
+          "before": {
+            "busyFraction": 0.6780341023069207,
+            "maximumBusyMS": 395.353292,
+            "p95BusyMS": 164.628125
+          },
+          "after": {
+            "busyFraction": 0.23987034035656402,
+            "maximumBusyMS": 67.480416,
+            "p95BusyMS": 55.460333
+          },
+          "beforeReceipt": ".local/remote-footer-and-input-latency/diagnostics/live-lock-idle.json",
+          "afterReceipt": ".local/remote-footer-and-input-latency/diagnostics/live-lock-postinstall.json",
+          "scope": "Two compiler-idle10s passive lock observations,uncontrolled workload and helper recovery/startup;not physical key-to-render latency or full-product performance qualification"
+        }
+      }
+    },
+    {
+      "id": "REQ-009",
+      "key": "oss",
+      "request": "Standalone open source Trano with public source/licensing",
+      "implementation": "source_connected",
+      "repairedInThisBatch": false,
+      "sourceFiles": [
+        "scripts/check-publication.py"
+      ],
+      "testContracts": [],
+      "qualificationLimits": [
+        "The existing repository is public; this local batch has not been committed or pushed."
+      ]
+    },
+    {
+      "id": "REQ-010",
+      "key": "header",
+      "request": "One compact title/tab/header row without redundant Trano title",
+      "implementation": "source_connected",
+      "repairedInThisBatch": false,
+      "sourceFiles": [
+        "Sources/TranoApp/WorkspaceView.swift",
+        "Sources/TranoApp/WorkspaceWindow.swift"
+      ],
+      "testContracts": [
+        "Tests/TerminalUITests/ActivityGeometryTests.swift"
+      ],
+      "qualificationLimits": []
+    },
+    {
+      "id": "REQ-011",
+      "key": "traffic",
+      "request": "Rex-sized native close/minimize/zoom controls centered and close to workspace selector",
+      "implementation": "source_connected",
+      "repairedInThisBatch": false,
+      "sourceFiles": [
+        "Sources/TranoApp/WorkspaceView.swift",
+        "Sources/TranoApp/WorkspaceWindow.swift"
+      ],
+      "testContracts": [
+        "Tests/TerminalUITests/WindowControlGeometryTests.swift"
+      ],
+      "qualificationLimits": []
+    },
+    {
+      "id": "REQ-012",
+      "key": "window_drag",
+      "request": "Natural window dragging through header/background regions",
+      "implementation": "source_connected",
+      "repairedInThisBatch": false,
+      "sourceFiles": [
+        "Sources/TranoApp/WindowChrome.swift",
+        "Sources/TranoApp/WorkspaceView.swift"
+      ],
+      "testContracts": [
+        "Tests/TerminalUITests/ActivityGeometryTests.swift"
+      ],
+      "qualificationLimits": []
+    },
+    {
+      "id": "REQ-013",
+      "key": "workspace_menu",
+      "request": "Workspace menu directly below its selector",
+      "implementation": "source_connected",
+      "repairedInThisBatch": false,
+      "sourceFiles": [
+        "Sources/TranoApp/WorkspaceView.swift"
+      ],
+      "testContracts": [
+        "Tests/TerminalUITests/WorkspaceMenuGeometryTests.swift"
+      ],
+      "qualificationLimits": []
+    },
+    {
+      "id": "REQ-014",
+      "key": "workspace_create",
+      "request": "Named get-or-create and default terminal; automatic lowercase random-word-random-word names",
+      "implementation": "source_connected",
+      "repairedInThisBatch": true,
+      "sourceFiles": [
+        "Sources/TerminalCore/Actions.swift",
+        "Sources/TerminalCore/Launcher.swift",
+        "Sources/TerminalCore/StartupWorkspace.swift",
+        "Sources/TerminalCore/Workspace.swift",
+        "Sources/TerminalCore/WorkspaceLaunchSelection.swift",
+        "Sources/TranoApp/WorkspaceView.swift"
+      ],
+      "testContracts": [
+        "Tests/TerminalCoreTests/StartupWorkspaceTests.swift",
+        "Tests/TerminalCoreTests/WorkspaceLaunchSelectionTests.swift"
+      ],
+      "qualificationLimits": []
+    },
+    {
+      "id": "REQ-015",
+      "key": "workspace_close",
+      "request": "Close workspace/session from header/sidebar/picker; final tab/pane advances workspace without app crash",
+      "implementation": "source_connected",
+      "repairedInThisBatch": true,
+      "sourceFiles": [
+        "Sources/TerminalCore/WindowSelection.swift",
+        "Sources/TerminalCore/Workspace.swift",
+        "Sources/TranoApp/Store.swift",
+        "Sources/TranoApp/WorkspaceView.swift",
+        "Sources/TranoApp/App.swift"
+      ],
+      "testContracts": [
+        "Tests/TerminalCoreTests/LastTabCloseTests.swift",
+        "Tests/TerminalUITests/WorkspaceCloseUITests.swift",
+        "Tests/TerminalUITests/TerminalInputRetirementTests.swift",
+        "Tests/TerminalUITests/EmptyWorkspaceCloseTests.swift"
+      ],
+      "qualificationLimits": [
+        "E2E paused by user; historical input-relay recursion crash not correlated or claimed fixed."
+      ],
+      "verification": {
+        "unitReceipt": ".local/workspace-close-crash/unit-receipt.json",
+        "installedBuild": "b1ebee8178caf5a5dfaeaf3cd052d3792e4900c49b05480b465360d119b7a15f",
+        "scope": "Empty selected-session command close, final-empty native window, repeated close, queued navigation/IME, native header and successor renderer attachment"
+      },
+      "currentRepairVerification": {
+        "status": "targeted_units_and_signed_local_install_verified",
+        "buildID": "1c1ae3961a9ecdf27e785899937161360e2975c5c273cd5a36e66577e999b2ce",
+        "productUnitTests": 67,
+        "nativeUnitTests": 31,
+        "coreUnitTests": 36,
+        "packagingUnitTests": 45,
+        "newRegressionTests": 4,
+        "regressionsFailedBeforeFix": 3,
+        "fullProductSuiteRerun": false,
+        "unitReceipt": ".local/closed-session-search/unit-receipt.json",
+        "sourceManifest": ".local/closed-session-search/source-manifest.json",
+        "review": ".local/closed-session-search/final-review.json",
+        "receipt": ".local/closed-session-search/installed-receipt.json",
+        "sameShellPIDs": true,
+        "sameLayout": true,
+        "sameSettings": true,
+        "liveShellsPreserved": 48,
+        "installedFileHashes": 123,
+        "e2e": "paused_by_user",
+        "scope": "Closed session search filtering; whole visible marked Hangul query uses contiguous matching; shared dark/green shell/zsh icon; existing Dock badge preference enabled",
+        "emptySessionRepair": ".local/closed-session-search/empty-session-repair.json",
+        "dockPreference": ".local/closed-session-search/dock-preference-receipt.json"
+      }
+    },
+    {
+      "id": "REQ-016",
+      "key": "restore_closed",
+      "request": "Explicit pane/tab close saves topology, cwd, screen/scrollback, shell/history and exact conversation before stopping processes; CmdShiftT restores a fresh same-kind shell and resumes saved Claude/Codex conversation.",
+      "implementation": "source_connected",
+      "repairedInThisBatch": true,
+      "sourceFiles": [
+        "Sources/TerminalCore/Actions.swift",
+        "Sources/TerminalCore/Workspace.swift",
+        "Sources/TranoApp/Store.swift",
+        "Sources/TerminalCore/API.swift",
+        "Sources/TerminalCore/AgentTaskActivity.swift",
+        "Sources/TerminalCore/ClosedRemoteTerminal.swift",
+        "Sources/TerminalCore/ClosedTerminalActions.swift",
+        "Sources/TerminalCore/ClosedTerminalAgentRecovery.swift",
+        "Sources/TerminalCore/ClosedTerminalProcesses.swift",
+        "Sources/TerminalCore/ClosedTerminalRestore.swift",
+        "Sources/TerminalCore/ClosedTerminalRuntime.swift",
+        "Sources/TerminalCore/ClosedTerminalStore.swift",
+        "Sources/TerminalCore/FollowUpQueue.swift",
+        "Sources/TerminalCore/KeyBindings.swift",
+        "Sources/TerminalCore/Recovery.swift",
+        "Sources/TerminalCore/Runtime.swift",
+        "Sources/TerminalCore/ShellHistoryIntegration.swift",
+        "Sources/TerminalCore/ShellHistoryStore.swift",
+        "Sources/TerminalCore/ShellIntegration.swift",
+        "Sources/TerminalCore/StartupWorkspace.swift",
+        "Sources/TerminalCore/TerminalLaunchSelection.swift",
+        "Sources/TranoApp/App.swift",
+        "Sources/TranoApp/FloatingPaneController.swift",
+        "Sources/TranoCLI/ScrollbackMonitoring.swift",
+        "Sources/TranoCLI/main.swift",
+        "remote/agent.go",
+        "remote/closed.go",
+        "remote/closed_history.go",
+        "remote/closed_process.go",
+        "remote/history.go",
+        "remote/main.go",
+        "remote/program.go",
+        "remote/recovery.go",
+        "remote/shell.go"
+      ],
+      "testContracts": [
+        "Tests/TerminalCoreTests/LastTabCloseTests.swift",
+        "Tests/TerminalUITests/WorkspaceCloseUITests.swift",
+        "Tests/TerminalCoreTests/ClosedAgentRecoveryTests.swift",
+        "Tests/TerminalCoreTests/ClosedRemoteTerminalTests.swift",
+        "Tests/TerminalCoreTests/ClosedTerminalLifecycleTests.swift",
+        "Tests/TerminalCoreTests/ClosedTerminalProcessTests.swift",
+        "Tests/TerminalCoreTests/ShellHistoryTests.swift",
+        "Tests/TerminalCoreTests/TerminalLaunchSelectionTests.swift",
+        "Tests/TerminalCoreTests/TerminalReopenTests.swift",
+        "Tests/TerminalUITests/ClosedTerminalLifecycleUITests.swift",
+        "Tests/TerminalUITests/EmptyWorkspaceCloseTests.swift",
+        "Tests/TerminalUITests/TerminalHistoryReplayFocusTests.swift",
+        "Tests/TranoCLITests/MonitorIdentityTests.swift",
+        "remote/closed_test.go",
+        "remote/history_test.go",
+        "remote/program_test.go",
+        "remote/shell_input_identity_test.go"
+      ],
+      "qualificationLimits": [
+        "Legacy unhooked shells recover on-disk history only.",
+        "Remote helpers packaged, not deployed or live-tested.",
+        "Real shell, provider, PTY, SSH and GUI E2E remain paused by user."
+      ],
+      "requirements": [
+        "FR-CLOSE-1",
+        "FR-CLOSE-2",
+        "FR-CLOSE-3",
+        "FR-CLOSE-4",
+        "FR-CLOSE-5",
+        "FR-CLOSE-6",
+        "FR-CLOSE-7"
+      ],
+      "verification": {
+        "status": "targeted_units_and_signed_local_install_verified",
+        "requirements": [
+          "FR-CLOSE-1",
+          "FR-CLOSE-2",
+          "FR-CLOSE-3",
+          "FR-CLOSE-4",
+          "FR-CLOSE-5",
+          "FR-CLOSE-6",
+          "FR-CLOSE-7"
+        ],
+        "testedBuildID": "16e5185f08ab19f052d8cd8e803e63e754a0873b9e1158d14e304dcfc98e0380",
+        "installedBuildID": "8a3bf2453d1e2a3144d7a08dd81dfc766af39e890180b513afa04c327e2f0909",
+        "closedSourceAndTestHashesUnchanged": 50,
+        "swift": {
+          "passed": 116,
+          "core": 92,
+          "native": 20,
+          "cli": 4,
+          "failures": 0,
+          "log": ".local/closed-terminal-state/final-green.log",
+          "exitCode": 0
+        },
+        "go": {
+          "passed": 44,
+          "newCloseTests": 22,
+          "race": true,
+          "failures": 0,
+          "log": ".local/closed-terminal-state/remote-cancel-final-regression.log",
+          "command": "GOMAXPROCS=2 go test -race -count=1 -v -run '^Test(ClosedTerminal|RemoteHistory|ShellInputIdentity|Program(Classifier|Foreground|Probe|Projection))' .",
+          "cwd": "remote"
+        },
+        "unitReceipt": ".local/closed-terminal-state/unit-receipt.json",
+        "review": ".local/closed-terminal-state/final-review.json",
+        "installationReceipt": ".local/closed-terminal-state/installed-receipt.json",
+        "limits": [
+          "Legacy unhooked shells recover on-disk history only.",
+          "Remote helpers packaged, not deployed or live-tested."
+        ],
+        "e2e": "paused_by_user_not_run",
+        "fullProductSuiteRerun": false
+      },
+      "nativeInteractionRepair": {
+        "status": "focused_units_and_signed_install_verified",
+        "buildID": "5e1eeab11d7f7747c0aa78878a916ce2fa7d80f42b94615fb271a937014ad85b",
+        "passed": 180,
+        "native": 90,
+        "core": 90,
+        "unitReceipt": ".local/native-interaction-batch/unit-receipt.json",
+        "installationReceipt": ".local/native-interaction-batch/installed-receipt.json",
+        "review": ".local/native-interaction-batch/final-review.json",
+        "notificationAuthorization": "authorized",
+        "e2e": "paused_by_user_not_run",
+        "fullProductSuiteRerun": false,
+        "features": [
+          "native_history_byte_encoding"
+        ]
+      }
+    },
+    {
+      "id": "REQ-017",
+      "key": "tab_geometry",
+      "request": "Slightly larger Rex-like tab height and font",
+      "implementation": "source_connected",
+      "repairedInThisBatch": true,
+      "sourceFiles": [
+        "Sources/TranoApp/WorkspaceView.swift"
+      ],
+      "testContracts": [
+        "Tests/TerminalUITests/ActivityGeometryTests.swift",
+        "Tests/TerminalUITests/WindowControlGeometryTests.swift"
+      ],
+      "qualificationLimits": [],
+      "nativeInteractionRepair": {
+        "status": "focused_units_and_signed_install_verified",
+        "buildID": "5e1eeab11d7f7747c0aa78878a916ce2fa7d80f42b94615fb271a937014ad85b",
+        "passed": 180,
+        "native": 90,
+        "core": 90,
+        "unitReceipt": ".local/native-interaction-batch/unit-receipt.json",
+        "installationReceipt": ".local/native-interaction-batch/installed-receipt.json",
+        "review": ".local/native-interaction-batch/final-review.json",
+        "notificationAuthorization": "authorized",
+        "e2e": "paused_by_user_not_run",
+        "fullProductSuiteRerun": false,
+        "features": [
+          "count_based_tab_compression"
+        ]
+      }
+    },
+    {
+      "id": "REQ-018",
+      "key": "tabs_no_plus",
+      "request": "Remove tab-strip plus; retain keyboard/context creation",
+      "implementation": "source_connected",
+      "repairedInThisBatch": false,
+      "sourceFiles": [
+        "Sources/TerminalCore/Actions.swift",
+        "Sources/TranoApp/HeaderContextMenu.swift",
+        "Sources/TranoApp/WorkspaceView.swift"
+      ],
+      "testContracts": [
+        "Tests/TerminalUITests/HeaderContextMenuTests.swift"
+      ],
+      "qualificationLimits": []
+    },
+    {
+      "id": "REQ-019",
+      "key": "tab_drag",
+      "request": "Drag tabs to existing windows and detach outside into a new window",
+      "implementation": "source_connected",
+      "repairedInThisBatch": false,
+      "sourceFiles": [
+        "Sources/TranoApp/App.swift",
+        "Sources/TranoApp/TabDragSource.swift",
+        "Sources/TranoApp/WorkspaceDrag.swift"
+      ],
+      "testContracts": [
+        "Tests/TerminalUITests/NativeTabDragTests.swift",
+        "Tests/TerminalUITests/TabTearOffTests.swift",
+        "Tests/TerminalUITests/TabTransferTests.swift"
+      ],
+      "qualificationLimits": []
+    },
+    {
+      "id": "REQ-020",
+      "key": "pane_drag",
+      "request": "Drag panes to other tabs/workspaces/windows and detach outside into new window",
+      "implementation": "source_connected",
+      "repairedInThisBatch": false,
+      "sourceFiles": [
+        "Sources/TranoApp/PaneDragSource.swift",
+        "Sources/TranoApp/PaneDropTarget.swift",
+        "Sources/TranoApp/WorkspaceDrag.swift",
+        "Sources/TranoApp/WorkspaceDropTarget.swift"
+      ],
+      "testContracts": [
+        "Tests/TerminalUITests/NativePaneDragTests.swift",
+        "Tests/TerminalUITests/PaneTearOffTests.swift",
+        "Tests/TerminalUITests/WorkspaceDropTests.swift"
+      ],
+      "qualificationLimits": []
+    },
+    {
+      "id": "REQ-021",
+      "key": "pane_zoom_float",
+      "request": "CmdShiftEnter pane maximize/restore and Float Pane; prevent the reported ARC/window-transform-animation close crash",
+      "implementation": "source_connected",
+      "repairedInThisBatch": false,
+      "sourceFiles": [
+        "Sources/TerminalCore/Actions.swift",
+        "Sources/TranoApp/FloatingPaneController.swift",
+        "Sources/TranoApp/Store.swift",
+        "Sources/TranoApp/SupervisorWindowController.swift",
+        "Sources/TranoApp/WorkspaceView.swift",
+        "Sources/TranoApp/WorkspaceWindow.swift"
+      ],
+      "testContracts": [
+        "Tests/TerminalUITests/FloatingPaneTests.swift",
+        "Tests/TerminalUITests/WindowLifecycleTests.swift"
+      ],
+      "qualificationLimits": []
+    },
+    {
+      "id": "REQ-022",
+      "key": "pane_title",
+      "request": "Pane title background follows terminal background",
+      "implementation": "source_connected",
+      "repairedInThisBatch": false,
+      "sourceFiles": [
+        "Sources/TranoApp/InterfaceEffects.swift",
+        "Sources/TranoApp/WorkspaceView.swift"
+      ],
+      "testContracts": [
+        "Tests/TerminalUITests/TerminalGapGeometryTests.swift",
+        "Tests/TerminalUITests/WindowTransparencyTests.swift"
+      ],
+      "qualificationLimits": []
+    },
+    {
+      "id": "REQ-023",
+      "key": "terminal_gaps",
+      "request": "No padding/transparent seam between header, pane and terminal",
+      "implementation": "source_connected",
+      "repairedInThisBatch": false,
+      "sourceFiles": [
+        "Sources/TranoApp/InterfaceEffects.swift",
+        "Sources/TranoApp/TerminalPane.swift",
+        "Sources/TranoApp/WorkspaceView.swift"
+      ],
+      "testContracts": [
+        "Tests/TerminalUITests/TerminalGapGeometryTests.swift",
+        "Tests/TerminalUITests/WindowTransparencyTests.swift"
+      ],
+      "qualificationLimits": []
+    },
+    {
+      "id": "REQ-024",
+      "key": "header_context",
+      "request": "Tab/blank-header New Tab, rename/close/new session, Add Remote Host and Customize View",
+      "implementation": "source_connected",
+      "repairedInThisBatch": false,
+      "sourceFiles": [
+        "Sources/TranoApp/HeaderContextMenu.swift",
+        "Sources/TranoApp/WindowChrome.swift",
+        "Sources/TranoApp/WorkspaceView.swift"
+      ],
+      "testContracts": [
+        "Tests/TerminalUITests/HeaderContextMenuTests.swift"
+      ],
+      "qualificationLimits": []
+    },
+    {
+      "id": "REQ-025",
+      "key": "picker_context",
+      "request": "CmdK rows rename/close/move up/down with keyboard/search identity preserved",
+      "implementation": "source_connected",
+      "repairedInThisBatch": false,
+      "sourceFiles": [
+        "Sources/TranoApp/SessionPickerContextMenu.swift",
+        "Sources/TranoApp/WorkspaceView.swift"
+      ],
+      "testContracts": [
+        "Tests/TerminalCoreTests/WorkspaceOrderTests.swift",
+        "Tests/TerminalUITests/SessionPickerMenuTests.swift",
+        "Tests/TerminalUITests/WorkspaceActivityDotTests.swift",
+        "Tests/TerminalUITests/WorkspaceSearchCorrectionTests.swift"
+      ],
+      "qualificationLimits": [],
+      "circularKeyboardNavigation": {
+        "status": "focused_units_and_signed_install_verified",
+        "buildID": "ae5a9dd3800e9e8d309a88b677f7b0e415f030501b2f6f61841b696a1fe3ebb4",
+        "total": 35,
+        "native": 28,
+        "core": 7,
+        "redAssertionFailures": 19,
+        "unitReceipt": ".local/workspace-picker-wrap/unit-receipt.json",
+        "reviewReceipt": ".local/workspace-picker-wrap/final-review.json",
+        "installationReceipt": ".local/workspace-picker-wrap/installed-receipt.json",
+        "scope": "Cmd+K sessions picker Up from first wraps to last selectable entry; Down from last wraps to first. Compact/full, filtered Create/footer entries, singleton and Korean literal/IME controls verified with native search-editor selectors. Other picker modes retain existing behavior.",
+        "preservedLiveShells": 65,
+        "e2e": "paused_by_user_not_run"
+      },
+      "visibleFooterKeyboardRepair": {
+        "status": "focused_units_and_signed_install_with_explicit_skips",
+        "buildID": "9781412387325071b8b3e1f3d284becf89a5f29a5c53f2855a9c5c5ce745369f",
+        "executed": 124,
+        "passed": 121,
+        "skipped": 3,
+        "failures": 0,
+        "unitReceipt": ".local/remote-footer-and-input-latency/unit-receipt.json",
+        "reviewReceipt": ".local/remote-footer-and-input-latency/final-review.json",
+        "installationReceipt": ".local/remote-footer-and-input-latency/installed-receipt.json",
+        "preservedLiveShells": 65,
+        "preservedActiveProviders": 19,
+        "scope": [
+          "All visible New Session/Add Remote Host footer actions selectable by arrows and Enter in empty/filtered session picker",
+          "Action/header presentation discovery outside mutation transaction",
+          "Coherent3file snapshot bytes under read transaction;decode after own lock release;explicit outer locks retained",
+          "Future supervisor polls cache unchanged persisted-file identity;old live supervisors retained",
+          "Confirmed tab title/icon selection presented before unrelated metadata;existing IME/modal/stale press guards retained"
+        ],
+        "qualificationLimits": [
+          "3 padding/background SwiftUI gesture cases skipped after harmless delivery control failed",
+          "Physical keyboard/provider/PTY E2E paused",
+          "19 retained provider processes preserve old supervisory code until natural lifecycle;no force restart",
+          "Passive lock observations do not establish physical typing latency"
+        ],
+        "lockObservation": {
+          "before": {
+            "busyFraction": 0.6780341023069207,
+            "maximumBusyMS": 395.353292,
+            "p95BusyMS": 164.628125
+          },
+          "after": {
+            "busyFraction": 0.23987034035656402,
+            "maximumBusyMS": 67.480416,
+            "p95BusyMS": 55.460333
+          },
+          "beforeReceipt": ".local/remote-footer-and-input-latency/diagnostics/live-lock-idle.json",
+          "afterReceipt": ".local/remote-footer-and-input-latency/diagnostics/live-lock-postinstall.json",
+          "scope": "Two compiler-idle10s passive lock observations,uncontrolled workload and helper recovery/startup;not physical key-to-render latency or full-product performance qualification"
+        }
+      }
+    },
+    {
+      "id": "REQ-026",
+      "key": "toolbar_context",
+      "request": "Toolbar-icon right-click opens direct show/hide customization and all-hidden recovery",
+      "implementation": "source_connected",
+      "repairedInThisBatch": true,
+      "sourceFiles": [
+        "Sources/TerminalCore/InterfacePreferences.swift",
+        "Sources/TranoApp/HeaderContextMenu.swift",
+        "Sources/TranoApp/StoreInterface.swift",
+        "Sources/TranoApp/ToolPanelStyle.swift",
+        "Sources/TranoApp/WorkspaceView.swift"
+      ],
+      "testContracts": [
+        "Tests/TerminalCoreTests/ToolbarVisibilityTests.swift",
+        "Tests/TerminalUITests/ToolPanelDesignTests.swift",
+        "Tests/TerminalUITests/ToolbarCustomizationTests.swift"
+      ],
+      "qualificationLimits": [],
+      "toolPanelPresentation": "Shared current interface theme, header/Close/spacing/typography; existing guarded actions preserved."
+    },
+    {
+      "id": "REQ-027",
+      "key": "palette_keyboard",
+      "request": "Palette UpDown/Enter scrolling, CmdK followed by CmdShiftN creation",
+      "implementation": "source_connected",
+      "repairedInThisBatch": true,
+      "sourceFiles": [
+        "Sources/TerminalCore/Actions.swift",
+        "Sources/TranoApp/App.swift",
+        "Sources/TranoApp/PickerSearchField.swift",
+        "Sources/TranoApp/ToolPanelStyle.swift",
+        "Sources/TranoApp/WorkspaceView.swift"
+      ],
+      "testContracts": [
+        "Tests/TerminalCoreTests/AppearanceKeyBindingTests.swift",
+        "Tests/TerminalUITests/CommandPaletteShortcutTests.swift",
+        "Tests/TerminalUITests/PickerKeyboardTests.swift",
+        "Tests/TerminalUITests/ToolPanelDesignTests.swift",
+        "Tests/TerminalUITests/WorkspacePickerShortcutTests.swift"
+      ],
+      "qualificationLimits": [],
+      "defaultShortcut": "cmd+shift+p",
+      "plainCommandPDefault": "unbound",
+      "shortcutVerification": "Default Cmd+Shift+P opens the actual command search; Cmd+P no longer opens the shared Go to Anything picker. Explicit custom navigation bindings remain supported.",
+      "toolPanelPresentation": "Shared current interface theme, header/Close/spacing/typography; existing guarded actions preserved."
+    },
+    {
+      "id": "REQ-028",
+      "key": "iterm_keys",
+      "request": "iTerm-style creation/split/close/zoom/font/layout/tab/workspace shortcuts",
+      "implementation": "source_connected",
+      "repairedInThisBatch": true,
+      "sourceFiles": [
+        "Sources/TerminalCore/Actions.swift",
+        "Sources/TranoApp/App.swift",
+        "Sources/TranoApp/SupervisorWindowController.swift",
+        "Sources/TranoApp/TerminalKeySequenceController.swift",
+        "Sources/TranoApp/Store.swift",
+        "Sources/TranoApp/TerminalPane.swift"
+      ],
+      "testContracts": [
+        "Tests/TerminalUITests/SupervisorKeySequenceRoutingTests.swift",
+        "Tests/TerminalUITests/TerminalKeySequenceAvailabilityTests.swift",
+        "Tests/TerminalUITests/TerminalKeySequenceNativeTests.swift",
+        "Tests/TerminalUITests/WorkspacePickerShortcutTests.swift",
+        "Tests/TerminalUITests/NewTabFocusTests.swift",
+        "Tests/TerminalUITests/SplitPaneFocusTests.swift",
+        "Tests/TerminalUITests/TabShortcutRoutingTests.swift",
+        "Tests/TerminalUITests/NativeTabClickTests.swift"
+      ],
+      "qualificationLimits": [],
+      "newTabFocusProof": {
+        "status": "passed",
+        "buildID": "1645abdd7d246c4f942b52540625a78b485aef909583cdcf45041bdd34e426c7",
+        "unitCount": 26,
+        "unitReceipt": ".local/new-tab-focus/unit-receipt.json",
+        "installationReceipt": ".local/new-tab-focus/installed-receipt.json",
+        "liveShellsPreserved": 59,
+        "sameShellPIDs": true,
+        "sameLayout": true,
+        "sameSettings": true,
+        "samePreferenceSidecars": true,
+        "nativeFocusAndFirstByteVerified": true,
+        "physicalE2E": "paused by user"
+      },
+      "splitPaneFocusProof": {
+        "status": "passed",
+        "buildID": "a03a2bb2f4e4fdc9a8531ff1afea27302b768e687262e3dac5ff6ba30d54627d",
+        "unitCount": 34,
+        "splitUnitCount": 8,
+        "unitReceipt": ".local/split-pane-focus/unit-receipt.json",
+        "installationReceipt": ".local/split-pane-focus/installed-receipt.json",
+        "liveShellsPreserved": 60,
+        "sameShellPIDs": true,
+        "sameLayout": true,
+        "sameSettings": true,
+        "samePreferenceSidecars": true,
+        "nativeShortcutAndFirstByteVerified": true,
+        "reparentingRegressionVerified": true,
+        "physicalE2E": "paused by user"
+      },
+      "tabShortcutRoutingProof": {
+        "status": "passed",
+        "buildID": "8db7dd315555aa31f56a4a032a54fc5563a97241cff8719d9dcd6cd8f365679a",
+        "unitCount": 57,
+        "nativeUnitCount": 50,
+        "coreUnitCount": 7,
+        "unitReceipt": ".local/tab-shortcut-routing/unit-receipt.json",
+        "reviewReceipt": ".local/tab-shortcut-routing/final-review.json",
+        "installationReceipt": ".local/tab-shortcut-routing/installed-receipt.json",
+        "liveShellsPreserved": 67,
+        "sameShellPIDs": true,
+        "sameLayout": true,
+        "sameSettings": true,
+        "samePreferenceSidecars": true,
+        "verifiedFailures": [
+          "Registered Unisession renderer consumes Ctrl+Shift+Tab before main-window tab dispatch",
+          "Physical Shift+Tab with literal Tab event characters sends plain Tab in legacy mode"
+        ],
+        "controls": [
+          "Ordinary Ctrl+Tab and Ctrl+Shift+Tab",
+          "U+0019 legacy reverse Tab",
+          "Kitty Shift+Tab encoding",
+          "IME, editor, settings and foreign renderer ownership guards"
+        ],
+        "qualification": "Inert native App.handle after controller yields and actual TranoView.keyDown captured user bytes; full private controller and physical keyboard/provider/PTY E2E not run. No sole-cause claim for all intermittent cases.",
+        "e2e": "paused_by_user"
+      },
+      "confirmedTabClickRepair": {
+        "status": "focused_units_and_signed_install_with_explicit_skips",
+        "buildID": "9781412387325071b8b3e1f3d284becf89a5f29a5c53f2855a9c5c5ce745369f",
+        "executed": 124,
+        "passed": 121,
+        "skipped": 3,
+        "failures": 0,
+        "unitReceipt": ".local/remote-footer-and-input-latency/unit-receipt.json",
+        "reviewReceipt": ".local/remote-footer-and-input-latency/final-review.json",
+        "installationReceipt": ".local/remote-footer-and-input-latency/installed-receipt.json",
+        "preservedLiveShells": 65,
+        "preservedActiveProviders": 19,
+        "scope": [
+          "All visible New Session/Add Remote Host footer actions selectable by arrows and Enter in empty/filtered session picker",
+          "Action/header presentation discovery outside mutation transaction",
+          "Coherent3file snapshot bytes under read transaction;decode after own lock release;explicit outer locks retained",
+          "Future supervisor polls cache unchanged persisted-file identity;old live supervisors retained",
+          "Confirmed tab title/icon selection presented before unrelated metadata;existing IME/modal/stale press guards retained"
+        ],
+        "qualificationLimits": [
+          "3 padding/background SwiftUI gesture cases skipped after harmless delivery control failed",
+          "Physical keyboard/provider/PTY E2E paused",
+          "19 retained provider processes preserve old supervisory code until natural lifecycle;no force restart",
+          "Passive lock observations do not establish physical typing latency"
+        ],
+        "lockObservation": {
+          "before": {
+            "busyFraction": 0.6780341023069207,
+            "maximumBusyMS": 395.353292,
+            "p95BusyMS": 164.628125
+          },
+          "after": {
+            "busyFraction": 0.23987034035656402,
+            "maximumBusyMS": 67.480416,
+            "p95BusyMS": 55.460333
+          },
+          "beforeReceipt": ".local/remote-footer-and-input-latency/diagnostics/live-lock-idle.json",
+          "afterReceipt": ".local/remote-footer-and-input-latency/diagnostics/live-lock-postinstall.json",
+          "scope": "Two compiler-idle10s passive lock observations,uncontrolled workload and helper recovery/startup;not physical key-to-render latency or full-product performance qualification"
+        }
+      }
+    },
+    {
+      "id": "REQ-029",
+      "key": "hold_command",
+      "request": "Command-hold numbered hints next to tabs, owner/IME cancellation",
+      "implementation": "source_connected",
+      "repairedInThisBatch": false,
+      "sourceFiles": [
+        "Sources/TranoApp/App.swift",
+        "Sources/TranoApp/CommandKeyHints.swift",
+        "Sources/TranoApp/WorkspaceView.swift"
+      ],
+      "testContracts": [
+        "Tests/TerminalUITests/CommandKeyHintTests.swift"
+      ],
+      "qualificationLimits": []
+    },
+    {
+      "id": "REQ-030",
+      "key": "focused_agent",
+      "request": "Focused coding agent icon first, other icons behind; conversation title on tab",
+      "implementation": "source_connected",
+      "repairedInThisBatch": false,
+      "sourceFiles": [
+        "Sources/TranoApp/TabPresentation.swift",
+        "Sources/TranoApp/WorkspaceView.swift"
+      ],
+      "testContracts": [
+        "Tests/TerminalUITests/TabPresentationTests.swift"
+      ],
+      "qualificationLimits": []
+    },
+    {
+      "id": "REQ-031",
+      "key": "program_icons",
+      "request": "zsh/Claude/Codex/k9s/kubectl-exec program icons and matching tab/summary colors",
+      "implementation": "source_connected",
+      "repairedInThisBatch": true,
+      "sourceFiles": [
+        "Sources/TranoApp/TabPresentation.swift",
+        "Sources/TranoApp/WorkspaceView.swift",
+        "Sources/TranoApp/AgentLogo.swift",
+        "Sources/TranoApp/ProgramLogo.swift"
+      ],
+      "testContracts": [
+        "Tests/TerminalUITests/TabIconColorTests.swift"
+      ],
+      "qualificationLimits": [],
+      "currentRepairVerification": {
+        "status": "targeted_units_and_signed_local_install_verified",
+        "buildID": "1c1ae3961a9ecdf27e785899937161360e2975c5c273cd5a36e66577e999b2ce",
+        "productUnitTests": 67,
+        "nativeUnitTests": 31,
+        "coreUnitTests": 36,
+        "packagingUnitTests": 45,
+        "newRegressionTests": 4,
+        "regressionsFailedBeforeFix": 3,
+        "fullProductSuiteRerun": false,
+        "unitReceipt": ".local/closed-session-search/unit-receipt.json",
+        "sourceManifest": ".local/closed-session-search/source-manifest.json",
+        "review": ".local/closed-session-search/final-review.json",
+        "receipt": ".local/closed-session-search/installed-receipt.json",
+        "sameShellPIDs": true,
+        "sameLayout": true,
+        "sameSettings": true,
+        "liveShellsPreserved": 48,
+        "installedFileHashes": 123,
+        "e2e": "paused_by_user",
+        "scope": "Closed session search filtering; whole visible marked Hangul query uses contiguous matching; shared dark/green shell/zsh icon; existing Dock badge preference enabled",
+        "emptySessionRepair": ".local/closed-session-search/empty-session-repair.json",
+        "dockPreference": ".local/closed-session-search/dock-preference-receipt.json"
+      }
+    },
+    {
+      "id": "REQ-032",
+      "key": "activity_overlay",
+      "request": "Activity left of Search, overlays terminal without shrinking or overflowing workspace",
+      "implementation": "source_connected",
+      "repairedInThisBatch": true,
+      "sourceFiles": [
+        "Sources/TerminalCore/Actions.swift",
+        "Sources/TerminalCore/KeyBindings.swift",
+        "Sources/TerminalCore/TerminalKeySequences.swift",
+        "Sources/TranoApp/App.swift",
+        "Sources/TranoApp/ToolPanelStyle.swift",
+        "Sources/TranoApp/WorkspaceView.swift",
+        "Sources/TranoApp/Store.swift",
+        "Sources/TranoApp/ActivityListView.swift"
+      ],
+      "testContracts": [
+        "Tests/TerminalCoreTests/AppearanceKeyBindingTests.swift",
+        "Tests/TerminalUITests/ActivityGeometryTests.swift",
+        "Tests/TerminalUITests/ActivityShortcutTests.swift",
+        "Tests/TerminalUITests/ToolPanelDesignTests.swift",
+        "Tests/TerminalUITests/ActivityKeyboardNavigationTests.swift",
+        "Tests/TerminalUITests/ActivityNativeFocusTests.swift",
+        "Tests/TerminalUITests/ActivityNativeEventTests.swift"
+      ],
+      "qualificationLimits": [],
+      "defaultShortcut": "cmd+.",
+      "shortcutVerification": "Command-period opens/closes the actual Activity overlay through native event routing; repeats are consumed. Explicit overrides/disable and existing single/sequence-prefix assignments retain precedence.",
+      "toolPanelPresentation": "Shared current interface theme, header/Close/spacing/typography; existing guarded actions preserved.",
+      "keyboardNavigation": {
+        "status": "focused_units_and_signed_install_verified",
+        "buildID": "40c6b036b2861005d5da3a7f1594ab9430380959e59ec052c7677f78248f94f4",
+        "focusedPassed": 26,
+        "core": 5,
+        "native": 21,
+        "unitReceipt": ".local/activity-keyboard/unit-receipt.json",
+        "installationReceipt": ".local/activity-keyboard/installed-receipt.json",
+        "review": ".local/activity-keyboard/final-review.json",
+        "widerGate": {
+          "passed": 35,
+          "failed": 1,
+          "test": "ActivityGeometryTests.testSessionsSidebarIsOptionalAndKeepsLayout",
+          "log": ".local/activity-keyboard/final-green.log",
+          "scope": "Sidebar resize assertion independent of requested keyboard routing; no full regression pass claimed"
+        },
+        "e2e": "paused_by_user_not_run"
+      },
+      "keyboardPriorityRepair": {
+        "status": "focused_units_and_signed_install_verified",
+        "buildID": "ca7ecaadc93fe03f6ea9d6664227d5b64551383e97395f528f7842bebe5604ae",
+        "total": 79,
+        "native": 68,
+        "core": 11,
+        "failures": 0,
+        "log": ".local/activity-keyboard-priority/green.log",
+        "red": {
+          "tests": 7,
+          "failedTests": 1,
+          "assertionFailures": 6,
+          "log": ".local/activity-keyboard-priority/red.log"
+        },
+        "sourceHashes": {
+          "Sources/TranoApp/App.swift": "8b7f1404f6db15354bf0551ed8b9d3f6370f73c5db15487cf5ebd6c3ae248c75",
+          "Tests/TerminalUITests/ActivityKeyboardNavigationTests.swift": "938206b1c237a3a72007d46cf50bcbb49cf76fa6bad959db44a721eb1d4d5376"
+        },
+        "scope": "Actual CmdPeriod action with inert firstresponder;competing native hint route;visible selectedrow bounds and nativepixelchange with bluebadge calibration;exactpane Enter;IME/editor/picker/modal/window guards;typinglock/input regressions",
+        "paletteOrLayoutChanged": false,
+        "e2e": "paused_by_user_not_run",
+        "optionalDirectCapture": "Excluded:pathlookupfailed,environmentdiagnosticredacted;noimageartifactclaimed",
+        "unitReceipt": ".local/activity-keyboard-priority/unit-receipt.json",
+        "installationReceipt": ".local/activity-keyboard-priority/installed-receipt.json",
+        "review": ".local/activity-keyboard-priority/final-review.json",
+        "sameShellPIDs": true,
+        "sameLayout": true,
+        "sameSettings": true,
+        "samePreferenceSidecars": true,
+        "liveShellsPreserved": 65,
+        "fullProductSuiteRerun": false
+      },
+      "tabKeyboardNavigation": {
+        "status": "focused_units_and_signed_install_verified",
+        "buildID": "ef579251d1a1659de1ba8fa4e7e44ebee79a14d0de2a8decb11ec2780450cfc5",
+        "total": 58,
+        "native": 51,
+        "core": 7,
+        "redAssertionFailures": 14,
+        "keys": {
+          "next": [
+            "down",
+            "tab",
+            "ctrl+tab"
+          ],
+          "previous": [
+            "up",
+            "shift+tab",
+            "ctrl+shift+tab"
+          ],
+          "activate": [
+            "enter",
+            "keypad-enter"
+          ]
+        },
+        "unitReceipt": ".local/activity-tab-navigation/unit-receipt.json",
+        "reviewReceipt": ".local/activity-tab-navigation/final-review.json",
+        "installationReceipt": ".local/activity-tab-navigation/installed-receipt.json",
+        "scope": "Activity-owned native key events, visible selected row and Enter exact-pane activation; editor/settings, original arrow navigation and outside-Activity terminal/tab routing regressions retained. Physical keyboard/provider/PTY E2E paused.",
+        "preservedLiveShells": 65
+      },
+      "nativeKeyboardFocusLifecycle": {
+        "status": "passed_with_explicit_skips",
+        "buildID": "236375f231d1b475170ef09201d0cf122c1469fddfb3f8a1ee655b1ffe140e54",
+        "executed": 76,
+        "passed": 73,
+        "skipped": 3,
+        "failures": 0,
+        "receipt": ".local/activity-owned-focus/unit-receipt.json",
+        "installation": ".local/activity-owned-focus/installed-receipt.json",
+        "scope": "Inert native window/menu/field-editor/Close, Up/Down/Tab and Enter exact target renderer native input; physical/provider/PTY E2E paused. Three existing background SwiftUI padding tests explicitly skip. Hangul units simulate callbacks, not selected OS input source.",
+        "fullProductQualification": "pending_gates_retained"
+      },
+      "directNativeKeyDelivery": {
+        "status": "passed_with_explicit_skips",
+        "buildID": "2017f0fc6b1e8df7d4a77d67e6b486bf820e73836f900e7b80a91431a5e5d0bb",
+        "executed": 82,
+        "passed": 79,
+        "skipped": 3,
+        "failures": 0,
+        "receipt": ".local/activity-direct-focus/unit-receipt.json",
+        "installation": ".local/activity-direct-focus/installed-receipt.json",
+        "scope": "Inert native firstResponder.keyDown and nil-window keys;NSApp.sendEvent+counted local monitor;single row movement;Enter exact split renderer+fakebytes;Escape typing return;IME/editor/settings/URL hint guards. Physical/provider/PTY E2E paused. Existing three background SwiftUI padding cases skip. Live user event.window and precise observed failure cause unmeasured.",
+        "fullProductQualification": "pending_gates_retained"
+      }
+    },
+    {
+      "id": "REQ-033",
+      "key": "activity_sections",
+      "request": "Working/Blocked/Done sections, provider icons and unread/attention dot",
+      "implementation": "source_connected",
+      "repairedInThisBatch": false,
+      "sourceFiles": [
+        "Sources/TerminalCore/ActivityInbox.swift",
+        "Sources/TerminalCore/RuntimeContinuity.swift",
+        "Sources/TranoApp/ActivityListView.swift"
+      ],
+      "testContracts": [
+        "Tests/TerminalCoreTests/ActivityInboxTests.swift",
+        "Tests/TerminalCoreTests/NotificationActivityProjectionTests.swift",
+        "Tests/TerminalCoreTests/RuntimeContinuityTests.swift",
+        "Tests/TerminalUITests/ActivityGeometryTests.swift",
+        "Tests/TerminalUITests/ActivityUnreadIndicatorTests.swift"
+      ],
+      "qualificationLimits": [],
+      "indicatorRepair": "8pt blue unread Done marker and existing orange attention marker; native paint aligned with marker bounds; read/attention predicates unchanged.",
+      "seenUnreadRepair": "Viewing Activity clears the window-local toolbar new-event marker without marking sessions read; observing done/blocked/error clears that item unread dot; unresolved attention remains. Presented exact timestamp snapshots include held worktree alerts and ignore stale/closed callbacks.",
+      "workspaceEntryReadProof": {
+        "status": "passed",
+        "buildID": "34515380e980cb64fdc8a07dc2688d6025a33714249955da31ec03ec84ca63e9",
+        "unitCount": 45,
+        "nativeUnitCount": 16,
+        "coreUnitCount": 29,
+        "unitReceipt": ".local/workspace-read-receipts/unit-receipt.json",
+        "installationReceipt": ".local/workspace-read-receipts/installed-receipt.json",
+        "liveShellsPreserved": 58,
+        "sameShellPIDs": true,
+        "sameLayout": true,
+        "sameSettings": true,
+        "samePreferenceSidecars": true,
+        "physicalE2E": "paused by user"
+      }
+    },
+    {
+      "id": "REQ-034",
+      "key": "hover_activity",
+      "request": "Tab hover live root/subagent activity",
+      "implementation": "source_connected",
+      "repairedInThisBatch": false,
+      "sourceFiles": [
+        "Sources/TerminalCore/AgentTaskActivity.swift",
+        "Sources/TerminalCore/Recovery.swift",
+        "Sources/TerminalCore/Remote.swift",
+        "Sources/TranoApp/TabActivityHover.swift",
+        "Sources/TranoApp/WorkspaceView.swift",
+        "remote/agent_tasks_linux_test.go",
+        "remote/agent_tasks_test.go",
+        "remote/hooks.go"
+      ],
+      "testContracts": [
+        "Tests/TerminalCoreTests/AgentTaskTests.swift",
+        "Tests/TerminalUITests/TabActivityHoverTests.swift"
+      ],
+      "qualificationLimits": []
+    },
+    {
+      "id": "REQ-035",
+      "key": "agent_notifications",
+      "request": "Agent completion notifications, running/blocked/done state and API",
+      "implementation": "source_connected",
+      "repairedInThisBatch": true,
+      "sourceFiles": [
+        "Sources/TerminalCore/API.swift",
+        "Sources/TerminalCore/Recovery.swift",
+        "Sources/TranoApp/NativeNotificationSink.swift",
+        "Sources/TranoApp/NotificationBannerHost.swift",
+        "Sources/TranoApp/Notifications.swift"
+      ],
+      "testContracts": [
+        "Tests/TerminalCoreTests/NotificationDeliveryTests.swift",
+        "Tests/TerminalCoreTests/NotificationSourceDeliveryTests.swift"
+      ],
+      "qualificationLimits": [],
+      "currentRepairVerification": {
+        "status": "targeted_units_and_signed_local_install_verified",
+        "buildID": "1c1ae3961a9ecdf27e785899937161360e2975c5c273cd5a36e66577e999b2ce",
+        "productUnitTests": 67,
+        "nativeUnitTests": 31,
+        "coreUnitTests": 36,
+        "packagingUnitTests": 45,
+        "newRegressionTests": 4,
+        "regressionsFailedBeforeFix": 3,
+        "fullProductSuiteRerun": false,
+        "unitReceipt": ".local/closed-session-search/unit-receipt.json",
+        "sourceManifest": ".local/closed-session-search/source-manifest.json",
+        "review": ".local/closed-session-search/final-review.json",
+        "receipt": ".local/closed-session-search/installed-receipt.json",
+        "sameShellPIDs": true,
+        "sameLayout": true,
+        "sameSettings": true,
+        "liveShellsPreserved": 48,
+        "installedFileHashes": 123,
+        "e2e": "paused_by_user",
+        "scope": "Closed session search filtering; whole visible marked Hangul query uses contiguous matching; shared dark/green shell/zsh icon; existing Dock badge preference enabled",
+        "emptySessionRepair": ".local/closed-session-search/empty-session-repair.json",
+        "dockPreference": ".local/closed-session-search/dock-preference-receipt.json"
+      },
+      "runningIndicatorRepair": "Running sessions never produce tab/sidebar notification dots, including old working.tabIndicator=true preferences. Other panes retain completion/attention dots, Working stays in Activity, and Working banner/sound controls remain. Working Tab checkbox removed; no stored preference migration.",
+      "runningIndicatorVerification": {
+        "status": "passed",
+        "buildID": "f9659fd4c3f2252f3f1d9efb7524b358c0b8249abdab7abed91af8caa7d92ec8",
+        "unitCount": 55,
+        "nativeUnitCount": 23,
+        "coreUnitCount": 32,
+        "unitReceipt": ".local/running-session-dots/unit-receipt.json",
+        "installationReceipt": ".local/running-session-dots/installed-receipt.json",
+        "review": ".local/running-session-dots/final-review.json",
+        "liveShellsPreserved": 62,
+        "sameShellPIDs": true,
+        "sameLayout": true,
+        "sameSettings": true,
+        "samePreferenceSidecars": true,
+        "legacyRunningIndicatorsSuppressed": true,
+        "mixedTabAttentionPreserved": true,
+        "physicalE2E": "paused by user"
+      },
+      "nativeInteractionRepair": {
+        "status": "focused_units_and_signed_install_verified",
+        "buildID": "5e1eeab11d7f7747c0aa78878a916ce2fa7d80f42b94615fb271a937014ad85b",
+        "passed": 180,
+        "native": 90,
+        "core": 90,
+        "unitReceipt": ".local/native-interaction-batch/unit-receipt.json",
+        "installationReceipt": ".local/native-interaction-batch/installed-receipt.json",
+        "review": ".local/native-interaction-batch/final-review.json",
+        "notificationAuthorization": "authorized",
+        "e2e": "paused_by_user_not_run",
+        "fullProductSuiteRerun": false,
+        "features": [
+          "macOS_only_delivery"
+        ]
+      }
+    },
+    {
+      "id": "REQ-036",
+      "key": "quota_alarms",
+      "request": "Settings toggles for quota low and reset alarms",
+      "implementation": "source_connected",
+      "repairedInThisBatch": false,
+      "sourceFiles": [
+        "Sources/TerminalCore/NotificationPreferences.swift",
+        "Sources/TerminalCore/QuotaAlarmDispatch.swift",
+        "Sources/TranoApp/NotificationSettingsView.swift",
+        "Sources/TranoApp/Notifications.swift"
+      ],
+      "testContracts": [
+        "Tests/TerminalCoreTests/NotificationPreferencesTests.swift",
+        "Tests/TerminalCoreTests/QuotaAlarmDispatchTests.swift"
+      ],
+      "qualificationLimits": []
+    },
+    {
+      "id": "REQ-037",
+      "key": "reset_tickets",
+      "request": "Redeemable reset ticket icon/count beside palette, not scheduled resets",
+      "implementation": "source_connected",
+      "repairedInThisBatch": false,
+      "sourceFiles": [
+        "Sources/TerminalCore/AccountResetCredits.swift",
+        "Sources/TranoApp/AccountsView.swift",
+        "Sources/TranoApp/ResetTicketButton.swift",
+        "Sources/TranoApp/WorkspaceView.swift"
+      ],
+      "testContracts": [
+        "Tests/TerminalCoreTests/AccountResetCreditTests.swift",
+        "Tests/TerminalUITests/ResetTicketUITests.swift",
+        "Tests/TerminalUITests/ToolbarCustomizationTests.swift"
+      ],
+      "qualificationLimits": [
+        "Fresh available ticket count/display is implemented; the icon opens account details and does not execute provider redemption."
+      ]
+    },
+    {
+      "id": "REQ-038",
+      "key": "queued_input",
+      "request": "Editable durable queued input, FIFO done-only delivery, pane-header placement and shortcut",
+      "implementation": "source_connected",
+      "repairedInThisBatch": true,
+      "sourceFiles": [
+        "Sources/TerminalCore/Actions.swift",
+        "Sources/TerminalCore/FollowUpQueue.swift",
+        "Sources/TerminalCore/RuntimeTerminalInput.swift",
+        "Sources/TerminalCore/TerminalInputLedger.swift",
+        "Sources/TerminalCore/TerminalInputRelay.swift",
+        "Sources/TranoApp/FollowUpQueueView.swift",
+        "Sources/TranoApp/TerminalPane.swift",
+        "Sources/TranoApp/WorkspaceView.swift",
+        "Sources/TranoCLI/ScrollbackMonitoring.swift"
+      ],
+      "testContracts": [
+        "Tests/TerminalCoreTests/QueuedInputDraftGuardTests.swift",
+        "Tests/TerminalCoreTests/TerminalInputLedgerStoreTests.swift",
+        "Tests/TerminalCoreTests/TerminalInputLedgerTests.swift",
+        "Tests/TerminalCoreTests/TerminalInputRelayTests.swift",
+        "Tests/TerminalCoreTests/TerminalUserInputScannerTests.swift",
+        "Tests/TerminalUITests/DeferredKittyPasteInputTests.swift",
+        "Tests/TerminalUITests/FollowUpQueueUITests.swift",
+        "Tests/TerminalUITests/LocalProcessTransportTests.swift",
+        "Tests/TerminalUITests/QueuedInputNativeTransportTests.swift",
+        "Tests/TerminalUITests/TransportClassificationTests.swift",
+        "Tests/TerminalUITests/TerminalInputRetirementTests.swift"
+      ],
+      "qualificationLimits": [
+        "Automatic delivery currently requires an authoritative local managed input receipt; unknown drafts and remote panes require review instead."
+      ]
+    },
+    {
+      "id": "REQ-039",
+      "key": "decision",
+      "request": "Native EasyDecision choice inbox with count inside icon, no question mark",
+      "implementation": "source_connected",
+      "repairedInThisBatch": true,
+      "sourceFiles": [
+        "Sources/TerminalCore/DecisionAdapter.swift",
+        "Sources/TranoApp/DecisionInboxView.swift",
+        "Sources/TranoApp/ToolPanelStyle.swift",
+        "Sources/TranoApp/WorkspaceControls.swift",
+        "Sources/TranoApp/WorkspaceView.swift",
+        "Sources/TranoCLI/main.swift"
+      ],
+      "testContracts": [
+        "Tests/TerminalCoreTests/DecisionAdapterTests.swift",
+        "Tests/TerminalCoreTests/DecisionInboxTests.swift",
+        "Tests/TerminalCoreTests/DecisionReviewRegressionTests.swift",
+        "Tests/TerminalUITests/ActivityGeometryTests.swift",
+        "Tests/TerminalUITests/DecisionInboxViewTests.swift",
+        "Tests/TerminalUITests/ToolPanelDesignTests.swift"
+      ],
+      "qualificationLimits": [],
+      "toolPanelPresentation": "Shared current interface theme, header/Close/spacing/typography; existing guarded actions preserved."
+    },
+    {
+      "id": "REQ-040",
+      "key": "decision_goto",
+      "request": "Go to bound session from native decision without answering it",
+      "implementation": "source_connected",
+      "repairedInThisBatch": false,
+      "sourceFiles": [
+        "Sources/TerminalCore/DecisionInbox.swift",
+        "Sources/TranoApp/Store.swift",
+        "Sources/TranoApp/WorkspaceView.swift"
+      ],
+      "testContracts": [
+        "Tests/TerminalCoreTests/DecisionNavigationTests.swift",
+        "Tests/TerminalUITests/DecisionNavigationUITests.swift"
+      ],
+      "qualificationLimits": []
+    },
+    {
+      "id": "REQ-041",
+      "key": "supervisor",
+      "request": "Native rex-supervisor-equivalent retained panel across workspaces, icon beside Decisions",
+      "implementation": "source_connected",
+      "repairedInThisBatch": true,
+      "sourceFiles": [
+        "Sources/TerminalCore/Supervisor.swift",
+        "Sources/TerminalCore/SupervisorContinuation.swift",
+        "Sources/TerminalCore/SupervisorContinuationRuntime.swift",
+        "Sources/TerminalCore/SupervisorInstructions.swift",
+        "Sources/TerminalCore/SupervisorRuntimeBackend.swift",
+        "Sources/TranoApp/App.swift",
+        "Sources/TranoApp/SupervisorReadinessDirectoryWatch.swift",
+        "Sources/TranoApp/SupervisorSessionNavigation.swift",
+        "Sources/TranoApp/SupervisorTargetActions.swift",
+        "Sources/TranoApp/SupervisorWindowController.swift",
+        "Sources/TranoApp/WorkspaceView.swift"
+      ],
+      "testContracts": [
+        "Tests/TerminalCoreTests/SupervisorBootstrapTests.swift",
+        "Tests/TerminalCoreTests/SupervisorContinuationTests.swift",
+        "Tests/TerminalCoreTests/SupervisorFinalAuthorityTests.swift",
+        "Tests/TerminalCoreTests/SupervisorInputWakeSourceTests.swift",
+        "Tests/TerminalCoreTests/SupervisorInstructionsTests.swift",
+        "Tests/TerminalCoreTests/SupervisorWatchTests.swift",
+        "Tests/TerminalUITests/SupervisorExternalPanePolicyTests.swift",
+        "Tests/TerminalUITests/SupervisorReadinessDirectoryWatchTests.swift",
+        "Tests/TerminalUITests/SupervisorReadinessRefreshTests.swift",
+        "Tests/TerminalUITests/SupervisorRendererIdentityTests.swift",
+        "Tests/TerminalUITests/SupervisorSessionNavigationTests.swift",
+        "Tests/TerminalUITests/SupervisorTargetActionsTests.swift",
+        "Tests/TerminalUITests/SupervisorTargetCurrentGuardTests.swift",
+        "Tests/TerminalUITests/SupervisorWindowControllerTests.swift"
+      ],
+      "qualificationLimits": [
+        "Continuation is limited to already-authorized local managed work with verified input readiness; remote continuation is unavailable."
+      ],
+      "uiSupersededBy": "REQ-067; legacy backend/API retained; user-facing entry opens Unisession"
+    },
+    {
+      "id": "REQ-042",
+      "key": "load",
+      "request": "Visualize each session CPU/memory and hook p99; expose state API",
+      "implementation": "source_connected",
+      "repairedInThisBatch": true,
+      "sourceFiles": [
+        "Sources/TerminalCore/API.swift",
+        "Sources/TerminalCore/Recovery.swift",
+        "Sources/TerminalCore/SessionLoad.swift",
+        "Sources/TerminalCore/SessionLoadNativeSource.swift",
+        "Sources/TerminalCore/SessionLoadRuntime.swift",
+        "Sources/TerminalCore/SessionLoadSampler.swift",
+        "Sources/TranoApp/ActivityListView.swift"
+      ],
+      "testContracts": [
+        "Tests/TerminalCoreTests/SessionHookFairnessTests.swift",
+        "Tests/TerminalCoreTests/SessionLoadAPITests.swift",
+        "Tests/TerminalCoreTests/SessionLoadNativeSourceTests.swift",
+        "Tests/TerminalCoreTests/SessionLoadPresentationTests.swift",
+        "Tests/TerminalCoreTests/SessionLoadRuntimeTests.swift",
+        "Tests/TerminalCoreTests/SessionLoadSamplerTests.swift",
+        "Tests/TerminalCoreTests/SessionLoadTests.swift",
+        "Tests/TerminalUITests/SessionLoadClientCacheTests.swift",
+        "Tests/TerminalUITests/SessionLoadStripTests.swift",
+        "Tests/TerminalUITests/SupervisorLoadAccessoryTests.swift"
+      ],
+      "qualificationLimits": [
+        "Local CPU/memory metadata is supported; hook p99 is Claude-specific and uses bounded fair sampling. Remote load and unavailable provider hook metadata remain explicit unavailable states."
+      ]
+    },
+    {
+      "id": "REQ-043",
+      "key": "resume_picker",
+      "request": "Easy native Claude/Codex conversation resume",
+      "implementation": "source_connected",
+      "repairedInThisBatch": true,
+      "sourceFiles": [
+        "Sources/TerminalCore/ConversationHistory.swift",
+        "Sources/TerminalCore/ConversationHistorySources.swift",
+        "Sources/TerminalCore/ConversationResumeRuntime.swift",
+        "Sources/TerminalCore/Recovery.swift",
+        "Sources/TranoApp/StoreConversationResume.swift",
+        "Sources/TranoApp/ToolPanelStyle.swift"
+      ],
+      "testContracts": [
+        "Tests/TerminalCoreTests/ConversationHistoryTests.swift",
+        "Tests/TerminalUITests/ConversationResumeInputTests.swift",
+        "Tests/TerminalUITests/ConversationResumeUITests.swift",
+        "Tests/TerminalUITests/ToolPanelDesignTests.swift"
+      ],
+      "qualificationLimits": [],
+      "toolPanelPresentation": "Shared current interface theme, header/Close/spacing/typography; existing guarded actions preserved."
+    },
+    {
+      "id": "REQ-044",
+      "key": "accounts",
+      "request": "Register multiple Claude/Codex accounts; safe same-provider quota switch",
+      "implementation": "source_connected",
+      "repairedInThisBatch": true,
+      "sourceFiles": [
+        "Sources/TerminalCore/AccountAuthenticationContext.swift",
+        "Sources/TerminalCore/AccountAuthenticationFingerprint.swift",
+        "Sources/TerminalCore/AccountOrganizations.swift",
+        "Sources/TerminalCore/AccountSwitch.swift",
+        "Sources/TerminalCore/AccountUsage.swift",
+        "Sources/TerminalCore/Accounts.swift",
+        "Sources/TerminalCore/AgentSupervision.swift",
+        "Sources/TerminalCore/ManagedAccountPath.swift",
+        "Sources/TranoApp/AccountsView.swift",
+        "Sources/TranoApp/ToolPanelStyle.swift",
+        "Sources/TranoCLI/ProviderLaunchCommit.swift",
+        "Sources/TranoCLI/ProviderSupervisor.swift",
+        "Sources/TranoCLI/main.swift"
+      ],
+      "testContracts": [
+        "Tests/TerminalCoreTests/AccountAuthenticationContextTests.swift",
+        "Tests/TerminalCoreTests/AccountAuthenticationFingerprintTests.swift",
+        "Tests/TerminalCoreTests/AccountManagementTests.swift",
+        "Tests/TerminalCoreTests/AccountOrganizationContextTests.swift",
+        "Tests/TerminalCoreTests/AccountOrganizationGuardTests.swift",
+        "Tests/TerminalCoreTests/AccountOrganizationIdentityTests.swift",
+        "Tests/TerminalCoreTests/AccountOrganizationLegacyBarrierTests.swift",
+        "Tests/TerminalCoreTests/AccountOrganizationProofFreshnessTests.swift",
+        "Tests/TerminalCoreTests/AccountOrganizationRollbackTests.swift",
+        "Tests/TerminalCoreTests/AccountOrganizationTests.swift",
+        "Tests/TerminalCoreTests/AccountOrganizationUsageGenerationTests.swift",
+        "Tests/TerminalCoreTests/AccountRollbackTests.swift",
+        "Tests/TerminalCoreTests/AccountTests.swift",
+        "Tests/TerminalCoreTests/ManagedAccountCommandPathTests.swift",
+        "Tests/TerminalCoreTests/ManagedAccountPathTests.swift",
+        "Tests/TerminalCoreTests/OrganizationUsageScopeTests.swift",
+        "Tests/TerminalUITests/AccountOrganizationControlsTests.swift",
+        "Tests/TerminalUITests/ToolPanelDesignTests.swift",
+        "Tests/TranoCLITests/AccountOrganizationUsageSupervisorTests.swift",
+        "Tests/TranoCLITests/ProviderLaunchCommitTests.swift"
+      ],
+      "qualificationLimits": [
+        "Authenticated quota failover remains unrun on the current revision."
+      ],
+      "toolPanelPresentation": "Shared current interface theme, header/Close/spacing/typography; existing guarded actions preserved."
+    },
+    {
+      "id": "REQ-045",
+      "key": "claude_orgs",
+      "request": "Cover same Claude account with different organizations",
+      "implementation": "source_connected",
+      "repairedInThisBatch": true,
+      "sourceFiles": [
+        "Sources/TerminalCore/AccountAuthentication.swift",
+        "Sources/TerminalCore/AccountAuthenticationContext.swift",
+        "Sources/TerminalCore/AccountAuthenticationFingerprint.swift",
+        "Sources/TerminalCore/AccountOrganizations.swift",
+        "Sources/TerminalCore/AccountSwitch.swift",
+        "Sources/TerminalCore/AccountUsage.swift",
+        "Sources/TerminalCore/Accounts.swift",
+        "Sources/TerminalCore/ManagedAccountPath.swift",
+        "Sources/TranoApp/AccountOrganizationControls.swift",
+        "Sources/TranoApp/AccountsView.swift",
+        "Sources/TranoCLI/ProviderLaunchCommit.swift",
+        "Sources/TranoCLI/ProviderSupervisor.swift"
+      ],
+      "testContracts": [
+        "Tests/TerminalCoreTests/AccountAuthenticationContextTests.swift",
+        "Tests/TerminalCoreTests/AccountAuthenticationFingerprintTests.swift",
+        "Tests/TerminalCoreTests/AccountOrganizationContextTests.swift",
+        "Tests/TerminalCoreTests/AccountOrganizationGuardTests.swift",
+        "Tests/TerminalCoreTests/AccountOrganizationIdentityTests.swift",
+        "Tests/TerminalCoreTests/AccountOrganizationLegacyBarrierTests.swift",
+        "Tests/TerminalCoreTests/AccountOrganizationProofFreshnessTests.swift",
+        "Tests/TerminalCoreTests/AccountOrganizationRollbackTests.swift",
+        "Tests/TerminalCoreTests/AccountOrganizationTests.swift",
+        "Tests/TerminalCoreTests/AccountOrganizationUsageGenerationTests.swift",
+        "Tests/TerminalCoreTests/ManagedAccountCommandPathTests.swift",
+        "Tests/TerminalCoreTests/ManagedAccountPathTests.swift",
+        "Tests/TerminalCoreTests/OrganizationUsageScopeTests.swift",
+        "Tests/TerminalUITests/AccountOrganizationControlsTests.swift",
+        "Tests/TranoCLITests/AccountOrganizationUsageSupervisorTests.swift",
+        "Tests/TranoCLITests/ProviderLaunchCommitTests.swift"
+      ],
+      "qualificationLimits": [
+        "User-level organization selection is a preselection, not membership enforcement. Authenticated cross-organization switching remains unrun.",
+        "The known authentication-source model supports Claude2.1.322 and ordinary physical local project paths; worktrees/submodules, symlink contexts and detected managed-policy sources are explicitly unavailable.",
+        "Keychain attributes provide a metadata freshness witness, not proof of exact secret-value equality."
+      ]
+    },
+    {
+      "id": "REQ-046",
+      "key": "shared_extensions",
+      "request": "Manage shared skills, plugins, hooks and MCP for Claude/Codex",
+      "implementation": "source_connected",
+      "repairedInThisBatch": false,
+      "sourceFiles": [
+        "Sources/TerminalCore/Accounts.swift",
+        "Sources/TerminalCore/Extensions.swift",
+        "Sources/TranoApp/ExtensionsView.swift",
+        "Sources/TranoCLI/main.swift"
+      ],
+      "testContracts": [],
+      "qualificationLimits": [
+        "Provider-specific compatibility is explicit; arbitrary plugins are not silently treated as shared. Remote library synchronization is not implemented."
+      ]
+    },
+    {
+      "id": "REQ-047",
+      "key": "font_select",
+      "request": "Good default font and installed-font selection control, no raw font textbox",
+      "implementation": "source_connected",
+      "repairedInThisBatch": false,
+      "sourceFiles": [
+        "Sources/TranoApp/FontPicker.swift",
+        "Sources/TranoApp/TerminalFontAdapter.swift",
+        "Sources/TranoApp/TerminalSettingsForm.swift"
+      ],
+      "testContracts": [
+        "Tests/TerminalUITests/FontSelectionTests.swift"
+      ],
+      "qualificationLimits": []
+    },
+    {
+      "id": "REQ-048",
+      "key": "profiles",
+      "request": "Clearly labeled profile create/delete, fast Profiles page",
+      "implementation": "source_connected",
+      "repairedInThisBatch": true,
+      "sourceFiles": [
+        "Sources/TranoApp/AppearanceSettings.swift",
+        "Sources/TranoApp/FontPicker.swift",
+        "Sources/TranoApp/ProfileAppearanceView.swift",
+        "Sources/TranoApp/ToolPanelStyle.swift"
+      ],
+      "testContracts": [
+        "Tests/TerminalUITests/ProfilesEntryDiagnosticTests.swift",
+        "Tests/TerminalUITests/ToolPanelDesignTests.swift"
+      ],
+      "qualificationLimits": [],
+      "toolPanelPresentation": "Shared current interface theme, header/Close/spacing/typography; existing guarded actions preserved."
+    },
+    {
+      "id": "REQ-049",
+      "key": "cancel_settings",
+      "request": "Save/Cancel or Close semantics instead of obligatory Done; transient outside-click dismissal",
+      "implementation": "source_connected",
+      "repairedInThisBatch": true,
+      "sourceFiles": [
+        "Sources/TranoApp/AccountOrganizationControls.swift",
+        "Sources/TranoApp/AccountsView.swift",
+        "Sources/TranoApp/App.swift",
+        "Sources/TranoApp/AppearanceSettings.swift",
+        "Sources/TranoApp/ConversationResumePicker.swift",
+        "Sources/TranoApp/DecisionInboxView.swift",
+        "Sources/TranoApp/DeferredTerminalInputTarget.swift",
+        "Sources/TranoApp/ExtendedSettingsDraft.swift",
+        "Sources/TranoApp/ExtensionsView.swift",
+        "Sources/TranoApp/OutsideClickDismissal.swift",
+        "Sources/TranoApp/ProfileAppearanceView.swift",
+        "Sources/TranoApp/RemoteHostsView.swift",
+        "Sources/TranoApp/RemotePathsView.swift",
+        "Sources/TranoApp/ToolPanelStyle.swift",
+        "Sources/TranoApp/UnisessionPresentation.swift",
+        "Sources/TranoApp/VoiceInput.swift",
+        "Sources/TranoApp/WorkspaceView.swift"
+      ],
+      "testContracts": [
+        "Tests/TerminalUITests/AccountOrganizationControlsTests.swift",
+        "Tests/TerminalUITests/DeferredTerminalNativeTests.swift",
+        "Tests/TerminalUITests/NotificationSettingsDraftTests.swift",
+        "Tests/TerminalUITests/OutsideClickDismissalTests.swift",
+        "Tests/TerminalUITests/SettingsDismissalTests.swift",
+        "Tests/TerminalUITests/SettingsOutsideClickNativeTests.swift",
+        "Tests/TerminalUITests/ToolPanelDesignTests.swift"
+      ],
+      "qualificationLimits": [
+        "Actual WorkspaceView presentation and synthetic native event delivery are unit verified. Physical pointer/OS E2E remain paused; no computer-use tool was available for direct Rex pointer comparison."
+      ],
+      "repair": "Settings and toolbar tools use exact owned nonmodal child panels bounded to owner content, with retained single draft/scroll sizing and native key ownership. Outside owner clicks and Esc use existing Close/Cancel; IME, shortcut recording, saving and nested dialogs retain their guards. Profiles callback, voice child identity/completion and native application actions remain scoped.",
+      "toolPanelPresentation": "Shared current interface theme, header/Close/spacing/typography; existing guarded actions preserved."
+    },
+    {
+      "id": "REQ-050",
+      "key": "settings_parity",
+      "request": "Rex Interface/Themes/Terminal/Developer/notification option consumers",
+      "implementation": "source_connected",
+      "repairedInThisBatch": true,
+      "sourceFiles": [
+        "Sources/TranoApp/AppearanceSettings.swift",
+        "Sources/TranoApp/ExtendedSettingsDraft.swift",
+        "Sources/TranoApp/SettingsNavigationSidebar.swift",
+        "Sources/TranoApp/ToolPanelStyle.swift"
+      ],
+      "testContracts": [
+        "Tests/TerminalUITests/SettingsNavigationTests.swift",
+        "Tests/TerminalUITests/ToolPanelDesignTests.swift"
+      ],
+      "qualificationLimits": [],
+      "toolPanelPresentation": "Shared current interface theme, header/Close/spacing/typography; existing guarded actions preserved."
+    },
+    {
+      "id": "REQ-051",
+      "key": "insert_path",
+      "request": "Rex Insert Path and go-to-directory actions",
+      "implementation": "source_connected",
+      "repairedInThisBatch": false,
+      "sourceFiles": [
+        "Sources/TerminalCore/TerminalPreferenceRuntime.swift",
+        "Sources/TerminalCore/Workspace.swift",
+        "Sources/TranoApp/Store.swift",
+        "Sources/TranoApp/TerminalRecentPaths.swift"
+      ],
+      "testContracts": [
+        "Tests/TerminalUITests/TerminalInteractionTests.swift",
+        "Tests/TerminalUITests/GoToDirectoryShortcutTests.swift"
+      ],
+      "qualificationLimits": [],
+      "goToDirectoryShortcut": {
+        "status": "passed",
+        "buildID": "bc326bb0cc1e0c37598319c2a43a28f44844733995b2f24dfd772efe88a00d52",
+        "tests": 24,
+        "failures": 0,
+        "receipt": ".local/go-directory-shortcut/unit-receipt.json",
+        "installation": ".local/go-directory-shortcut/installed-receipt.json",
+        "scope": "Default/configured menu/native action dispatch and directory-only remote request,local NSOpenPanel folder-only/new-tab configuration;existing native tab-focus and explicit key/sequence units. No chooser confirmation or actual PTY/SSH/physical E2E;these remain paused."
+      }
+    },
+    {
+      "id": "REQ-052",
+      "key": "color",
+      "request": "Real ANSI/statusline colors, preserved shell configuration",
+      "implementation": "source_connected",
+      "repairedInThisBatch": false,
+      "sourceFiles": [
+        "Sources/TerminalCore/Runtime.swift",
+        "Sources/TerminalCore/ShellIntegration.swift",
+        "Sources/TranoApp/TerminalPreferenceRenderer.swift"
+      ],
+      "testContracts": [
+        "Tests/TerminalUITests/TerminalColorTests.swift"
+      ],
+      "qualificationLimits": []
+    },
+    {
+      "id": "REQ-053",
+      "key": "opacity",
+      "request": "Whole-window background opacity including header/footer, inclusive0..100 range",
+      "implementation": "source_connected",
+      "repairedInThisBatch": false,
+      "sourceFiles": [
+        "Sources/TerminalCore/Appearance.swift",
+        "Sources/TerminalCore/InterfacePreferences.swift",
+        "Sources/TranoApp/InterfaceTerminalEffects.swift",
+        "Sources/TranoApp/WindowOpacityControl.swift",
+        "Sources/TranoApp/WorkspaceView.swift"
+      ],
+      "testContracts": [
+        "Tests/TerminalCoreTests/OpacityRangeTests.swift",
+        "Tests/TerminalUITests/WindowOpacityPreviewTests.swift"
+      ],
+      "qualificationLimits": []
+    },
+    {
+      "id": "REQ-054",
+      "key": "opacity_live",
+      "request": "Immediate slider preview with cancel restoration",
+      "implementation": "source_connected",
+      "repairedInThisBatch": true,
+      "sourceFiles": [
+        "Sources/TranoApp/AppearanceSettings.swift",
+        "Sources/TranoApp/InterfaceEffects.swift",
+        "Sources/TranoApp/StoreAppearancePreview.swift",
+        "Sources/TranoApp/StoreThemes.swift"
+      ],
+      "testContracts": [
+        "Tests/TerminalUITests/InterfaceWindowContextTests.swift",
+        "Tests/TerminalUITests/WindowOpacityPreviewTests.swift"
+      ],
+      "qualificationLimits": []
+    },
+    {
+      "id": "REQ-055",
+      "key": "appearance_sources",
+      "request": "Apply existing Ghostty/WezTerm display preferences",
+      "implementation": "source_connected",
+      "repairedInThisBatch": false,
+      "sourceFiles": [
+        "Sources/TranoApp/TerminalPreferenceRenderer.swift"
+      ],
+      "testContracts": [
+        "Tests/TerminalUITests/TerminalThemeConfigurationTests.swift"
+      ],
+      "qualificationLimits": []
+    },
+    {
+      "id": "REQ-056",
+      "key": "font_smoothing",
+      "request": "Font smoothing toggle/consumer and selected preview",
+      "implementation": "source_connected",
+      "repairedInThisBatch": false,
+      "sourceFiles": [
+        "Sources/TranoApp/TerminalPreferenceRenderer.swift",
+        "Sources/TranoApp/TerminalSettingsForm.swift",
+        "Sources/TranoApp/ThemeSettingsView.swift",
+        "vendor/SwiftTerm/Sources/SwiftTerm/Apple/AppleTerminalView.swift"
+      ],
+      "testContracts": [
+        "Tests/TerminalUITests/SettingsTerminologyNativeTests.swift"
+      ],
+      "qualificationLimits": [],
+      "currentRepairVerification": {
+        "status": "targeted_units_and_signed_local_install_verified",
+        "buildID": "f09009a24b5a6893d25e797fc28e5e02fa9248235bc035dd2c1a77aceaa85482",
+        "nativeUnitTests": 47,
+        "packagingUnitTests": 49,
+        "unitReceipt": ".local/text-rendering/unit-receipt.json",
+        "sourceManifest": ".local/text-rendering/source-manifest.json",
+        "review": ".local/text-rendering/final-review.json",
+        "receipt": ".local/text-rendering/installed-receipt.json",
+        "sameShellPIDs": true,
+        "sameLayout": true,
+        "sameSettings": true,
+        "preferenceSidecarsPreserved": true,
+        "liveShellsPreserved": 55,
+        "installedFileHashes": 129,
+        "e2e": "paused_by_user",
+        "fullProductSuiteRerun": false,
+        "warmBuildSeconds": 2.579,
+        "warmBuildNewInvocation": true,
+        "pluginCacheReused": true,
+        "skipBuildNativeCommandSeconds": 8.36,
+        "warmSignedPackagingSeconds": 14.81,
+        "performanceScope": "Unchanged compiled source and warmed caches; not full rebuild timing"
+      }
+    },
+    {
+      "id": "REQ-057",
+      "key": "article_fonts",
+      "request": "Install identifiable licensed fonts from the linked terminal-font article and expose picker choices",
+      "implementation": "source_connected",
+      "repairedInThisBatch": false,
+      "sourceFiles": [
+        "Sources/TranoApp/FontPicker.swift",
+        "Sources/TranoApp/TerminalFontAdapter.swift"
+      ],
+      "testContracts": [
+        "Tests/TerminalUITests/FontSelectionTests.swift"
+      ],
+      "qualificationLimits": [
+        "Nine identifiable OSS font families installed; SF Mono/Consolas excluded because applicable redistribution/use permission was not established; exact original IBM EGA distribution unidentified."
+      ]
+    },
+    {
+      "id": "REQ-058",
+      "key": "notification_terms",
+      "request": "Clearly distinguish terminal-program requests from delivery channel settings",
+      "implementation": "source_connected",
+      "repairedInThisBatch": true,
+      "sourceFiles": [
+        "Sources/TerminalCore/NotificationPreferences.swift",
+        "Sources/TranoApp/NotificationSettingsView.swift"
+      ],
+      "testContracts": [
+        "Tests/TerminalCoreTests/NotificationSourceDeliveryTests.swift"
+      ],
+      "qualificationLimits": [],
+      "nativeInteractionRepair": {
+        "status": "focused_units_and_signed_install_verified",
+        "buildID": "5e1eeab11d7f7747c0aa78878a916ce2fa7d80f42b94615fb271a937014ad85b",
+        "passed": 180,
+        "native": 90,
+        "core": 90,
+        "unitReceipt": ".local/native-interaction-batch/unit-receipt.json",
+        "installationReceipt": ".local/native-interaction-batch/installed-receipt.json",
+        "review": ".local/native-interaction-batch/final-review.json",
+        "notificationAuthorization": "authorized",
+        "e2e": "paused_by_user_not_run",
+        "fullProductSuiteRerun": false,
+        "features": [
+          "macOS_only_settings"
+        ]
+      }
+    },
+    {
+      "id": "REQ-059",
+      "key": "notification_icon",
+      "request": "Correct app icon in system notifications including background helper",
+      "implementation": "source_connected",
+      "repairedInThisBatch": false,
+      "sourceFiles": [
+        "Sources/TranoApp/NativeNotificationSink.swift",
+        "scripts/build-app.sh"
+      ],
+      "testContracts": [
+        "Tests/TerminalCoreTests/BuildIdentityTests.swift"
+      ],
+      "qualificationLimits": [
+        "Installed GUI/helper icon metadata is checked; actual OS notification delivery remains unrun."
+      ]
+    },
+    {
+      "id": "REQ-060",
+      "key": "mouse_scroll",
+      "request": "Terminal mouse/trackpad scrolling",
+      "implementation": "source_connected",
+      "repairedInThisBatch": true,
+      "sourceFiles": [
+        "Sources/TerminalCore/RemoteTerminalHistory.swift",
+        "Sources/TerminalCore/TerminalHistoryScroll.swift",
+        "Sources/TranoApp/App.swift",
+        "Sources/TranoApp/TerminalPane.swift",
+        "vendor/SwiftTerm/Sources/SwiftTerm/Mac/MacTerminalView.swift"
+      ],
+      "testContracts": [
+        "Tests/TerminalCoreTests/RemoteTerminalHistoryTests.swift",
+        "Tests/TerminalCoreTests/RemoteTerminalHistoryTransactionTests.swift",
+        "Tests/TerminalCoreTests/TerminalHistoryScrollPlanTests.swift",
+        "Tests/TerminalUITests/TerminalContextMenuUnitTests.swift",
+        "Tests/TerminalUITests/TerminalHistoryReplayFocusTests.swift"
+      ],
+      "qualificationLimits": []
+    },
+    {
+      "id": "REQ-061",
+      "key": "right_click",
+      "request": "Working terminal right-click menu",
+      "implementation": "source_connected",
+      "repairedInThisBatch": false,
+      "sourceFiles": [
+        "Sources/TranoApp/TerminalContextMenu.swift",
+        "Sources/TranoApp/TerminalPane.swift"
+      ],
+      "testContracts": [
+        "Tests/TerminalUITests/TerminalContextMenuUnitTests.swift"
+      ],
+      "qualificationLimits": []
+    },
+    {
+      "id": "REQ-062",
+      "key": "zoom_close_reset",
+      "request": "Working zoom/font reset/terminal reset/close actions",
+      "implementation": "source_connected",
+      "repairedInThisBatch": false,
+      "sourceFiles": [
+        "Sources/TerminalCore/TerminalFontAdjustmentPlan.swift",
+        "Sources/TranoApp/Store.swift",
+        "Sources/TranoApp/TerminalContextMenu.swift",
+        "Sources/TranoApp/TerminalPane.swift"
+      ],
+      "testContracts": [
+        "Tests/TerminalUITests/TerminalContextMenuUnitTests.swift"
+      ],
+      "qualificationLimits": []
+    },
+    {
+      "id": "REQ-063",
+      "key": "clipboard",
+      "request": "Image paste and OSC5522 clipboard support",
+      "implementation": "source_connected",
+      "repairedInThisBatch": true,
+      "sourceFiles": [
+        "Sources/TerminalCore/Remote.swift",
+        "Sources/TranoApp/AttachmentAdmissionBudget.swift",
+        "Sources/TranoApp/DeferredTerminalInputPolicy.swift",
+        "Sources/TranoApp/DeferredTerminalInputTarget.swift",
+        "Sources/TranoApp/KittyClipboard.swift",
+        "Sources/TranoApp/Store.swift",
+        "Sources/TranoApp/StoreAttachmentAdmission.swift",
+        "Sources/TranoApp/TerminalDraftPaste.swift",
+        "Sources/TranoApp/TerminalPane.swift"
+      ],
+      "testContracts": [
+        "Tests/TerminalUITests/AttachmentAdmissionBudgetTests.swift",
+        "Tests/TerminalUITests/AttachmentAdmissionNativeTests.swift",
+        "Tests/TerminalUITests/DeferredPasteNativeTests.swift",
+        "Tests/TerminalUITests/DeferredPasteOwnershipTests.swift",
+        "Tests/TerminalUITests/DeferredTerminalInputTests.swift",
+        "Tests/TerminalUITests/DeferredTerminalNativeTests.swift",
+        "Tests/TerminalUITests/KittyClipboardTests.swift"
+      ],
+      "qualificationLimits": [],
+      "nativeInteractionRepair": {
+        "status": "focused_units_and_signed_install_verified",
+        "buildID": "5e1eeab11d7f7747c0aa78878a916ce2fa7d80f42b94615fb271a937014ad85b",
+        "passed": 180,
+        "native": 90,
+        "core": 90,
+        "unitReceipt": ".local/native-interaction-batch/unit-receipt.json",
+        "installationReceipt": ".local/native-interaction-batch/installed-receipt.json",
+        "review": ".local/native-interaction-batch/final-review.json",
+        "notificationAuthorization": "authorized",
+        "e2e": "paused_by_user_not_run",
+        "fullProductSuiteRerun": false,
+        "features": [
+          "native_responder_selection_copy"
+        ]
+      }
+    },
+    {
+      "id": "REQ-064",
+      "key": "url_hints",
+      "request": "Kitty-style URL hint mode",
+      "implementation": "source_connected",
+      "repairedInThisBatch": false,
+      "sourceFiles": [
+        "Sources/TerminalCore/Actions.swift",
+        "Sources/TerminalCore/URLHintMatches.swift",
+        "Sources/TranoApp/URLHints.swift"
+      ],
+      "testContracts": [
+        "Tests/TerminalUITests/URLHintsTests.swift"
+      ],
+      "qualificationLimits": []
+    },
+    {
+      "id": "REQ-065",
+      "key": "voice",
+      "request": "Voice input with editable preview",
+      "implementation": "source_connected",
+      "repairedInThisBatch": true,
+      "sourceFiles": [
+        "Sources/TranoApp/DeferredTerminalInputPolicy.swift",
+        "Sources/TranoApp/DeferredTerminalInputTarget.swift",
+        "Sources/TranoApp/TerminalDraftPaste.swift",
+        "Sources/TranoApp/ToolPanelStyle.swift",
+        "Sources/TranoApp/VoiceInput.swift",
+        "Sources/TranoApp/VoiceInputPresentation.swift",
+        "Sources/TranoApp/VoiceInputRecoveryDraft.swift",
+        "Sources/TranoApp/WorkspaceView.swift"
+      ],
+      "testContracts": [
+        "Tests/TerminalUITests/DeferredPasteNativeTests.swift",
+        "Tests/TerminalUITests/DeferredPasteOwnershipTests.swift",
+        "Tests/TerminalUITests/DeferredTerminalInputTests.swift",
+        "Tests/TerminalUITests/DeferredTerminalNativeTests.swift",
+        "Tests/TerminalUITests/NativeInteractionTests.swift",
+        "Tests/TerminalUITests/ToolPanelDesignTests.swift"
+      ],
+      "qualificationLimits": [],
+      "toolPanelPresentation": "Shared current interface theme, header/Close/spacing/typography; existing guarded actions preserved."
+    },
+    {
+      "id": "REQ-066",
+      "key": "server-status",
+      "request": "Native menu-bar background server running/error visibility and recovery",
+      "implementation": "source_connected",
+      "repairedInThisBatch": false,
+      "sourceFiles": [
+        "Sources/TerminalCore/ServerStatus.swift",
+        "Sources/TerminalCore/API.swift",
+        "Sources/TerminalCore/ServerRemoteRuntime.swift",
+        "Sources/TranoApp/ServerStatusMenu.swift",
+        "Sources/TranoApp/BackgroundServerHost.swift",
+        "Sources/TranoApp/App.swift"
+      ],
+      "testContracts": [
+        "Tests/TerminalCoreTests/ServerStatusTests.swift",
+        "Tests/TerminalUITests/ServerStatusMenuTests.swift"
+      ],
+      "qualificationLimits": [
+        "Physical menu-bar visibility and system interaction remain untested while E2E is paused",
+        "Whole-helper process crash watchdog is outside this slice"
+      ]
+    },
+    {
+      "id": "REQ-067",
+      "key": "unisession",
+      "request": "Replace Supervisor dashboard with one themed shared terminal pinned across workspaces",
+      "implementation": "source_connected",
+      "repairedInThisBatch": false,
+      "sourceFiles": [
+        "Sources/TerminalCore/Unisession.swift",
+        "Sources/TerminalCore/UnisessionRuntime.swift",
+        "Sources/TerminalCore/UnisessionStateStore.swift",
+        "Sources/TranoApp/UnisessionController.swift",
+        "Sources/TranoApp/UnisessionPresentation.swift",
+        "Sources/TranoApp/UnisessionWorkspaceAnchor.swift",
+        "Sources/TranoApp/UnisessionFocusIntent.swift",
+        "Sources/TranoApp/ExternalTerminalPanePolicy.swift",
+        "Sources/TranoApp/App.swift",
+        "Sources/TranoApp/Store.swift",
+        "Sources/TranoApp/WorkspaceView.swift"
+      ],
+      "testContracts": [
+        "Tests/TerminalCoreTests/UnisessionTests.swift",
+        "Tests/TerminalCoreTests/UnisessionIntegrationTests.swift",
+        "Tests/TerminalCoreTests/UnisessionResumeLivenessTests.swift",
+        "Tests/TerminalUITests/UnisessionTests.swift"
+      ],
+      "qualificationLimits": [
+        "Physical OS/IME/window interactions remain untested while E2E is paused"
+      ]
+    },
+    {
+      "id": "REQ-068",
+      "key": "worktree_cleanup",
+      "request": "Track worktrees created in the current Trano session and automatically clean eligible worktrees after task completion",
+      "implementation": "source_connected",
+      "repairedInThisBatch": true,
+      "sourceFiles": [
+        "Sources/TerminalCore/GitTrackingShell.swift",
+        "Sources/TerminalCore/WorktreeCleanup.swift",
+        "Sources/TerminalCore/WorktreeCleanupRuntimeIntegration.swift",
+        "Sources/TerminalCore/WorktreeCleanupStore.swift",
+        "Sources/TerminalCore/WorktreeGitInspector.swift",
+        "Sources/TerminalCore/Recovery.swift",
+        "Sources/TranoCLI/TrackedGitCommand.swift",
+        "Sources/TranoCLI/main.swift",
+        "Sources/TranoApp/StoreWorktrees.swift",
+        "Sources/TranoApp/WorktreeCleanupSection.swift",
+        "Sources/TranoApp/ServerIntegrationsSettings.swift"
+      ],
+      "testContracts": [
+        "Tests/TerminalCoreTests/WorktreeCleanupTests.swift",
+        "Tests/TerminalCoreTests/WorktreeGitTests.swift",
+        "Tests/TerminalCoreTests/WorktreeRuntimeGateTests.swift",
+        "Tests/TerminalCoreTests/WorktreeCleanupAPITests.swift",
+        "Tests/TerminalCoreTests/WorktreeCleanupPreferencesTests.swift",
+        "Tests/TerminalCoreTests/GitTrackingShellTests.swift",
+        "Tests/TerminalUITests/WorktreeCleanupSettingsTests.swift",
+        "Tests/TerminalUITests/WorktreeCleanupPresentationTests.swift",
+        "Tests/TranoCLITests/TrackedGitCommandTests.swift",
+        "Tests/TerminalCoreTests/WorktreeExitedProcessTests.swift"
+      ],
+      "qualificationLimits": [
+        "Future supported local creations only; absolute Git/unsupported options bypass tracking; plain shell exit does not establish managed task completion.",
+        "Dirty, untracked, ignored, locked, active or uncertain worktrees are kept; branches are retained. External writers cannot be atomically excluded after final checks.",
+        "Real Git/worktree/provider/physical UI E2E remains paused; remote worktree cleanup is unsupported."
+      ]
+    },
+    {
+      "id": "REQ-069",
+      "key": "pessimistic_twin",
+      "request": "Fork the exact current Claude or Codex conversation into an isolated pessimistic reviewer with direct fixes, human-selected deferred merge, queued feedback, bounded rounds and owned-resource cleanup",
+      "implementation": "source_connected",
+      "repairedInThisBatch": true,
+      "sourceFiles": [
+        "Sources/TerminalCore/PessimisticTwinAPI.swift",
+        "Sources/TerminalCore/PessimisticTwinArtifacts.swift",
+        "Sources/TerminalCore/PessimisticTwinArtifactsNative.swift",
+        "Sources/TerminalCore/PessimisticTwinAuthentication.swift",
+        "Sources/TerminalCore/PessimisticTwinCoordinator.swift",
+        "Sources/TerminalCore/PessimisticTwinFileAliasAdmission.swift",
+        "Sources/TerminalCore/PessimisticTwinGit.swift",
+        "Sources/TerminalCore/PessimisticTwinGitCleanup.swift",
+        "Sources/TerminalCore/PessimisticTwinGitGuard.swift",
+        "Sources/TerminalCore/PessimisticTwinGitNative.swift",
+        "Sources/TerminalCore/PessimisticTwinHookAdmission.swift",
+        "Sources/TerminalCore/PessimisticTwinLaunchPreparation.swift",
+        "Sources/TerminalCore/PessimisticTwinModels.swift",
+        "Sources/TerminalCore/PessimisticTwinPaneRuntime.swift",
+        "Sources/TerminalCore/PessimisticTwinProfileCleanup.swift",
+        "Sources/TerminalCore/PessimisticTwinProfileProcessUse.swift",
+        "Sources/TerminalCore/PessimisticTwinProvider.swift",
+        "Sources/TerminalCore/PessimisticTwinRestrictedStartup.swift",
+        "Sources/TerminalCore/PessimisticTwinRetirement.swift",
+        "Sources/TerminalCore/PessimisticTwinRuntime.swift",
+        "Sources/TerminalCore/PessimisticTwinRuntimeGitWork.swift",
+        "Sources/TerminalCore/PessimisticTwinSandbox.swift",
+        "Sources/TerminalCore/PessimisticTwinSourceEnvironment.swift",
+        "Sources/TerminalCore/PessimisticTwinSourceExpectation.swift",
+        "Sources/TerminalCore/PessimisticTwinStore.swift",
+        "Sources/TerminalCore/PessimisticTwinWorker.swift",
+        "Sources/TerminalCore/PessimisticTwinWorkerIteration.swift",
+        "Sources/TranoApp/PessimisticTwinControls.swift",
+        "Sources/TranoCLI/PessimisticTwinBridgeCLI.swift",
+        "Sources/TranoCLI/PessimisticTwinRunCLI.swift",
+        "Sources/TranoSandboxBridge/TranoSandboxBridge.c",
+        "Sources/TranoSandboxBridge/include/TranoSandboxBridge.h"
+      ],
+      "testContracts": [
+        "Tests/TerminalCoreTests/PessimisticTwinAPITests.swift",
+        "Tests/TerminalCoreTests/PessimisticTwinAliasAdmissionTests.swift",
+        "Tests/TerminalCoreTests/PessimisticTwinArtifactFileTests.swift",
+        "Tests/TerminalCoreTests/PessimisticTwinArtifactTests.swift",
+        "Tests/TerminalCoreTests/PessimisticTwinAuthenticationTests.swift",
+        "Tests/TerminalCoreTests/PessimisticTwinCoordinatorTests.swift",
+        "Tests/TerminalCoreTests/PessimisticTwinDecisionGuardTests.swift",
+        "Tests/TerminalCoreTests/PessimisticTwinDecisionPruningTests.swift",
+        "Tests/TerminalCoreTests/PessimisticTwinDecisionQueueTests.swift",
+        "Tests/TerminalCoreTests/PessimisticTwinEmptyCleanupTests.swift",
+        "Tests/TerminalCoreTests/PessimisticTwinGitPathTests.swift",
+        "Tests/TerminalCoreTests/PessimisticTwinGitPlumbingTests.swift",
+        "Tests/TerminalCoreTests/PessimisticTwinGitTests.swift",
+        "Tests/TerminalCoreTests/PessimisticTwinHookAdmissionTests.swift",
+        "Tests/TerminalCoreTests/PessimisticTwinInvocationInputTests.swift",
+        "Tests/TerminalCoreTests/PessimisticTwinLaunchPreparationTests.swift",
+        "Tests/TerminalCoreTests/PessimisticTwinLifecycleTests.swift",
+        "Tests/TerminalCoreTests/PessimisticTwinModelTests.swift",
+        "Tests/TerminalCoreTests/PessimisticTwinPrivateReadTests.swift",
+        "Tests/TerminalCoreTests/PessimisticTwinProfileCleanupTests.swift",
+        "Tests/TerminalCoreTests/PessimisticTwinProfileProcessUseTests.swift",
+        "Tests/TerminalCoreTests/PessimisticTwinProviderTests.swift",
+        "Tests/TerminalCoreTests/PessimisticTwinReservationTests.swift",
+        "Tests/TerminalCoreTests/PessimisticTwinRestrictedStartupTests.swift",
+        "Tests/TerminalCoreTests/PessimisticTwinRetirementTests.swift",
+        "Tests/TerminalCoreTests/PessimisticTwinRuntimeGateTests.swift",
+        "Tests/TerminalCoreTests/PessimisticTwinRuntimeGitWorkTests.swift",
+        "Tests/TerminalCoreTests/PessimisticTwinSourceExpectationTests.swift",
+        "Tests/TerminalCoreTests/PessimisticTwinSourceIdleTests.swift",
+        "Tests/TerminalCoreTests/PessimisticTwinStoreTests.swift",
+        "Tests/TerminalCoreTests/PessimisticTwinWorkerIsolationTests.swift",
+        "Tests/TerminalUITests/PessimisticTwinNativeButtonTests.swift",
+        "Tests/TerminalUITests/PessimisticTwinPresentationTests.swift",
+        "Tests/TranoCLITests/PessimisticTwinBridgeCLITests.swift",
+        "Tests/TranoCLITests/PessimisticTwinRunCLITests.swift",
+        "Tests/TerminalCoreTests/PessimisticTwinWaitingReasonTests.swift"
+      ],
+      "qualificationLimits": [
+        "Local managed Claude2.1.323 and Codex0.167.0 only; unsupported environment, authentication or confinement prerequisites fail closed.",
+        "Real authenticated provider/fork/hook/PTY/physical UI E2E remains paused by user.",
+        "Concurrent external writers cannot be atomically excluded after final checks; ambiguous, dirty, active, interrupted or conflicted resources remain visible and retained."
+      ],
+      "verification": {
+        "unitTests": 299,
+        "signedInstalledBuild": "8e743ff52c3f8e7a24e884cc250bd5c6c0a2106ed52615981e08d4e6597aa160",
+        "liveShellsPreserved": 26,
+        "qualification": "implemented; real authenticated fork/PTY/physical UI E2E paused"
+      }
+    },
+    {
+      "id": "REQ-070",
+      "key": "workspace_activity_dot",
+      "request": "Workspace picker activity dots beside workspace titles, matching Rex reference",
+      "implementation": "source_connected",
+      "repairedInThisBatch": true,
+      "sourceFiles": [
+        "Sources/TranoApp/WorkspaceView.swift",
+        "Sources/TerminalCore/ActivityInbox.swift",
+        "Sources/TranoApp/Store.swift"
+      ],
+      "testContracts": [
+        "Tests/TerminalUITests/WorkspaceActivityDotTests.swift",
+        "Tests/TerminalUITests/WorkspaceActivityReadTests.swift"
+      ],
+      "requirements": [
+        "FR-WSACT-1",
+        "FR-WSACT-2",
+        "FR-WSACT-3"
+      ],
+      "qualificationLimits": [
+        "Physical pointer/provider E2E remains paused."
+      ],
+      "repairProof": {
+        "status": "passed",
+        "buildID": "34515380e980cb64fdc8a07dc2688d6025a33714249955da31ec03ec84ca63e9",
+        "unitCount": 45,
+        "nativeUnitCount": 16,
+        "coreUnitCount": 29,
+        "unitReceipt": ".local/workspace-read-receipts/unit-receipt.json",
+        "installationReceipt": ".local/workspace-read-receipts/installed-receipt.json",
+        "liveShellsPreserved": 58,
+        "sameShellPIDs": true,
+        "sameLayout": true,
+        "sameSettings": true,
+        "samePreferenceSidecars": true,
+        "physicalE2E": "paused by user"
+      }
+    },
+    {
+      "id": "REQ-071",
+      "key": "workspace_keyboard_layout_search",
+      "request": "Cmd+K Korean two-set input also finds Latin workspace names while preserving literal search and the typed name",
+      "implementation": "source_connected",
+      "repairedInThisBatch": true,
+      "sourceFiles": [
+        "Sources/TerminalCore/KeyboardLayoutSearch.swift",
+        "Sources/TranoApp/WorkspaceView.swift",
+        "Sources/TranoApp/PickerSearchField.swift"
+      ],
+      "testContracts": [
+        "Tests/TerminalCoreTests/KeyboardLayoutSearchTests.swift",
+        "Tests/TerminalUITests/WorkspaceSearchCorrectionTests.swift"
+      ],
+      "requirements": [
+        "FR-SEARCH-1",
+        "FR-SEARCH-2"
+      ],
+      "qualificationLimits": [
+        "Physical OS IME/modal activation/provider/PTY/SSH E2E remains paused."
+      ],
+      "verification": {
+        "unitReceipt": ".local/input-ergonomics/unit-receipt.json",
+        "installedBuild": "42a9acdc61e05a3bc17db763b051fef896f899b6bf6e764f5448f398fe295dec"
+      },
+      "currentRepairVerification": {
+        "status": "targeted_units_and_signed_local_install_verified",
+        "buildID": "1c1ae3961a9ecdf27e785899937161360e2975c5c273cd5a36e66577e999b2ce",
+        "productUnitTests": 67,
+        "nativeUnitTests": 31,
+        "coreUnitTests": 36,
+        "packagingUnitTests": 45,
+        "newRegressionTests": 4,
+        "regressionsFailedBeforeFix": 3,
+        "fullProductSuiteRerun": false,
+        "unitReceipt": ".local/closed-session-search/unit-receipt.json",
+        "sourceManifest": ".local/closed-session-search/source-manifest.json",
+        "review": ".local/closed-session-search/final-review.json",
+        "receipt": ".local/closed-session-search/installed-receipt.json",
+        "sameShellPIDs": true,
+        "sameLayout": true,
+        "sameSettings": true,
+        "liveShellsPreserved": 48,
+        "installedFileHashes": 123,
+        "e2e": "paused_by_user",
+        "scope": "Closed session search filtering; whole visible marked Hangul query uses contiguous matching; shared dark/green shell/zsh icon; existing Dock badge preference enabled",
+        "emptySessionRepair": ".local/closed-session-search/empty-session-repair.json",
+        "dockPreference": ".local/closed-session-search/dock-preference-receipt.json"
+      },
+      "circularKeyboardNavigation": {
+        "status": "focused_units_and_signed_install_verified",
+        "buildID": "ae5a9dd3800e9e8d309a88b677f7b0e415f030501b2f6f61841b696a1fe3ebb4",
+        "total": 35,
+        "native": 28,
+        "core": 7,
+        "redAssertionFailures": 19,
+        "unitReceipt": ".local/workspace-picker-wrap/unit-receipt.json",
+        "reviewReceipt": ".local/workspace-picker-wrap/final-review.json",
+        "installationReceipt": ".local/workspace-picker-wrap/installed-receipt.json",
+        "scope": "Cmd+K sessions picker Up from first wraps to last selectable entry; Down from last wraps to first. Compact/full, filtered Create/footer entries, singleton and Korean literal/IME controls verified with native search-editor selectors. Other picker modes retain existing behavior.",
+        "preservedLiveShells": 65,
+        "e2e": "paused_by_user_not_run"
+      }
+    },
+    {
+      "id": "REQ-072",
+      "key": "editable_multiline_paste",
+      "request": "Edit multiline paste preview; Return/keypad Enter inserts newline in editor and activates Paste outside editor without terminal submission",
+      "implementation": "source_connected",
+      "repairedInThisBatch": true,
+      "sourceFiles": [
+        "Sources/TranoApp/TerminalDraftPaste.swift"
+      ],
+      "testContracts": [
+        "Tests/TerminalUITests/DeferredPasteNativeTests.swift",
+        "Tests/TerminalUITests/DeferredPasteOwnershipTests.swift",
+        "Tests/TerminalUITests/DeferredTerminalInputTests.swift"
+      ],
+      "requirements": [
+        "FR-PASTE-EDIT-1",
+        "FR-PASTE-EDIT-2",
+        "FR-PASTE-EDIT-3"
+      ],
+      "qualificationLimits": [
+        "Physical OS IME/modal activation/provider/PTY/SSH E2E remains paused."
+      ],
+      "verification": {
+        "unitReceipt": ".local/input-ergonomics/unit-receipt.json",
+        "installedBuild": "42a9acdc61e05a3bc17db763b051fef896f899b6bf6e764f5448f398fe295dec"
+      },
+      "confirmationKeyboardRepair": {
+        "status": "focused_units_and_signed_install_verified",
+        "buildID": "a36cebf2c8dfc8c64233a35e22e1555dddf754eae45913c99ca5426c2bd3333c",
+        "total": 43,
+        "native": 36,
+        "core": 7,
+        "failures": 0,
+        "log": ".local/paste-return-modal/final-green.log",
+        "red": {
+          "ownedResponderTest": 1,
+          "assertionFailures": 4,
+          "nativeClickPositivePassed": true,
+          "actualResponderIdentityChecksPassed": true,
+          "log": ".local/paste-return-modal/owned-responder-red.log"
+        },
+        "sourceHashes": {
+          "Sources/TranoApp/TerminalDraftPaste.swift": "73a7885c9877618d587651a0ef62dc261be5401bd199b11ad53266aad7d22213",
+          "Tests/TerminalUITests/DeferredPasteNativeTests.swift": "588772153d28bc4a2a3984d702c19f711dd9c6bbc9fdfbc65ce505a1805d90db"
+        },
+        "scope": "Actual NSAlert native target/action/modalresponse;owned initial responder directReturn/keypad dispatch with nativeclickpositive;edited/bracketedbytes/noextrasubmit;editornewline/IME/Escape/deferredownership",
+        "excludedEvidence": [
+          "Inactivebackgroundmodalposted-key tests cannot qualify physicalkeyboard",
+          "Constructorfocusability baselinepassed;artificialbuttonpolicytestexcluded"
+        ],
+        "qualification": "Owned-responder component only;physical OS modal admission unqualified under user E2E pause",
+        "e2e": "paused_by_user_not_run",
+        "unitReceipt": ".local/paste-return-modal/unit-receipt.json",
+        "installationReceipt": ".local/paste-return-modal/installed-receipt.json",
+        "review": ".local/paste-return-modal/final-review.json",
+        "sameShellPIDs": true,
+        "sameLayout": true,
+        "sameSettings": true,
+        "samePreferenceSidecars": true,
+        "liveShellsPreserved": 67,
+        "fullProductSuiteRerun": false
+      }
+    },
+    {
+      "id": "REQ-073",
+      "key": "remove_terminal_status_footer",
+      "request": "Remove Persistent sessions, live count and local host footer and reclaim its 27 pt space",
+      "implementation": "source_connected",
+      "repairedInThisBatch": true,
+      "sourceFiles": [
+        "Sources/TranoApp/WorkspaceView.swift",
+        "Sources/TerminalCore/DeveloperSettings.swift",
+        "vendor/SwiftTerm/Sources/SwiftTerm/Apple/AppleTerminalView.swift"
+      ],
+      "testContracts": [
+        "Tests/TerminalUITests/WorkspaceFooterTests.swift",
+        "Tests/TerminalUITests/WindowTransparencyTests.swift",
+        "Tests/TerminalUITests/SyntheticInterfaceLayoutTests.swift",
+        "Tests/TerminalUITests/TerminalBottomViewportTests.swift",
+        "Tests/TerminalCoreTests/DeveloperSettingsTests.swift",
+        "Tests/TerminalUITests/DeveloperNativeEffectsTests.swift"
+      ],
+      "requirements": [
+        "FR-CHROME-FOOTER-1"
+      ],
+      "qualificationLimits": [
+        "Physical display/compositor and OS IME/modal activation/provider/PTY/SSH E2E remains paused."
+      ],
+      "verification": {
+        "unitReceipt": ".local/footer-residual/unit-receipt.json",
+        "installedBuild": "597b39f1956f48409682ad5aa583eb1fc99ce5c6a0bd82ddf3ad379620d6a43a"
+      }
+    },
+    {
+      "id": "REQ-074",
+      "key": "session_picker_copy",
+      "request": "Use New Session for creation labels; Cmd+K shows Filter or create with no Workspaces title row",
+      "implementation": "source_connected",
+      "repairedInThisBatch": true,
+      "sourceFiles": [
+        "Sources/TranoApp/WorkspaceView.swift"
+      ],
+      "testContracts": [
+        "Tests/TerminalUITests/WorkspaceSearchCorrectionTests.swift",
+        "Tests/TerminalUITests/WorkspaceActivityDotTests.swift"
+      ],
+      "requirements": [
+        "FR-NAV-6",
+        "FR-SEARCH-2"
+      ],
+      "verification": {
+        "unitReceipt": ".local/workspace-close-crash/unit-receipt.json",
+        "installedBuild": "b1ebee8178caf5a5dfaeaf3cd052d3792e4900c49b05480b465360d119b7a15f"
+      },
+      "qualificationLimits": [
+        "Physical UI E2E paused; compact/full native component captures inspected."
+      ],
+      "currentRepairVerification": {
+        "status": "targeted_units_and_signed_local_install_verified",
+        "buildID": "1c1ae3961a9ecdf27e785899937161360e2975c5c273cd5a36e66577e999b2ce",
+        "productUnitTests": 67,
+        "nativeUnitTests": 31,
+        "coreUnitTests": 36,
+        "packagingUnitTests": 45,
+        "newRegressionTests": 4,
+        "regressionsFailedBeforeFix": 3,
+        "fullProductSuiteRerun": false,
+        "unitReceipt": ".local/closed-session-search/unit-receipt.json",
+        "sourceManifest": ".local/closed-session-search/source-manifest.json",
+        "review": ".local/closed-session-search/final-review.json",
+        "receipt": ".local/closed-session-search/installed-receipt.json",
+        "sameShellPIDs": true,
+        "sameLayout": true,
+        "sameSettings": true,
+        "liveShellsPreserved": 48,
+        "installedFileHashes": 123,
+        "e2e": "paused_by_user",
+        "scope": "Closed session search filtering; whole visible marked Hangul query uses contiguous matching; shared dark/green shell/zsh icon; existing Dock badge preference enabled",
+        "emptySessionRepair": ".local/closed-session-search/empty-session-repair.json",
+        "dockPreference": ".local/closed-session-search/dock-preference-receipt.json"
+      }
+    },
+    {
+      "id": "REQ-075",
+      "key": "menu_bar_snake_wordmark",
+      "request": "Menu-bar item uses only the snake-shaped Trano lettering from the Dock icon in white",
+      "implementation": "source_connected",
+      "repairedInThisBatch": true,
+      "sourceFiles": [
+        "Sources/TranoApp/ServerStatusMenu.swift",
+        "Sources/TranoApp/Resources/TranoStatusMark.pdf",
+        "scripts/generate-icon.swift",
+        "scripts/build-app.sh"
+      ],
+      "testContracts": [
+        "Tests/TerminalUITests/ServerStatusMenuTests.swift"
+      ],
+      "requirements": [
+        "FR-SERVER-1",
+        "FR-SERVER-3"
+      ],
+      "currentRepairVerification": {
+        "status": "targeted_units_and_signed_local_install_verified",
+        "buildID": "f09009a24b5a6893d25e797fc28e5e02fa9248235bc035dd2c1a77aceaa85482",
+        "nativeUnitTests": 47,
+        "packagingUnitTests": 49,
+        "unitReceipt": ".local/text-rendering/unit-receipt.json",
+        "sourceManifest": ".local/text-rendering/source-manifest.json",
+        "review": ".local/text-rendering/final-review.json",
+        "receipt": ".local/text-rendering/installed-receipt.json",
+        "sameShellPIDs": true,
+        "sameLayout": true,
+        "sameSettings": true,
+        "preferenceSidecarsPreserved": true,
+        "liveShellsPreserved": 55,
+        "installedFileHashes": 129,
+        "e2e": "paused_by_user",
+        "fullProductSuiteRerun": false,
+        "warmBuildSeconds": 2.579,
+        "warmBuildNewInvocation": true,
+        "pluginCacheReused": true,
+        "skipBuildNativeCommandSeconds": 8.36,
+        "warmSignedPackagingSeconds": 14.81,
+        "performanceScope": "Unchanged compiled source and warmed caches; not full rebuild timing"
+      },
+      "qualificationLimits": [
+        "Native1x/2x captures inspected; physical UI E2E paused"
+      ]
+    }
+  ]
+}

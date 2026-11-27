@@ -6,7 +6,12 @@ public struct AccountProfile: Codable, Identifiable, Equatable {
     public var label: String
     public var enabled = true
     public var pinned = false
+    public var organization: AccountOrganizationState? = nil
     public var unavailableUntil: Date?
+    public var organizationUsageBindingID: String? {
+        guard provider == .claude, let value = organization?.bindingID, !value.isEmpty else { return nil }
+        return value
+    }
     public init(provider: AgentKind, label: String) { self.provider = provider; self.label = label }
 }
 
@@ -54,9 +59,10 @@ public enum ManagedDirectory {
 }
 
 extension TerminalRuntime {
-    public func addAccount(provider: AgentKind, label: String) throws -> AccountProfile {
+    public func addAccount(provider: AgentKind, label: String, organization: ClaudeOrganizationSelection? = nil) throws -> AccountProfile {
         guard provider != .shell else { throw TerminalError.invalid("Choose Claude or Codex") }
         try Self.validateAccountLabel(label)
+        guard organization == nil || provider == .claude else { throw TerminalError.invalid("Organization selection is available for Claude profiles") }
         return try transaction {
             let profile = AccountProfile(provider: provider, label: label)
             let base = try ManagedDirectory.ensure(root, component: "accounts")
@@ -70,7 +76,8 @@ extension TerminalRuntime {
                 }
                 try update { $0.accounts.append(profile) }
                 try applyExtensions(extensionPlan(accountID: profile.id, extensionIDs: []))
-                return profile
+                if let organization { try setAccountOrganization(profile.id, selection: organization) }
+                return try state().accounts.first { $0.id == profile.id }!
             } catch {
                 try? update { $0.accounts.removeAll { $0.id == profile.id } }
                 try? FileManager.default.removeItem(at: directory)
@@ -105,37 +112,68 @@ extension TerminalRuntime {
         }
     }
 
-    public func setAccountCooldown(_ id: String, until: Date?) throws {
+    public func setAccountCooldown(_ id: String, until: Date?, organizationBindingID: String? = nil) throws {
         if let until, !until.timeIntervalSince1970.isFinite { throw TerminalError.invalid("Invalid cooldown time") }
-        try update { state in
-            guard let index = state.accounts.firstIndex(where: { $0.id == id }) else { throw TerminalError.invalid("Unknown account") }
-            state.accounts[index].unavailableUntil = until
+        try transaction {
+            guard let account = try state().accounts.first(where: { $0.id == id }) else { throw TerminalError.invalid("Unknown account") }
+            if until != nil, account.organizationUsageBindingID != organizationBindingID { return }
+            if account.organizationUsageBindingID != nil {
+                try setOrganizationAccountCooldown(id, until: until)
+                return
+            }
+            try update { state in
+                guard let index = state.accounts.firstIndex(where: { $0.id == id }) else { throw TerminalError.invalid("Unknown account") }
+                state.accounts[index].unavailableUntil = until
+            }
+        }
+    }
+
+    public func recordAccountSwitchFailure(accountID: String, organizationBindingID: String?, until: Date) throws {
+        guard until.timeIntervalSince1970.isFinite else { throw TerminalError.invalid("Invalid cooldown time") }
+        try transaction {
+            guard let account = try state().accounts.first(where: { $0.id == accountID }),
+                  account.organizationUsageBindingID == organizationBindingID else { return }
+            _ = try recordAccountFailure(accountID: accountID, authentication: false, organizationBindingID: organizationBindingID)
+            try setAccountCooldown(accountID, until: until, organizationBindingID: organizationBindingID)
         }
     }
 
     public func accountRoot(_ id: String) throws -> URL {
-        guard UUID(uuidString: id) != nil, try state().accounts.contains(where: { $0.id == id }) else { throw TerminalError.invalid("Unknown account") }
+        guard UUID(uuidString: id) != nil, let profile = try state().accounts.first(where: { $0.id == id }) else { throw TerminalError.invalid("Unknown account") }
         let base = try ManagedDirectory.ensure(root, component: "accounts")
         let directory = try ManagedDirectory.ensure(base, component: id)
-        guard try AccountFile.read(directory.appendingPathComponent(".trano-account"), limit: 64) == Data("trano-account-v1\n".utf8) else { throw TerminalError.invalid("Account directory is not owned by Trano") }
+        let marker = try AccountFile.read(directory.appendingPathComponent(".trano-account"), limit: 64)
+        try Self.validateManagedAccountMarker(marker, profile: profile)
         return directory
+    }
+
+    static func validateManagedAccountMarker(_ marker: Data, profile: AccountProfile) throws {
+        let legacy = marker == Data("trano-account-v1\n".utf8)
+        let organization = marker == Data("trano-account-org-v1\n".utf8)
+        guard (legacy && profile.organization?.selection == nil) || (organization && profile.organization != nil) else {
+            throw TerminalError.invalid("Account ownership or organization metadata is unavailable; use a current Trano helper and verify this profile")
+        }
     }
 
     public func accountCommand(_ id: String, login: Bool = false, arguments: [String] = []) throws -> AccountCommand {
         guard let profile = try state().accounts.first(where: { $0.id == id }), profile.enabled else { throw TerminalError.invalid("Account is unavailable") }
         let directory = try accountRoot(id)
+        if login && profile.provider == .claude { try prepareAccountOrganizationLogin(id) }
         if !login { try applyExtensions(extensionPlan(accountID: id, extensionIDs: enabledExtensions(accountID: id))) }
         let removed = ["ANTHROPIC_API_KEY", "ANTHROPIC_AUTH_TOKEN", "CLAUDE_CODE_OAUTH_TOKEN", "CLAUDE_SECURESTORAGE_CONFIG_DIR", "CLAUDE_CONFIG_DIR", "ANTHROPIC_BASE_URL", "CLAUDE_CODE_USE_BEDROCK", "CLAUDE_CODE_USE_VERTEX", "CLAUDE_CODE_USE_FOUNDRY", "OPENAI_API_KEY", "CODEX_API_KEY", "CODEX_ACCESS_TOKEN", "CODEX_HOME", "CODEX_SQLITE_HOME", "OPENAI_BASE_URL"]
+        let path = ManagedAccountPath.normalized(ProcessInfo.processInfo.environment["PATH"], runtimeRoot: root)
         if profile.provider == .claude {
             return AccountCommand(arguments: login ? ["claude", "auth", "login", "--claudeai"] : ["claude", "--mcp-config", directory.appendingPathComponent("trano-mcp.json").path, "--settings", directory.appendingPathComponent("trano-settings.json").path] + arguments,
-                                  environment: ["CLAUDE_CONFIG_DIR": directory.path, "TRANO_ACCOUNT_ID": id], removeEnvironment: removed)
+                                  environment: ["CLAUDE_CONFIG_DIR": directory.path, "TRANO_ACCOUNT_ID": id, "PATH": path], removeEnvironment: removed)
         }
         return AccountCommand(arguments: login ? ["codex", "login"] : ["codex", "--no-daemon", "--profile", "trano"] + arguments,
-                              environment: ["CODEX_HOME": directory.path, "TRANO_ACCOUNT_ID": id], removeEnvironment: removed)
+                              environment: ["CODEX_HOME": directory.path, "TRANO_ACCOUNT_ID": id, "PATH": path], removeEnvironment: removed)
     }
 
     public func launchAccount(_ id: String, cwd: String, login: Bool = false) throws -> LaunchResult {
+        let organizationProof = login ? nil : try preflightAccountOrganization(accountID: id, cwd: cwd)
         _ = try accountCommand(id, login: login)
+        if let organizationProof { try validateAccountOrganizationAuthorization(organizationProof, cwd: cwd) }
         guard let helperExecutable, FileManager.default.isExecutableFile(atPath: helperExecutable) else { throw TerminalError.runtime("The bundled trano CLI is required") }
         let result = try launch(cwd: cwd)
         let command = [helperExecutable, "account", "exec", id] + (login ? ["--login"] : [])

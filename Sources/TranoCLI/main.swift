@@ -60,8 +60,9 @@ func runProvider(_ initialPlan: AccountCommand, agent: AgentKind, runtime: Termi
         recovery = transfer.source
         command = sourceCommand
         transferred = nil
-        _ = try? runtime.recordAccountFailure(accountID: transfer.plan.targetAccountID, authentication: false)
-        try? runtime.setAccountCooldown(transfer.plan.targetAccountID, until: Date().addingTimeInterval(300))
+        let binding = transfer.plan.organizationAuthorization?.bindingID
+        try? runtime.recordAccountSwitchFailure(accountID: transfer.plan.targetAccountID,
+            organizationBindingID: binding?.isEmpty == false ? binding : nil, until: Date().addingTimeInterval(300))
     }
     while true {
         let result: ProviderAttemptResult
@@ -105,10 +106,73 @@ func runProvider(_ initialPlan: AccountCommand, agent: AgentKind, runtime: Termi
     }
 }
 
-func runProviderAttempt(_ initialPlan: AccountCommand, agent: AgentKind, runtime: TerminalRuntime, accountID: String?, resume: AgentLaunch?, relay: ProviderSignalRelay, expectedTransfer: PendingAccountTransfer?) throws -> ProviderAttemptResult {
+func resumeWithBackoff(_ initial: AgentLaunch, paneID: String, runtime: TerminalRuntime) throws -> Int32 {
+    var launch = initial
+    var retry = 0
+    while true {
+        let plan = try runtime.recoveryCommand(launch)
+        guard FileManager.default.changeCurrentDirectoryPath(launch.cwd) else { throw TerminalError.invalid("Original working directory is unavailable") }
+        let code = try runProvider(plan, agent: launch.provider, runtime: runtime, accountID: launch.accountID, resume: launch)
+        guard ![128 + SIGINT, 128 + SIGTERM, 128 + SIGHUP].contains(code),
+              let next = try runtime.pendingResumeRetry(paneID: paneID, providerSessionID: initial.providerSessionID) else { return code }
+        guard retry < RecoveryResumeBackoff.maximumRetries else {
+            try runtime.setRecovery(paneID, status: .failed, message: RecoveryResumeBackoff.failurePrefix + " (exit \(code)) after \(retry) retries")
+            return code
+        }
+        retry += 1
+        let delay = RecoveryResumeBackoff.delay(attempt: retry)
+        let message = String(format: "Resume failed (exit %d); retrying in %.1fs (%d/%d)", code, delay, retry, RecoveryResumeBackoff.maximumRetries)
+        FileHandle.standardError.write(Data(("trano: " + message + "\n").utf8))
+        try runtime.setRecovery(paneID, status: .restoring, message: message)
+        if let signal = interruptibleSleep(delay) {
+            try runtime.setRecovery(paneID, status: .failed, message: RecoveryResumeBackoff.failurePrefix + " (exit \(code)); retry cancelled")
+            return 128 + signal
+        }
+        guard let current = try runtime.state().agentLaunches.first(where: { $0.id == next.id && $0.lifecycle == .active && $0.processID == nil }),
+              try runtime.state().recoveryResults.first(where: { $0.paneID == paneID })?.status == .restoring else { return code }
+        launch = current
+    }
+}
+
+func interruptibleSleep(_ seconds: TimeInterval) -> Int32? {
+    let done = DispatchSemaphore(value: 0)
+    let received = ProviderSignalRelay()
+    let sources = [SIGINT, SIGTERM, SIGHUP].map { value -> DispatchSourceSignal in
+        signal(value, SIG_IGN)
+        let source = DispatchSource.makeSignalSource(signal: value, queue: .global())
+        source.setEventHandler { received.send(value); done.signal() }
+        source.resume()
+        return source
+    }
+    defer { for source in sources { source.cancel() }; for value in [SIGINT, SIGTERM, SIGHUP] { signal(value, SIG_DFL) } }
+    _ = done.wait(timeout: .now() + seconds)
+    return received.lastSignalValue
+}
+
+func runTwinProvider(_ ticket: TwinLaunchTicket, runtime: TerminalRuntime) throws -> Int32 {
+    let command = TwinRunCLI.command(executable: ticket.providerExecutable, arguments: ticket.args,
+        environment: ticket.environment, removeEnvironment: ticket.removeEnvironment)
+    let relay = ProviderSignalRelay()
+    let signals = [SIGINT, SIGTERM].map { value -> DispatchSourceSignal in
+        signal(value, SIG_IGN)
+        let source = DispatchSource.makeSignalSource(signal: value, queue: .global())
+        source.setEventHandler { relay.send(value) }
+        source.resume()
+        return source
+    }
+    defer { for source in signals { source.cancel() }; signal(SIGINT, SIG_DFL); signal(SIGTERM, SIG_DFL) }
+    return try runProviderAttempt(command, agent: ticket.source.provider, runtime: runtime,
+        accountID: ticket.source.accountID, resume: nil, relay: relay, expectedTransfer: nil, twinTicket: ticket).code
+}
+
+func runProviderAttempt(_ initialPlan: AccountCommand, agent: AgentKind, runtime: TerminalRuntime, accountID: String?, resume: AgentLaunch?, relay: ProviderSignalRelay, expectedTransfer: PendingAccountTransfer?, twinTicket: TwinLaunchTicket? = nil) throws -> ProviderAttemptResult {
     let session = ProcessInfo.processInfo.environment["TRANO_SESSION"]
     let nested = !(ProcessInfo.processInfo.environment["TRANO_LAUNCH_ID"] ?? "").isEmpty
     let interactive = AgentInvocation.isInteractive(initialPlan.arguments, provider: agent)
+    let accountLogin = initialPlan.arguments == ["claude", "auth", "login", "--claudeai"] || initialPlan.arguments == ["codex", "login"]
+    let organizationAuthorization: AccountOrganizationAuthorization?
+    if let twinTicket { organizationAuthorization = twinTicket.sourceOrganizationAuthorization }
+    else { organizationAuthorization = try !accountLogin ? accountID.map { try runtime.preflightAccountOrganization(accountID: $0, cwd: FileManager.default.currentDirectoryPath, command: initialPlan) } : nil }
     var plan = initialPlan
     var environment = ProcessInfo.processInfo.environment
     for key in ["REX_BLOCK", "REX_SESSION", "REX_SERVER"] { environment.removeValue(forKey: key) }
@@ -116,14 +180,39 @@ func runProviderAttempt(_ initialPlan: AccountCommand, agent: AgentKind, runtime
     environment.merge(plan.environment) { _, new in new }
     let shim = runtime.root.appendingPathComponent("bin").path
     environment["PATH"] = (environment["PATH"] ?? "/usr/bin:/bin").split(separator: ":").map(String.init).filter { URL(fileURLWithPath: $0).resolvingSymlinksInPath().path != URL(fileURLWithPath: shim).resolvingSymlinksInPath().path }.joined(separator: ":")
+    if twinTicket == nil, let tracked = try? GitTrackingShell.environment(environment, root: runtime.root, helperExecutable: Bundle.main.executableURL?.path ?? "") { environment = tracked }
     environment.removeValue(forKey: "TRANO_LAUNCH_ID")
     var launch: AgentLaunch?
-    if let session, interactive, !nested {
+    if let twinTicket {
+        guard let session, twinTicket.paneID == session, agent == twinTicket.source.provider, interactive,
+              accountID == twinTicket.source.accountID, resume == nil, expectedTransfer == nil,
+              initialPlan.executable == twinTicket.providerExecutable, initialPlan.arguments == twinTicket.args,
+              let helper = runtime.helperExecutable ?? Bundle.main.executableURL?.path else {
+            throw TerminalError.invalid("The owned twin command or pane changed")
+        }
+        let created = try runtime.beginAgentLaunch(paneID: session, provider: agent, cwd: FileManager.default.currentDirectoryPath,
+            accountID: twinTicket.source.accountID, configurationRoot: twinTicket.configurationRoot,
+            organizationAuthorization: twinTicket.sourceOrganizationAuthorization, twinTicket: twinTicket)
+        launch = created
+        do {
+            environment = TwinRunCLI.environment(environment, command: plan, paneID: session, generation: created.id,
+                helper: helper, socket: try runtime.twinSocketPath(runID: twinTicket.runID))
+            try runtime.report(session, state: .running, agent: agent, source: "process")
+        } catch {
+            do {
+                try TwinRunCLI.finish(recordExit: { try runtime.recordTwinExit(ticket: twinTicket, code: 127) },
+                    endLaunch: { try runtime.endAgentLaunch(paneID: session, generation: created.id, normalExit: false) })
+            } catch {}
+            throw error
+        }
+    } else if let session, interactive, !nested {
         plan = try runtime.integratingAgentHooks(plan, provider: agent)
         launch = try runtime.beginAgentLaunch(paneID: session, provider: agent, cwd: FileManager.default.currentDirectoryPath,
-                                             accountID: accountID, configurationRoot: environment[agent == .claude ? "CLAUDE_CONFIG_DIR" : "CODEX_HOME"], resume: resume)
+                                             accountID: accountID, configurationRoot: environment[agent == .claude ? "CLAUDE_CONFIG_DIR" : "CODEX_HOME"], resume: resume,
+                                             organizationAuthorization: organizationAuthorization)
         environment["TRANO_LAUNCH_ID"] = launch?.id
         environment["TRANO_CLI_PATH"] = Bundle.main.executableURL?.path
+        environment = try runtime.decisionEnvironment(environment)
         try runtime.report(session, state: .running, agent: agent, source: "process")
     }
     var argv = ([plan.executable] + plan.arguments).map { strdup($0) } + [nil]
@@ -142,12 +231,27 @@ func runProviderAttempt(_ initialPlan: AccountCommand, agent: AgentKind, runtime
     posix_spawnattr_setflags(&attributes, Int16(flags))
     let terminal = ProviderTerminalControl()
     var childPID: pid_t = 0
-    let spawned = posix_spawn(&childPID, plan.executable, nil, &attributes, &argv, &envp)
-    guard spawned == 0 else {
-        if let session, let launch { try? runtime.endAgentLaunch(paneID: session, generation: launch.id, normalExit: true); try? runtime.report(session, state: .error, reason: "Launch failed", agent: agent, source: "process") }
-        throw TerminalError.runtime("Cannot launch provider: " + String(cString: strerror(spawned)))
+    let spawnProvider = { () throws -> Void in
+        if let organizationAuthorization { try runtime.revalidateAccountOrganizationAuthorization(organizationAuthorization, cwd: FileManager.default.currentDirectoryPath) }
+        let spawned = posix_spawn(&childPID, plan.executable, nil, &attributes, &argv, &envp)
+        guard spawned == 0 else {
+            throw TerminalError.runtime("Cannot launch provider: " + String(cString: strerror(spawned)))
+        }
     }
-    if let session, let launch {
+    if let twinTicket {
+        do { try spawnProvider() }
+        catch {
+            do {
+                try TwinRunCLI.finish(recordExit: { try runtime.recordTwinExit(ticket: twinTicket, code: 127) }, endLaunch: {
+                    if let session, let launch { try runtime.endAgentLaunch(paneID: session, generation: launch.id, normalExit: false) }
+                })
+            } catch {}
+            throw error
+        }
+    } else {
+        try ProviderLaunchCommit.perform(runtime: runtime, sessionID: session, launch: launch, agent: agent, commit: spawnProvider)
+    }
+    if twinTicket == nil, let session, let launch {
         do { try runtime.recordAgentProcess(paneID: session, generation: launch.id, pid: childPID) }
         catch {
             kill(childPID, SIGKILL)
@@ -168,17 +272,39 @@ func runProviderAttempt(_ initialPlan: AccountCommand, agent: AgentKind, runtime
         }
         terminal.restore()
     }
-    try terminal.give(to: childPID)
-    kill(childPID, SIGCONT)
+    if let twinTicket, let session, let launch {
+        do {
+            try TwinRunCLI.activateSuspendedProvider(record: {
+                try runtime.recordAgentProcess(paneID: session, generation: launch.id, pid: childPID)
+            }, register: {
+                try runtime.registerTwinInvocation(ticket: twinTicket, providerPID: childPID)
+            }, giveTerminal: {
+                try terminal.give(to: childPID)
+            }, resume: {
+                guard kill(childPID, SIGCONT) == 0 else { throw TerminalError.runtime("Cannot continue the owned twin provider") }
+            })
+        } catch {
+            do {
+                try TwinRunCLI.finish(recordExit: { try runtime.recordTwinExit(ticket: twinTicket, code: 127) },
+                    endLaunch: { try runtime.endAgentLaunch(paneID: session, generation: launch.id, normalExit: false) })
+            } catch {}
+            throw error
+        }
+    } else {
+        try terminal.give(to: childPID)
+        kill(childPID, SIGCONT)
+    }
     var status: Int32 = 0
     let supervisor = launch.map { ProviderSupervisor(runtime: runtime, launch: $0) }
     var switching: AccountSwitchPlan?
     var switchDeadline: TimeInterval?
     var transferConfirmed = expectedTransfer == nil
+    var authenticationExpiry = twinTicket.flatMap { $0.authenticationSeedProof }.map { TwinRunCLI.ExpiryGuard(expiresAt: $0.expiresAt) }
     while true {
         let waited = waitpid(childPID, &status, WNOHANG)
         if waited == childPID { reaped = true; break }
         if waited < 0 && errno != EINTR { throw TerminalError.runtime("Cannot wait for provider") }
+        if let signal = authenticationExpiry?.poll(now: Date(), uptime: ProcessInfo.processInfo.systemUptime) { kill(childPID, signal) }
         if let deadline = switchDeadline, ProcessInfo.processInfo.systemUptime > deadline {
             kill(childPID, SIGKILL)
             switchDeadline = nil
@@ -188,7 +314,7 @@ func runProviderAttempt(_ initialPlan: AccountCommand, agent: AgentKind, runtime
            try runtime.state().supervision.contains(where: { $0.generation == launch.id && $0.startedSessionID == transfer.plan.providerSessionID }) {
             transferConfirmed = true
         }
-        if switching == nil, transferConfirmed, !relay.wasInterrupted, let supervisor {
+        if twinTicket == nil, switching == nil, transferConfirmed, !relay.wasInterrupted, let supervisor {
             do {
                 if let plan = try supervisor.pendingSwitch(), !relay.wasInterrupted {
                     try supervisor.stopForSwitch(plan, childPID: childPID)
@@ -207,7 +333,8 @@ func runProviderAttempt(_ initialPlan: AccountCommand, agent: AgentKind, runtime
     if !transferConfirmed, let transfer = expectedTransfer, let launch {
         transferConfirmed = try runtime.state().supervision.contains { $0.generation == launch.id && $0.startedSessionID == transfer.plan.providerSessionID }
     }
-    let code = status & 0x7f == 0 ? (status >> 8) & 0xff : 128 + (status & 0x7f)
+    let providerCode = status & 0x7f == 0 ? (status >> 8) & 0xff : 128 + (status & 0x7f)
+    let code = authenticationExpiry?.exitCode(providerCode, now: Date()) ?? providerCode
     if let switching, let launch, interruptedBy == nil {
         do {
             guard let source = try runtime.state().agentLaunches.first(where: { $0.id == launch.id }) else { throw TerminalError.invalid("Source launch changed") }
@@ -225,20 +352,62 @@ func runProviderAttempt(_ initialPlan: AccountCommand, agent: AgentKind, runtime
         let paneSurvived = (try? runtime.list().first(where: { $0.id == session })?.alive) == true
         let startedSession = try runtime.state().supervision.first(where: { $0.generation == launch.id })?.startedSessionID
         let resumeConfirmed = resume == nil || startedSession == resume?.providerSessionID
-        let normal = resumeConfirmed && paneSurvived && (status & 0x7f == 0 || status & 0x7f == SIGINT) && ![SIGHUP, SIGTERM].contains(interruptedBy ?? 0)
-        try runtime.endAgentLaunch(paneID: session, generation: launch.id, normalExit: normal)
+        let normal = authenticationExpiry?.expired(now: Date()) != true && resumeConfirmed && paneSurvived && (status & 0x7f == 0 || status & 0x7f == SIGINT) && ![SIGHUP, SIGTERM].contains(interruptedBy ?? 0)
+        let completedWorktreeTask = twinTicket == nil && code == 0 && interruptedBy == nil && normal && status & 0x7f == 0
+            ? try? runtime.worktreeSuccessfulExitCandidate(paneID: session, generation: launch.id, originPID: getpid()) : nil
+        if let twinTicket {
+            try TwinRunCLI.finish(recordExit: { try runtime.recordTwinExit(ticket: twinTicket, code: code) },
+                endLaunch: { try runtime.endAgentLaunch(paneID: session, generation: launch.id, normalExit: normal) })
+        } else { try runtime.endAgentLaunch(paneID: session, generation: launch.id, normalExit: normal) }
         try runtime.report(session, state: code == 0 ? .done : .error, reason: "Exit \(code)", agent: agent, source: "process")
+        if let completedWorktreeTask { try? runtime.confirmWorktreeSuccessfulExit(completedWorktreeTask, originPID: getpid()) }
         if resume != nil, try runtime.state().recoveryResults.contains(where: { $0.paneID == session && $0.status == .restoring }) { try runtime.setRecovery(session, status: .failed, message: "Provider exited before confirming conversation resume (exit \(code))") }
     }
     return ProviderAttemptResult(code: code, next: nil, transferConfirmed: transferConfirmed, interruptedBy: interruptedBy)
 }
 
 var args = Array(CommandLine.arguments.dropFirst())
+if args.first == "pty-host" {
+    PtyHost(root: TerminalRuntime.defaultRoot.standardizedFileURL).run()
+}
+if args.first == "pty-attach", args.count == 2 || (args.count == 4 && args[2] == "--root") {
+    let root = args.count == 4 ? URL(fileURLWithPath: args[3]) : TerminalRuntime.defaultRoot
+    exit(PtyAttach.run(id: args[1], root: root.standardizedFileURL))
+}
+if TwinBridgeCLI.handles(args) {
+    do { exit(try TwinBridgeCLI.execute(args)) }
+    catch {
+        let data = try? JSONSerialization.data(withJSONObject: ["apiVersion": 1, "error": error.localizedDescription], options: [.sortedKeys])
+        FileHandle.standardError.write(data ?? Data("{\"error\":\"encoding failed\"}".utf8))
+        FileHandle.standardError.write(Data([10]))
+        exit(1)
+    }
+}
 func option(_ name: String) -> String? {
     guard let index = args.firstIndex(of: name), index + 1 < args.count else { return nil }
     let value = args[index + 1]
     args.removeSubrange(index...index + 1)
     return value
+}
+
+if args.first == "tracked-git", args.count >= 2 {
+    var realGit = URL(fileURLWithPath: args[1]).standardizedFileURL.path
+    if GitTrackingShell.isManagedShim(realGit, root: TerminalRuntime.defaultRoot) { realGit = "/usr/bin/git" }
+    var coordinator: WorktreeCleanupCoordinator?
+    TrackedGitCommand.execute(realGit: realGit, arguments: Array(args.dropFirst(2)), begin: {
+        guard ProcessInfo.processInfo.environment["TRANO_WORKTREE_CAPTURE"] == nil,
+              let pane = ProcessInfo.processInfo.environment["TRANO_SESSION"],
+              let runtime = try? TerminalRuntime(helperExecutable: Bundle.main.executableURL?.path),
+              let owner = try? runtime.worktreeCaptureOwner(paneID: pane,
+                  generation: ProcessInfo.processInfo.environment["TRANO_LAUNCH_ID"], originPID: getpid()) else { return nil }
+        let value = runtime.worktreeCleanupCoordinator()
+        guard let capture = try? value.beginCapture(owner: owner, cwd: FileManager.default.currentDirectoryPath,
+                                                   gitArguments: Array(args.dropFirst(2))) else { return nil }
+        coordinator = value
+        return GitTrackingTicket(id: capture.id, nonce: capture.nonce)
+    }, finish: { ticket, status, interrupted in
+        try? coordinator?.finishCapture(id: ticket.id, nonce: ticket.nonce, exitStatus: interrupted && status == 0 ? -1 : status)
+    })
 }
 
 if args.isEmpty || args.first == "--help" || args.first == "help" {
@@ -261,9 +430,13 @@ if args.isEmpty || args.first == "--help" || args.first == "help" {
       check
       serve
       api METHOD [PARAMS_JSON]
+      decision-adapter ask|submit (JSON stdin)
+      decision-adapter poll|abandon REQUEST_ID
+      decision-adapter gate --agent claude|codex --session-id ID
       run --agent claude|codex -- [PROVIDER_ARGUMENTS]
       account list
-      account add --provider claude|codex --label TEXT
+      account add --provider claude|codex --label TEXT [--organization UUID --organization-name NAME]
+      account organization ID [--uuid UUID --name NAME | --clear | --refresh]
       account exec ID [--login] [-- PROVIDER_ARGUMENTS]
       account usage [ID]
       account switch PANE_ID ACCOUNT_ID
@@ -273,6 +446,10 @@ if args.isEmpty || args.first == "--help" || args.first == "help" {
       extension preview ACCOUNT_ID [EXTENSION_IDS...]
       extension apply PLAN_JSON_FILE
       extension install ACCOUNT_ID EXTENSION_ID
+      supervisor state
+      supervisor start [--provider claude|codex] [--account ACCOUNT_ID] [--cwd PATH]
+      supervisor stop PANE_ID BACKEND_PID
+      supervisor watch CURSOR_JSON [--timeout SECONDS]
       recovery list
       recovery run [PANE_ID]
     TRANO_DATA_DIR selects an isolated runtime directory. All results are JSON.
@@ -284,9 +461,23 @@ do {
     let runtime = try TerminalRuntime(helperExecutable: Bundle.main.executableURL?.path)
     let command = args.removeFirst()
     switch command {
+    case "twin":
+        let invocation = try TwinRunCLI.parse(args)
+        let ticket = try runtime.twinLaunchTicket(runID: invocation.runID, round: invocation.round)
+        guard ProcessInfo.processInfo.environment["TRANO_SESSION"] == ticket.paneID else { throw TerminalError.invalid("Twin bootstrap requires its exact owned pane") }
+        exit(try runTwinProvider(ticket, runtime: runtime))
+    case "supervisor-bootstrap":
+        guard args.count == 2, let paneID = ProcessInfo.processInfo.environment["TRANO_SESSION"],
+              let helper = runtime.helperExecutable else { throw TerminalError.invalid("Supervisor bootstrap requires its own managed pane") }
+        let plan = try SupervisorBootstrapClient.receivePlan(root: runtime.root, gateName: args[0], nonce: args[1],
+            paneID: paneID, backendPID: getpid(), helperExecutable: helper)
+        try SupervisorBootstrapClient.execute(plan)
+    case "supervisor":
+        try emit(SupervisorCommand.perform(arguments: args, defaultCWD: FileManager.default.currentDirectoryPath,
+                                           operations: runtime.supervisorOperations()))
     case "cwd":
         guard args.count == 2, ProcessInfo.processInfo.environment["TRANO_SESSION"] == args[0] else { throw TerminalError.invalid("cwd requires the current pane and directory") }
-        try runtime.recordDirectory(paneID: args[0], cwd: args[1])
+        try runtime.recordDirectory(paneID: args[0], cwd: args[1], expectedPID: getppid())
     case "recovery":
         guard !args.isEmpty else { throw TerminalError.invalid("recovery requires list or run") }
         switch args.removeFirst() {
@@ -297,9 +488,7 @@ do {
         case "resume":
             guard args.count == 2, ProcessInfo.processInfo.environment["TRANO_SESSION"] == args[0],
                   let launch = try runtime.state().agentLaunches.first(where: { $0.paneID == args[0] && $0.id == args[1] && $0.lifecycle == .active }) else { throw TerminalError.invalid("Recovery launch no longer matches this pane") }
-            let plan = try runtime.recoveryCommand(launch)
-            guard FileManager.default.changeCurrentDirectoryPath(launch.cwd) else { throw TerminalError.invalid("Original working directory is unavailable") }
-            exit(try runProvider(plan, agent: launch.provider, runtime: runtime, accountID: launch.accountID, resume: launch))
+            exit(try resumeWithBackoff(launch, paneID: args[0], runtime: runtime))
         default: throw TerminalError.invalid("Unknown recovery command")
         }
     case "extension":
@@ -327,16 +516,26 @@ do {
         default: throw TerminalError.invalid("Unknown extension command")
         }
     case "usage-hook":
+        guard try runtime.integrationsPreferences().integrateWithAvailableAgents else { break }
         guard args.isEmpty else { throw TerminalError.invalid("usage-hook takes input on stdin") }
         let data = try boundedHookInput()
         if let pane = ProcessInfo.processInfo.environment["TRANO_SESSION"], let generation = ProcessInfo.processInfo.environment["TRANO_LAUNCH_ID"] {
             try runtime.recordUsageHook(paneID: pane, generation: generation, data: data, originPID: getpid())
         }
     case "hook":
+        guard try runtime.integrationsPreferences().integrateWithAvailableAgents else { break }
         guard (1...2).contains(args.count), let agent = AgentKind(rawValue: args[0]) else { throw TerminalError.invalid("hook requires provider") }
         let data = try boundedHookInput()
         if let id = ProcessInfo.processInfo.environment["TRANO_SESSION"], let generation = ProcessInfo.processInfo.environment["TRANO_LAUNCH_ID"], !generation.isEmpty {
-            try runtime.recordAgentHook(paneID: id, generation: generation, provider: agent, data: data, originPID: getpid())
+            let response: JSONValue? = try runtime.transaction {
+                try runtime.recordAgentHook(paneID: id, generation: generation, provider: agent, data: data, originPID: getpid())
+                if let decision = try runtime.decisionHookOutput(paneID: id, generation: generation, provider: agent, data: data, originPID: getpid()) { return decision }
+                return try runtime.integrationHookOutput(paneID: id, generation: generation, provider: agent, data: data, originPID: getpid())
+            }
+            if let response {
+                FileHandle.standardOutput.write(try JSONEncoder().encode(response))
+                FileHandle.standardOutput.write(Data([10]))
+            }
         }
     case "account":
         guard !args.isEmpty else { throw TerminalError.invalid("account requires list, add or exec") }
@@ -354,8 +553,23 @@ do {
             try emit(["enabled": args[0] == "on"])
         case "add":
             let provider = option("--provider") ?? "", label = option("--label") ?? ""
-            guard args.isEmpty, let provider = AgentKind(rawValue: provider) else { throw TerminalError.invalid("account add requires --provider and --label") }
-            try emit(runtime.addAccount(provider: provider, label: label))
+            let organizationUUID = option("--organization"), organizationName = option("--organization-name")
+            guard args.isEmpty, let provider = AgentKind(rawValue: provider), organizationUUID != nil || organizationName == nil else { throw TerminalError.invalid("account add requires --provider and --label; an organization name also requires its UUID") }
+            let organization = try organizationUUID.map { try ClaudeOrganizationSelection(uuid: $0, name: organizationName) }
+            try emit(runtime.addAccount(provider: provider, label: label, organization: organization))
+        case "organization":
+            guard !args.isEmpty else { throw TerminalError.invalid("account organization requires an account ID") }
+            let id = args.removeFirst()
+            let uuid = option("--uuid"), name = option("--name")
+            let clear = args == ["--clear"], refresh = args == ["--refresh"]
+            guard (args.isEmpty || clear || refresh), uuid != nil || name == nil,
+                  !(clear || refresh) || uuid == nil else { throw TerminalError.invalid("Choose --uuid, --clear or --refresh") }
+            if refresh { try emit(runtime.refreshAccountOrganization(accountID: id)) }
+            else {
+                if clear || uuid != nil { try runtime.setAccountOrganization(id, selection: uuid.map { try ClaudeOrganizationSelection(uuid: $0, name: name) }) }
+                guard let account = try runtime.state().accounts.first(where: { $0.id == id }) else { throw TerminalError.invalid("Unknown account") }
+                try emit(account.organization)
+            }
         case "exec":
             guard !args.isEmpty else { throw TerminalError.invalid("account exec requires ID") }
             let id = args.removeFirst()
@@ -390,8 +604,8 @@ do {
         guard args.isEmpty, let agent = AgentKind(rawValue: agentText) else { throw TerminalError.invalid("launch requires shell, claude or codex") }
         try emit(runtime.launch(cwd: cwd, agent: agent, prompt: prompt))
     case "monitor":
-        guard args.count == 1, UUID(uuidString: args[0]) != nil else { throw TerminalError.invalid("monitor requires ID") }
-        try monitorPane(args[0], runtime: runtime)
+        let invocation = try MonitorCLI.parse(args)
+        try monitorPane(invocation.paneID, expectedPID: invocation.expectedPID, runtime: runtime)
     case "scrollback":
         guard !args.isEmpty else { throw TerminalError.invalid("scrollback requires list, save or replay") }
         switch args.removeFirst() {
@@ -424,8 +638,15 @@ do {
         FileHandle.standardOutput.write(try encoder.encode(response))
         FileHandle.standardOutput.write(Data([10]))
         if response.error != nil { exit(1) }
+    case "decision-adapter":
+        let socket = ProcessInfo.processInfo.environment["EASYDECISION_SOCKET"] ?? runtime.root.appendingPathComponent("api.sock").path
+        exit(DecisionAdapterCommand.run(arguments: args, socketPath: socket, input: DecisionAdapterCommand.readStandardInput, output: { FileHandle.standardOutput.write($0) }))
+    case "migrate-legacy":
+        try emit(runtime.migrateLegacyTmuxPanes())
     case "check":
-        try emit(["tmux": runtime.executable, "socket": runtime.socketPath, "version": "0.1.0-dev"])
+        let hostPID = (runtime.host as? PaneHostClient)?.processIdentifier()
+        try emit(["host": PaneHostClient.resolveExecutable(runtime.helperExecutable) ?? "", "socket": runtime.host.socketPath,
+                  "running": hostPID == nil ? "0" : "1", "hostPID": hostPID.map(String.init) ?? "", "version": "0.1.0-dev"])
     case "list":
         let query = option("--query") ?? ""
         let sessions = try runtime.list().filter { query.isEmpty || ($0.title + " " + $0.cwd + " " + $0.id).localizedCaseInsensitiveContains(query) }
@@ -458,6 +679,8 @@ do {
         guard args.count == 1 else { throw TerminalError.invalid("attach requires ID") }
         try runtime.update { state in
             guard state.sessions.contains(where: { $0.id == args[0] }) else { throw TerminalError.invalid("Unknown session") }
+            try runtime.requireOrdinaryPane(args[0],
+                attachedPaneIDs: Set((state.layout.tabs + state.layout.closedTabs).flatMap(\.panes)))
             if state.layout.tabs.contains(where: { $0.panes.contains(args[0]) }) {
                 try state.layout.focusPane(args[0])
             } else { state.layout.addTab(paneID: args[0]) }

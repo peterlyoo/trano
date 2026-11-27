@@ -3,7 +3,7 @@ import Darwin
 
 public enum AgentLifecycle: String, Codable { case active, exited }
 public enum RecoveryStatus: String, Codable { case live, restoring, restored, needsAttention = "needs_attention", failed }
-public struct AgentLaunch: Codable, Identifiable {
+public struct AgentLaunch: Codable, Identifiable, Equatable {
     public var id = UUID().uuidString.lowercased()
     public let paneID: String
     public let provider: AgentKind
@@ -11,6 +11,7 @@ public struct AgentLaunch: Codable, Identifiable {
     public var cwd: String
     public let accountID: String?
     public let configurationRoot: String
+    public var organizationBindingID: String? = nil
     public let bootID: String
     public var processID: Int32?
     public var providerPID: Int32?
@@ -23,6 +24,21 @@ public struct RecoveryResult: Codable, Identifiable {
     public var status: RecoveryStatus
     public var message: String
     public var updatedAt = Date()
+}
+
+// Mirrors Claude Code 2.1.331 API retry timing: min(32 s, 500 ms * 2^(attempt-1)) plus 0-25% proportional jitter, 10 retries.
+public enum RecoveryResumeBackoff {
+    public static let maximumRetries = 10
+    public static let baseMilliseconds = 500.0
+    public static let capMilliseconds = 32_000.0
+    public static let jitterRatio = 0.25
+    public static let failurePrefix = "Provider exited before confirming conversation resume"
+
+    public static func delay(attempt: Int, random: () -> Double = { Double.random(in: 0..<1) }) -> TimeInterval {
+        let exponent = Double(max(attempt, 1) - 1)
+        let base = min(capMilliseconds, baseMilliseconds * pow(2, exponent))
+        return (base + random() * jitterRatio * base).rounded() / 1000
+    }
 }
 
 public enum AgentInvocation {
@@ -53,25 +69,49 @@ extension TerminalRuntime {
     }
 
     public func beginAgentLaunch(paneID: String, provider: AgentKind, cwd: String, accountID: String? = nil,
-                                 configurationRoot: String? = nil, resume: AgentLaunch? = nil) throws -> AgentLaunch {
+                                 configurationRoot: String? = nil, resume: AgentLaunch? = nil,
+                                 organizationAuthorization: AccountOrganizationAuthorization? = nil, twinTicket: TwinLaunchTicket? = nil) throws -> AgentLaunch {
         guard provider != .shell, cwd.hasPrefix("/"), !cwd.contains("\0"), !cwd.contains("\n") else { throw TerminalError.invalid("Invalid agent launch metadata") }
+        if let organizationAuthorization { try revalidateAccountOrganizationAuthorization(organizationAuthorization, cwd: cwd) }
         let boot = try Self.bootIdentity()
-        let config = try accountID.map { try accountRoot($0).path } ?? configurationRoot ?? FileManager.default.homeDirectoryForCurrentUser.appendingPathComponent(provider == .claude ? ".claude" : ".codex").path
+        if let twinTicket { try validateTwinBootstrap(ticket: twinTicket, paneID: paneID, provider: provider, cwd: cwd) }
+        let config = try twinTicket?.configurationRoot ?? accountID.map { try accountRoot($0).path } ?? configurationRoot ?? FileManager.default.homeDirectoryForCurrentUser.appendingPathComponent(provider == .claude ? ".claude" : ".codex").path
         return try transaction {
             let state = try state()
             guard state.sessions.contains(where: { $0.id == paneID && $0.remote == nil }) else { throw TerminalError.invalid("Unknown local pane") }
+            guard !(try isTerminalIntentionallyClosed(paneID)) else { throw TerminalError.invalid("Reopen this closed terminal before launching an agent") }
             if let accountID, !state.accounts.contains(where: { $0.id == accountID && $0.provider == provider }) { throw TerminalError.invalid("Account provider does not match the agent") }
+            if let accountID {
+                if let organizationAuthorization {
+                    guard organizationAuthorization.accountID == accountID else { throw TerminalError.invalid("Organization authorization belongs to another account") }
+                    try validateAccountOrganizationAuthorization(organizationAuthorization, cwd: cwd)
+                } else if state.accounts.first(where: { $0.id == accountID })?.organization?.selection != nil {
+                    throw TerminalError.invalid("Verify this profile's organization before launching the agent")
+                }
+            }
             if let previous = state.agentLaunches.first(where: { $0.paneID == paneID }), previous.lifecycle == .active, previous.bootID == boot, let pid = previous.processID, kill(pid, 0) == 0 {
                 throw TerminalError.invalid("This pane already has an active agent")
             }
             if let resume {
-                guard state.agentLaunches.contains(where: { $0.id == resume.id && $0.paneID == paneID && $0.lifecycle == .active }) else { throw TerminalError.invalid("Recovery launch changed; refresh before retrying") }
+                guard let current = state.agentLaunches.first(where: { $0.id == resume.id && $0.paneID == paneID && $0.lifecycle == .active }),
+                      ClosedAgentRecovery.sameIdentity(current, resume), provider == resume.provider,
+                      accountID == resume.accountID, config == resume.configurationRoot,
+                      ClosedAgentRecovery.sameDirectory(cwd, resume.cwd) else {
+                    throw TerminalError.invalid("Recovery launch changed; refresh before retrying")
+                }
+                try validateAgentRecoveryIdentity(resume)
             }
-            let launch = AgentLaunch(paneID: paneID, provider: provider, providerSessionID: resume?.providerSessionID, cwd: cwd,
-                                     accountID: accountID, configurationRoot: config, bootID: boot, processID: getpid())
+            var launch = AgentLaunch(paneID: paneID, provider: provider, providerSessionID: resume?.providerSessionID, cwd: resume?.cwd ?? cwd,
+                                     accountID: accountID, configurationRoot: config,
+                                     organizationBindingID: state.accounts.first(where: { $0.id == accountID })?.organizationUsageBindingID,
+                                     bootID: boot, processID: getpid())
+            if let twinTicket { launch.id = twinTicket.generation }
             try update { state in
                 state.agentLaunches.removeAll { $0.paneID == paneID }
                 state.agentLaunches.append(launch)
+                state.invalidateFollowUps(paneID: paneID, message: "The agent restarted. Edit this input to bind it to the current agent.")
+                state.followUpTurns.removeAll { $0.paneID == paneID }
+                state.followUpPasteStates.removeAll { $0.paneID == paneID }
                 let active = Set(state.agentLaunches.map(\.id))
                 state.supervision.removeAll { !active.contains($0.generation) }
                 state.supervision.append(AgentSupervision(generation: launch.id))
@@ -81,10 +121,12 @@ extension TerminalRuntime {
         }
     }
 
-    public func recordDirectory(paneID: String, cwd: String) throws {
+    public func recordDirectory(paneID: String, cwd: String, expectedPID: Int32? = nil) throws {
         guard cwd.hasPrefix("/"), !cwd.contains("\0"), !cwd.contains("\n"), !cwd.contains("\r") else { throw TerminalError.invalid("Invalid working directory") }
         try transaction {
             guard let pane = try state().sessions.first(where: { $0.id == paneID && $0.remote == nil }) else { throw TerminalError.invalid("Unknown local pane") }
+            if let expectedPID, pane.pid != expectedPID { return }
+            guard try !isTerminalIntentionallyClosed(paneID) else { return }
             if pane.cwd == cwd { return }
             try update { state in if let index = state.sessions.firstIndex(where: { $0.id == paneID }) { state.sessions[index].cwd = cwd } }
         }
@@ -102,7 +144,7 @@ extension TerminalRuntime {
         let payload = try JSONDecoder().decode([String: JSONValue].self, from: data)
         guard let sessionID = payload["session_id"]?.text, UUID(uuidString: sessionID) != nil,
               let event = payload["hook_event_name"]?.text,
-              ["SessionStart", "UserPromptSubmit", "PreToolUse", "PostToolUse", "PostToolUseFailure", "PreModelRequest", "PostModelRequest", "PermissionRequest", "Stop", "StopFailure", "SessionEnd", "SubagentStart", "SubagentStop"].contains(event),
+              ["SessionStart", "UserPromptSubmit", "PreToolUse", "PostToolUse", "PostToolUseFailure", "PreModelRequest", "PostModelRequest", "PermissionRequest", "Notification", "Stop", "StopFailure", "SessionEnd", "SubagentStart", "SubagentStop"].contains(event),
               let cwd = payload["cwd"]?.text, cwd.hasPrefix("/"), !cwd.contains("\0"), !cwd.contains("\n") else { return }
         try transaction {
             let state = try state()
@@ -131,8 +173,15 @@ extension TerminalRuntime {
                     }
                 }
             }
+            if provider == .claude, originPID != nil, let transcript = payload["transcript_path"]?.text {
+                try? recordSessionLoadHookSource(launch: launch, providerSessionID: sessionID, transcriptPath: transcript)
+            }
             if event == "SessionStart", try self.state().recoveryResults.contains(where: { $0.paneID == paneID && $0.status == .restoring }) {
                 try setRecovery(paneID, status: .restored, message: "Agent conversation resumed")
+            }
+            if event == "Stop", try decisionGateReason(paneID: paneID, generation: generation) != nil {
+                try report(paneID, state: .blocked, reason: Self.decisionWaitingReason, agent: provider, source: "hook")
+                return
             }
             try update { state in
                 if let index = state.supervision.firstIndex(where: { $0.generation == generation }) {
@@ -140,9 +189,27 @@ extension TerminalRuntime {
                     if event == "SessionStart" { state.supervision[index].startedSessionID = sessionID }
                 }
             }
+            if let originPID {
+                if replacesSession {
+                    try update { state in
+                        state.invalidateFollowUps(paneID: paneID, message: "The conversation changed. Edit this input to bind it to the current conversation.")
+                        state.followUpTurns.removeAll { $0.paneID == paneID }
+                    }
+                }
+                try observeFollowUpHook(paneID: paneID, generation: generation, event: event, originPID: originPID)
+            }
             if event == "StopFailure", let accountID = launch.accountID {
-                if payload["error"]?.text == "rate_limit" { try recordAccountLimit(accountID: accountID, source: "claude.StopFailure") }
-                if ["authentication_failed", "oauth_org_not_allowed", "account_on_hold"].contains(payload["error"]?.text ?? "") { try recordAccountFailure(accountID: accountID, authentication: true) }
+                if payload["error"]?.text == "rate_limit" { try recordAccountLimit(accountID: accountID, source: "claude.StopFailure", organizationBindingID: launch.organizationBindingID) }
+                if ["authentication_failed", "oauth_org_not_allowed", "account_on_hold"].contains(payload["error"]?.text ?? "") { try recordAccountFailure(accountID: accountID, authentication: true, organizationBindingID: launch.organizationBindingID) }
+            }
+            if event == "Notification", let pane = try self.state().sessions.first(where: { $0.id == paneID }),
+               pane.activity.state == .blocked, !pane.activity.reason.isEmpty { return }
+            if event == "PreToolUse", let pane = try self.state().sessions.first(where: { $0.id == paneID }),
+               pane.activity.state == .blocked, pane.activity.reason == Self.decisionWaitingReason,
+               try hasPendingDecision(paneID: paneID, generation: generation) { return }
+            if let attention = AttentionSummary.activity(event: event, payload: payload) {
+                try report(paneID, state: attention.state, reason: attention.reason, agent: provider, source: "hook")
+                return
             }
             let activity: ActivityState?
             switch event {
@@ -154,27 +221,34 @@ extension TerminalRuntime {
             default: activity = nil
             }
             if let activity { try report(paneID, state: activity, agent: provider, source: "hook") }
+            if event == "Stop", let originPID { try? observeWorktreeCompletion(paneID: paneID, generation: generation, originPID: originPID) }
         }
     }
 
     public func endAgentLaunch(paneID: String, generation: String, normalExit: Bool) throws {
-        try update { state in
-            guard let index = state.agentLaunches.firstIndex(where: { $0.paneID == paneID && $0.id == generation }) else { return }
-            state.agentLaunches[index].processID = nil
-            if normalExit { state.agentLaunches[index].lifecycle = .exited }
-            state.agentLaunches[index].updatedAt = Date()
+        try transaction {
+            try update { state in
+                guard let index = state.agentLaunches.firstIndex(where: { $0.paneID == paneID && $0.id == generation }) else { return }
+                state.agentLaunches[index].processID = nil
+                if normalExit { state.agentLaunches[index].lifecycle = .exited }
+                state.agentLaunches[index].updatedAt = Date()
+                state.invalidateFollowUps(paneID: paneID, message: "The agent exited. Start a managed agent and edit this input to requeue it.")
+                state.followUpTurns.removeAll { $0.paneID == paneID }
+                state.followUpPasteStates.removeAll { $0.paneID == paneID }
+            }
+            try abandonDecisions(paneID: paneID, generation: generation)
         }
     }
 
     public func recoveryCommand(_ launch: AgentLaunch) throws -> AccountCommand {
-        guard let id = launch.providerSessionID, UUID(uuidString: id) != nil else { throw TerminalError.invalid("No verified conversation ID. Review the Trano hook in the provider before the next launch.") }
-        var directory: ObjCBool = false
-        guard FileManager.default.fileExists(atPath: launch.cwd, isDirectory: &directory), directory.boolValue else { throw TerminalError.invalid("Original working directory is missing: " + launch.cwd) }
-        guard FileManager.default.fileExists(atPath: launch.configurationRoot, isDirectory: &directory), directory.boolValue else { throw TerminalError.invalid("Original agent configuration directory is missing") }
-        let arguments = launch.provider == .claude ? ["--resume", id] : ["resume", id]
-        if let accountID = launch.accountID { return try accountCommand(accountID, arguments: arguments) }
-        let key = launch.provider == .claude ? "CLAUDE_CONFIG_DIR" : "CODEX_HOME"
-        return AccountCommand(arguments: [launch.provider.rawValue] + arguments, environment: [key: launch.configurationRoot], removeEnvironment: [])
+        try transaction {
+            try validateAgentRecoveryIdentity(launch)
+            guard let id = launch.providerSessionID else { throw TerminalError.invalid("No verified conversation ID") }
+            let arguments = launch.provider == .claude ? ["--resume", id] : ["resume", id]
+            if let accountID = launch.accountID { return try accountCommand(accountID, arguments: arguments) }
+            let key = launch.provider == .claude ? "CLAUDE_CONFIG_DIR" : "CODEX_HOME"
+            return AccountCommand(arguments: [launch.provider.rawValue] + arguments, environment: [key: launch.configurationRoot], removeEnvironment: [])
+        }
     }
 
     public func setRecovery(_ paneID: String, status: RecoveryStatus, message: String) throws {
@@ -184,13 +258,56 @@ extension TerminalRuntime {
         }
     }
 
+    /// Returns the launch to retry after a resume attempt failed before the provider confirmed the conversation.
+    public func pendingResumeRetry(paneID: String, providerSessionID: String?) throws -> AgentLaunch? {
+        let current = try state()
+        guard let result = current.recoveryResults.first(where: { $0.paneID == paneID }), result.status == .failed,
+              result.message.hasPrefix(RecoveryResumeBackoff.failurePrefix), !(try isTerminalIntentionallyClosed(paneID)) else { return nil }
+        return current.agentLaunches.first {
+            $0.paneID == paneID && $0.lifecycle == .active && $0.processID == nil && $0.providerSessionID != nil && $0.providerSessionID == providerSessionID
+        }
+    }
+
+    public func retryRecovery(paneID: String) throws -> [RecoveryResult] {
+        let snapshot = try state()
+        guard let pane = snapshot.sessions.first(where: { $0.id == paneID }) else { throw TerminalError.invalid("Unknown recovery pane") }
+        guard pane.remote == nil, try list().first(where: { $0.id == paneID })?.alive == true else { return try recoverSessions(paneID: paneID) }
+        try transaction {
+            let current = try state()
+            guard !(try isTerminalIntentionallyClosed(paneID)), current.sessions.contains(where: { $0.id == paneID && $0.remote == nil }),
+                  let result = current.recoveryResults.first(where: { $0.paneID == paneID }), [.failed, .needsAttention].contains(result.status) else {
+                throw TerminalError.invalid("This pane has no failed recovery to retry")
+            }
+            guard let launch = current.agentLaunches.first(where: { $0.paneID == paneID && $0.lifecycle == .active }) else {
+                throw TerminalError.invalid("No agent conversation is waiting to resume in this pane")
+            }
+            if let pid = launch.processID, kill(pid, 0) == 0 { throw TerminalError.invalid("This pane already has an active agent") }
+            guard let live = try list().first(where: { $0.id == paneID }), live.alive,
+                  ForegroundProgramProbe.shellOwnsForeground(pid: live.pid) else {
+                throw TerminalError.invalid("Return this pane to its shell prompt before retrying")
+            }
+            do { _ = try recoveryCommand(launch) }
+            catch {
+                try setRecovery(paneID, status: .needsAttention, message: error.localizedDescription)
+                throw error
+            }
+            guard let helperExecutable, FileManager.default.isExecutableFile(atPath: helperExecutable) else { throw TerminalError.runtime("The bundled trano CLI is required to resume an agent") }
+            try setRecovery(paneID, status: .restoring, message: "Resuming " + launch.provider.rawValue + " conversation")
+            try send(paneID, text: [helperExecutable, "recovery", "resume", paneID, launch.id].map(ShellQuote.quote).joined(separator: " "), enter: true)
+        }
+        return try state().recoveryResults.filter { $0.paneID == paneID }
+    }
+
     public func recoverSessions(automatic: Bool = false, paneID: String? = nil) throws -> [RecoveryResult] {
         let snapshot = try state()
         if let paneID, !snapshot.sessions.contains(where: { $0.id == paneID }) { throw TerminalError.invalid("Unknown recovery pane") }
         if automatic && !snapshot.settings.automaticRestore { return snapshot.recoveryResults }
         let live = try list()
+        let reservation = detachedPaneReservations()
+        let attached = Set((snapshot.layout.tabs + snapshot.layout.closedTabs).flatMap(\.panes))
         var results: [RecoveryResult] = []
-        for pane in snapshot.sessions where paneID == nil || pane.id == paneID {
+        for pane in snapshot.sessions where (paneID == nil || pane.id == paneID) && reservation.permitsGenericRecovery(pane.id, attachedPaneIDs: attached) {
+            if try isTerminalIntentionallyClosed(pane.id) { continue }
             if live.first(where: { $0.id == pane.id })?.alive == true {
                 results.append(snapshot.recoveryResults.first(where: { $0.paneID == pane.id }) ?? RecoveryResult(paneID: pane.id, status: .live, message: "Existing process preserved"))
                 continue
@@ -199,13 +316,15 @@ extension TerminalRuntime {
                 if pane.remote != nil {
                     try restoreRemoteBridge(pane.id)
                     try transaction {
-                        guard try state().sessions.contains(where: { $0.id == pane.id && $0.remote == pane.remote }) else { return }
+                        guard !(try isTerminalIntentionallyClosed(pane.id)),
+                              try state().sessions.contains(where: { $0.id == pane.id && $0.remote == pane.remote }) else { return }
                         try setRecovery(pane.id, status: .restored, message: "Reconnected to the same remote session")
                     }
                 } else {
                     try transaction {
                         let current = try state()
-                        guard let local = current.sessions.first(where: { $0.id == pane.id && $0.remote == nil }) else { return }
+                        guard !(try isTerminalIntentionallyClosed(pane.id)),
+                              let local = current.sessions.first(where: { $0.id == pane.id && $0.remote == nil }) else { return }
                         if try list().first(where: { $0.id == pane.id })?.alive == true { return }
                         let launch = current.agentLaunches.first { $0.paneID == pane.id && $0.lifecycle == .active }
                         if let launch {
@@ -228,7 +347,8 @@ extension TerminalRuntime {
                 }
             } catch {
                 try transaction {
-                    guard try state().sessions.contains(where: { $0.id == pane.id }) else { return }
+                    guard !(try isTerminalIntentionallyClosed(pane.id)),
+                          try state().sessions.contains(where: { $0.id == pane.id }) else { return }
                     try setRecovery(pane.id, status: .failed, message: error.localizedDescription)
                 }
             }

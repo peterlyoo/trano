@@ -45,9 +45,28 @@ func (r *Runtime) spawnShell(id, cwd string) (int, error) {
 	if info, err := os.Stat(shell); err != nil || info.Mode()&0111 == 0 {
 		shell = "/bin/sh"
 	}
+	return r.spawnSelectedShell(id, cwd, shell, "")
+}
+func (r *Runtime) spawnClosedShell(snapshot closedTerminalSnapshot) (int, error) {
+	return r.spawnSelectedShell(snapshot.SessionID, snapshot.Original.Cwd, snapshot.Shell, snapshot.OperationID)
+}
+func (r *Runtime) spawnSelectedShell(id, cwd, shell, operationID string) (int, error) {
 	extra, arguments, err := r.shellIntegration(shell)
 	if err != nil {
 		return 0, err
+	}
+	selection, historyEnv, err := r.prepareClosedShellSelection(id, shell)
+	if err != nil {
+		return 0, err
+	}
+	extra = append(extra, historyEnv...)
+	if operationID != "" {
+		extra = append(extra, "TRANO_CLOSED_OPERATION="+operationID, "TRANO_HISTORY_IMPORT="+filepath.Join(r.root, "closed-terminals", operationID+".history"), "TRANO_RESTORE_CWD="+cwd)
+		if filepath.Base(shell) == "fish" {
+			arguments = append(arguments, "-C", closedFishStartup())
+		}
+	} else {
+		extra = append(extra, "TRANO_CLOSED_OPERATION=", "TRANO_RESTORE_CWD=")
 	}
 	args := []string{"new-session", "-d", "-P", "-F", "#{pane_pid}", "-s", id, "-x", "100", "-y", "30", "-c", cwd,
 		"-e", "TRANO_SESSION=" + id, "-e", "TRANO_REMOTE_ROOT=" + r.root, "-e", "COLORTERM=truecolor"}
@@ -56,6 +75,9 @@ func (r *Runtime) spawnShell(id, cwd string) (int, error) {
 	}
 	if r.helper != "" {
 		command := shellQuote(r.helper) + " replay " + shellQuote(id) + "; exec " + shellQuote(shell)
+		if operationID != "" {
+			command = shellQuote(r.helper) + " closed-replay " + shellQuote(operationID) + "; exec " + shellQuote(shell)
+		}
 		for _, argument := range arguments {
 			command += " " + shellQuote(argument)
 		}
@@ -79,6 +101,8 @@ func (r *Runtime) spawnShell(id, cwd string) (int, error) {
 	pid, err := strconv.Atoi(strings.TrimSpace(output))
 	if err != nil {
 		_, _ = r.command("kill-session", "-t", "="+id)
+	} else {
+		err = r.saveClosedShellSelection(id, selection, pid)
 	}
 	return pid, err
 }
@@ -139,6 +163,10 @@ func (r *Runtime) Recover(id string) ([]RecoveryResult, error) {
 	if err != nil {
 		return nil, err
 	}
+	closed, err := r.intentionalClosedTerminals()
+	if err != nil {
+		return nil, err
+	}
 	if id != "" {
 		if err := require(state, id); err != nil {
 			return nil, err
@@ -158,6 +186,9 @@ func (r *Runtime) Recover(id string) ([]RecoveryResult, error) {
 	results := []RecoveryResult{}
 	for i := range state.Sessions {
 		pane := &state.Sessions[i]
+		if closed[pane.ID] != "" {
+			continue
+		}
 		if id != "" && pane.ID != id {
 			continue
 		}

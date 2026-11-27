@@ -153,6 +153,8 @@ extension TerminalRuntime {
             pane.agent = remote.agent
             pane.activity = remote.activity
             pane.agentTasks = remote.agentTasks.map { Array($0.prefix(64)) }
+            pane.foregroundProgram = remote.foregroundProgram
+            pane.inputBackendIdentity = remote.inputBackendIdentity
             try update { state in
                 if let index = state.sessions.firstIndex(where: { $0.id == pane.id }) { state.sessions[index] = pane }
                 guard attachToLayout else { return }
@@ -218,6 +220,16 @@ extension TerminalRuntime {
                     try update { state in if let index = state.sessions.firstIndex(where: { $0.id == local.id }) { state.sessions[index].cwd = remote.cwd } }
                 }
                 let tasks = remote.agentTasks.map { Array($0.prefix(64)) }
+                if local.inputBackendIdentity != remote.inputBackendIdentity {
+                    try update { state in
+                        if let index = state.sessions.firstIndex(where: { $0.id == local.id }) { state.sessions[index].inputBackendIdentity = remote.inputBackendIdentity }
+                    }
+                }
+                if local.foregroundProgram != remote.foregroundProgram {
+                    try update { state in
+                        if let index = state.sessions.firstIndex(where: { $0.id == local.id }) { state.sessions[index].foregroundProgram = remote.foregroundProgram }
+                    }
+                }
                 if local.agentTasks != tasks {
                     try update { state in
                         if let index = state.sessions.firstIndex(where: { $0.id == local.id }) { state.sessions[index].agentTasks = tasks }

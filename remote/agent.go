@@ -128,6 +128,14 @@ func (r *Runtime) RunAgent(provider string, args []string, resumeGeneration stri
 		lock.Close()
 		return err
 	}
+	closed, err := r.intentionalClosedTerminals()
+	if err != nil || closed[paneID] != "" {
+		lock.Close()
+		if err != nil {
+			return err
+		}
+		return errors.New("terminal is intentionally closed")
+	}
 	launch := AgentLaunch{SessionID: paneID, Provider: provider, Cwd: cwd, ConfigurationRoot: providerConfig(provider), BootID: bootIdentity(), ProcessID: os.Getpid(), Lifecycle: "active", UpdatedAt: now()}
 	launch.ID, err = uuid()
 	if err != nil {
@@ -153,6 +161,10 @@ func (r *Runtime) RunAgent(provider string, args []string, resumeGeneration stri
 	if !matched {
 		lock.Close()
 		return errors.New("resume launch changed")
+	}
+	if resumeGeneration != "" && closedConversationActiveElsewhere(launch, state) {
+		lock.Close()
+		return errors.New("saved conversation is already active in another remote terminal")
 	}
 	state.AgentLaunches = append(kept, launch)
 	for i := range state.Sessions {

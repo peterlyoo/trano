@@ -22,6 +22,11 @@ class SBOMTests(unittest.TestCase):
         pins = module.read_document(ROOT / "Package.resolved")["pins"]
         for pin in pins:
             item = components[pin["identity"]]
+            properties = {prop["name"]: prop["value"] for prop in item.get("properties", [])}
+            if properties.get("trano:sourceType") == "vendored-modified":
+                self.assertEqual(pin["identity"], "swiftterm")
+                self.assertTrue(item["version"].startswith(pin["state"]["version"] + "+trano."))
+                item = item["pedigree"]["ancestors"][0]
             self.assertEqual(item["version"], pin["state"]["version"])
             self.assertIn(pin["state"]["revision"], str(item["externalReferences"]))
             self.assertTrue(item["licenses"])

@@ -186,6 +186,8 @@ final class CommandKeyHintTests: XCTestCase {
         let deadline = Date().addingTimeInterval(3)
         while store.loading && Date() < deadline { try await Task.sleep(for: .milliseconds(10)) }
         XCTAssertFalse(store.loading)
+        // Startup creates lock files in the watched runtime root; let that refresh land before mutating local state.
+        try await Task.sleep(for: .milliseconds(400))
         for index in 1...3 {
             let id = UUID().uuidString.lowercased()
             store.state.layout.addTab(paneID: id)

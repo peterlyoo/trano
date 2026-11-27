@@ -9,15 +9,15 @@ build_version=${TRANO_BUILD_VERSION:-1}
 python3 scripts/configure-updates.py --check
 build_args=(-c "$configuration")
 if [[ "${TRANO_UNIVERSAL:-0}" == 1 ]]; then build_args+=(--arch arm64 --arch x86_64); fi
-swift build "${build_args[@]}"
-binary_dir=$(swift build "${build_args[@]}" --show-bin-path)
+python3 scripts/run-swift.py build "${build_args[@]}"
+binary_dir=$(python3 scripts/run-swift.py build "${build_args[@]}" --show-bin-path)
 build_identity=$(python3 scripts/build-id.py)
 mkdir -p build
 staging=$(mktemp -d build/.bundle.XXXXXX)
 trap 'rm -rf "$staging"' EXIT
 app="$staging/Trano.app"
 mkdir -p "$app/Contents/MacOS" "$app/Contents/Resources" "$app/Contents/Frameworks"
-swift scripts/generate-icon.swift "$staging/Trano.icns" >/dev/null
+python3 scripts/run-swift.py scripts/generate-icon.swift "$staging/Trano.icns" >/dev/null
 cp "$staging/Trano.icns" "$app/Contents/Resources/Trano.icns"
 python3 scripts/generate-sbom.py --version "${TRANO_APP_VERSION:-0.1.0}" --output "$app/Contents/Resources/sbom.json" >/dev/null
 cp "$binary_dir/TranoApp" "$app/Contents/MacOS/TranoApp"
@@ -40,6 +40,7 @@ cat > "$app/Contents/Info.plist" <<'PLIST'
 <key>CFBundleName</key><string>Trano</string>
 <key>CFBundleDisplayName</key><string>Trano</string>
 <key>CFBundleIdentifier</key><string>dev.trano.app</string>
+<key>TranoAPIVersion</key><integer>1</integer>
 <key>CFBundleExecutable</key><string>TranoApp</string>
 <key>CFBundleIconFile</key><string>Trano.icns</string>
 <key>CFBundlePackageType</key><string>APPL</string>
@@ -55,7 +56,11 @@ PLIST
 python3 scripts/configure-updates.py "$app/Contents/Info.plist"
 /usr/libexec/PlistBuddy -c "Add :TranoBuildID string $build_identity" "$app/Contents/Info.plist"
 helper="$app/Contents/Helpers/Trano Service.app"
-mkdir -p "$helper/Contents/MacOS"
+mkdir -p "$helper/Contents/MacOS" "$helper/Contents/Resources"
+cp "$app/Contents/Resources/Trano.icns" "$helper/Contents/Resources/Trano.icns"
+for resource in "$app/Contents/Resources/"*.bundle; do
+    if [[ -d "$resource" ]]; then cp -R "$resource" "$helper/Contents/Resources/"; fi
+done
 cp "$binary_dir/TranoApp" "$helper/Contents/MacOS/TranoApp"
 cp "$binary_dir/trano" "$helper/Contents/MacOS/trano"
 cat > "$helper/Contents/Info.plist" <<'PLIST'
@@ -63,7 +68,10 @@ cat > "$helper/Contents/Info.plist" <<'PLIST'
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0"><dict>
 <key>CFBundleName</key><string>Trano Activity</string>
+<key>CFBundleDisplayName</key><string>Trano</string>
+<key>CFBundleIconFile</key><string>Trano.icns</string>
 <key>CFBundleIdentifier</key><string>dev.trano.activity</string>
+<key>TranoAPIVersion</key><integer>1</integer>
 <key>CFBundleExecutable</key><string>TranoApp</string>
 <key>CFBundlePackageType</key><string>APPL</string>
 <key>CFBundleVersion</key><string>1</string>

@@ -64,6 +64,7 @@ struct ExtendedAppearanceControls: View {
 
 struct ProfileAppearanceView: View {
     @ObservedObject var store: AppStore
+    var onClose: (() -> Void)?
     var embedded = false
     var draft: Binding<TerminalSettings>?
     @Environment(\.dismiss) private var dismiss
@@ -81,69 +82,76 @@ struct ProfileAppearanceView: View {
         Binding(get: { settings }, set: { settings = $0; stageProfile() })
     }
 
-    var body: some View {
-        VStack(alignment: .leading, spacing: 14) {
-            if !embedded {
-                HStack { Text("Appearance profiles").font(.title2.weight(.semibold)); Spacer(); Button("Close") { dismiss() }.keyboardShortcut(.cancelAction) }
-            }
-            HStack(alignment: .top, spacing: 16) {
-                VStack(spacing: 10) {
-                    List(selection: $selectedID) {
-                        ForEach(profileSettings.appearanceProfiles) { profile in Text(profile.name).tag(profile.id) }
+    @ViewBuilder var body: some View {
+        if embedded { content }
+        else {
+            VStack(spacing: 0) {
+                ToolPanelHeader("Appearance profiles", onClose: closeProfiles)
+                content.padding(ToolPanelMetrics.contentInset)
+            }.frame(width: 720, height: 560)
+                .toolPanelSurface(store.toolPanelTheme)
+                .dismissOnOutsideClick("appearance-profiles-sheet", perform: closeProfiles)
+        }
+    }
+
+    private var content: some View {
+        HStack(alignment: .top, spacing: ToolPanelMetrics.contentInset) {
+            VStack(spacing: 10) {
+                List(selection: $selectedID) {
+                    ForEach(profileSettings.appearanceProfiles) { profile in Text(profile.name).tag(profile.id) }
+                }
+                VStack(spacing: 6) {
+                    Button { newProfile(); stageProfile(creating: true) } label: {
+                        Label("New Profile", systemImage: "plus").frame(maxWidth: .infinity, alignment: .leading)
+                    }.help("Create from current appearance").accessibilityLabel("New appearance profile")
+                    Button(role: .destructive) {
+                        guard let id = selectedID else { return }
+                        if let draft {
+                            var value = draft.wrappedValue
+                            SettingsDraft.removeProfile(id, from: &value)
+                            draft.wrappedValue = value
+                        } else { store.perform { try $0.removeAppearanceProfile(id) } }
+                        newProfile()
+                    } label: {
+                        Label("Delete Profile", systemImage: "trash").frame(maxWidth: .infinity, alignment: .leading)
+                    }.disabled(selectedID == nil).help("Delete selected profile").accessibilityLabel("Delete appearance profile")
+                }.buttonStyle(.bordered).controlSize(.small)
+            }.frame(width: 150)
+            ScrollView {
+                VStack(alignment: .leading, spacing: ToolPanelMetrics.sectionSpacing) {
+                    TextField("Profile name", text: nameBinding).textFieldStyle(.roundedBorder)
+                    HStack {
+                        FontChoicePicker(title: "Profile font", selection: settingsBinding.fontName)
+                        Stepper("\(Int(settings.fontSize)) pt", value: settingsBinding.fontSize, in: 9...40).frame(width: 110)
                     }
-                    VStack(spacing: 6) {
-                        Button { newProfile(); stageProfile(creating: true) } label: {
-                            Label("New Profile", systemImage: "plus").frame(maxWidth: .infinity, alignment: .leading)
-                        }.help("Create from current appearance").accessibilityLabel("New appearance profile")
-                        Button(role: .destructive) {
-                            guard let id = selectedID else { return }
-                            if let draft {
-                                var value = draft.wrappedValue
-                                SettingsDraft.removeProfile(id, from: &value)
-                                draft.wrappedValue = value
-                            } else { store.perform { try $0.removeAppearanceProfile(id) } }
-                            newProfile()
-                        } label: {
-                            Label("Delete Profile", systemImage: "trash").frame(maxWidth: .infinity, alignment: .leading)
-                        }.disabled(selectedID == nil).help("Delete selected profile").accessibilityLabel("Delete appearance profile")
-                    }.buttonStyle(.bordered).controlSize(.small)
-                }.frame(width: 150)
-                ScrollView {
-                    VStack(alignment: .leading, spacing: 14) {
-                        TextField("Profile name", text: nameBinding).textFieldStyle(.roundedBorder)
-                        HStack {
-                            FontChoicePicker(title: "Profile font", selection: settingsBinding.fontName)
-                            Stepper("\(Int(settings.fontSize)) pt", value: settingsBinding.fontSize, in: 9...40).frame(width: 110)
-                        }
-                        Text("한글 · English · 0123456789\n❯ claude --resume")
-                            .font(Font(InstalledFontCatalog.previewFont(settings)))
-                            .foregroundStyle(Color(NSColor(hex: settings.appearance.foreground)))
-                            .padding(12).frame(maxWidth: .infinity, alignment: .leading)
-                            .background(Color(NSColor(hex: settings.background)))
-                        HStack {
-                            profileColor("Background", settingsBinding.background)
-                            profileColor("Text", settingsBinding.appearance.foreground)
-                        }
-                        HStack {
-                            profileColor("Cursor", settingsBinding.appearance.cursor)
-                            profileColor("Selection", settingsBinding.appearance.selection)
-                        }
-                        HStack {
-                            Text("Opacity").frame(width: 110, alignment: .leading)
-                            Slider(value: settingsBinding.appearance.opacity, in: 0.3...1)
-                        }
-                        ExtendedAppearanceControls(settings: settingsBinding, root: store.runtime.root).id(draftID)
-                        if let error { Text(error).font(.caption).foregroundStyle(.orange) }
-                        if !embedded { HStack { Spacer(); Button("Save Profile", action: save) } }
-                    }.padding(.trailing, 8)
-                }.disabled(embedded && selectedID == nil)
-            }
-        }.padding(embedded ? 16 : 24)
-            .frame(width: embedded ? nil : 720, height: embedded ? nil : 560)
-            .preferredColorScheme(.dark)
+                    Text("한글 · English · 0123456789\n❯ claude --resume")
+                        .font(Font(InstalledFontCatalog.previewFont(settings)))
+                        .foregroundStyle(Color(NSColor(hex: settings.appearance.foreground)))
+                        .padding(12).frame(maxWidth: .infinity, alignment: .leading)
+                        .background(Color(NSColor(hex: settings.background)))
+                    HStack {
+                        profileColor("Background", settingsBinding.background)
+                        profileColor("Text", settingsBinding.appearance.foreground)
+                    }
+                    HStack {
+                        profileColor("Cursor", settingsBinding.appearance.cursor)
+                        profileColor("Selection", settingsBinding.appearance.selection)
+                    }
+                    HStack {
+                        Text("Opacity").frame(width: 110, alignment: .leading)
+                        Slider(value: settingsBinding.appearance.opacity, in: AppearancePreferences.opacityRange)
+                    }
+                    ExtendedAppearanceControls(settings: settingsBinding, root: store.runtime.root).id(draftID)
+                    if let error { Text(error).font(.caption).foregroundStyle(.orange) }
+                    if !embedded { HStack { Spacer(); Button("Save Profile", action: save) } }
+                }.padding(.trailing, 8)
+            }.disabled(embedded && selectedID == nil)
+        }
             .onAppear { newProfile(); if let first = profileSettings.appearanceProfiles.first { selectedID = first.id; load(first.id) } }
             .onChange(of: selectedID) { _, id in if let id { load(id) } }
     }
+
+    private func closeProfiles() { if let onClose { onClose() } else { dismiss() } }
 
     private func newProfile() {
         selectedID = nil; draftID = UUID().uuidString.lowercased(); name = "New Profile"

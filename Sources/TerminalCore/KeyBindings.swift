@@ -10,8 +10,12 @@ public struct KeyBindingMap {
         for id in overrides.keys where ActionID(rawValue: id) == nil { throw TerminalError.invalid("Unknown keyboard action: \(id)") }
         var result: [String: [String]] = [:]
         var resolved: [String: ActionID] = [:]
+        let explicitBindings = Set(try overrides.values.flatMap { $0 }.map(Self.normalize))
         for action in ActionCatalog.all {
-            let keys = overrides[action.id] ?? action.bindings
+            var keys = overrides[action.id] ?? action.bindings
+            if [.queuedInput, .urlHints, .activity, .goToDirectory].contains(action.action), overrides[action.id] == nil {
+                keys = try keys.filter { !explicitBindings.contains(try Self.normalize($0)) }
+            }
             guard keys.count <= 4 else { throw TerminalError.invalid("Use at most four shortcuts per action.") }
             let canonical = try keys.map(Self.normalize)
             for key in canonical {

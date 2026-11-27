@@ -10,7 +10,12 @@ final class NotificationController: NSObject, UNUserNotificationCenterDelegate {
     private var cursor: Int
     private let cursorURL: URL
     private let applicationURL: URL
+    private let nativeSink = NativeNotificationSink()
+    private var quotaTimer: DispatchSourceTimer?
+    private var quotaLedger: QuotaAlarmLedger?
+    private var quotaResetDeadline: Date?
     private var remoteWorker: RemoteActivityWorker?
+    private var accountUsageWorker: AccountUsageWorker?
     private let identity = BuildIdentity.process
     private let shutdownLock = NSLock()
     private var shutdownRequested = false
@@ -27,6 +32,7 @@ final class NotificationController: NSObject, UNUserNotificationCenterDelegate {
 
     func start() {
         remoteWorker = RemoteActivityWorker(runtime: runtime)
+        accountUsageWorker = AccountUsageWorker(runtime: runtime)
         UNUserNotificationCenter.current().delegate = self
         let fd = open(runtime.root.path, O_EVTONLY | O_CLOEXEC)
         if fd >= 0 {
@@ -39,6 +45,29 @@ final class NotificationController: NSObject, UNUserNotificationCenterDelegate {
     }
 
     func handle(_ request: APIRequest) throws -> JSONValue? {
+        if let preferences = try NotificationPreferencesAPI.handle(request, runtime: runtime) { return preferences }
+        if request.method == "notifications.publish" {
+            guard case .string(let rawKind)? = request.params["kind"], let kind = NotificationKind(rawValue: rawKind),
+                  [.terminal, .tailscaleSignIn, .tailscaleDeviceApproval, .tailscaleFailure].contains(kind),
+                  case .string(let title)? = request.params["title"], case .string(let body)? = request.params["body"] else {
+                throw TerminalError.invalid("Choose a typed terminal or network notification")
+            }
+            let paneID: String?
+            if case .string(let value)? = request.params["paneID"] { paneID = value } else { paneID = nil }
+            if kind == .terminal {
+                guard let paneID, UUID(uuidString: paneID) != nil,
+                      case .number(let expectedPID)? = request.params["expectedPID"], expectedPID.isFinite,
+                      try runtime.state().sessions.contains(where: { $0.id == paneID && Double($0.pid) == expectedPID }) else {
+                    throw TerminalError.invalid("Terminal notification requires an existing pane")
+                }
+            }
+            let message = NotificationMessage(identifier: "\(kind.rawValue).\(UUID().uuidString)", kind: kind, title: title, body: body, paneID: paneID)
+            queue.async { [weak self] in
+                guard let self, let state = try? self.runtime.state(), let preferences = try? self.runtime.notificationPreferences() else { return }
+                self.deliver(message, state: state, preferences: preferences)
+            }
+            return .object(["accepted": .bool(true)])
+        }
         if request.method == "service.shutdown" {
             guard request.params["expectedBuildID"] == .string(identity.buildID),
                   request.params["expectedPID"] == .number(Double(getpid())), onShutdown != nil else {
@@ -83,7 +112,9 @@ final class NotificationController: NSObject, UNUserNotificationCenterDelegate {
             DispatchQueue.main.async { [weak self] in
                 guard let self else { return }
                 self.pending?.cancel(); self.watcher?.cancel(); self.watcher = nil
+                self.quotaTimer?.cancel(); self.quotaTimer = nil
                 self.remoteWorker = nil
+                self.accountUsageWorker = nil
                 self.onShutdown?()
             }
         }
@@ -106,34 +137,131 @@ final class NotificationController: NSObject, UNUserNotificationCenterDelegate {
     }
 
     private func refresh() {
-        guard let state = try? runtime.state(), state.revision != cursor,
-              let batch = try? runtime.events(since: min(cursor, state.revision)) else { return }
-        if state.settings.notifications {
-            let latest = Dictionary(batch.events.map { ($0.sessionID, $0) }, uniquingKeysWith: { _, right in right })
-            for event in latest.values where [.done, .error, .blocked].contains(event.activity.state) {
-                let content = UNMutableNotificationContent()
-                content.title = String(event.title.prefix(100))
-                content.body = event.activity.state == .done ? "Task completed" : event.activity.state == .blocked ? "Waiting for your attention" : "Task ended with an error"
-                content.sound = .default
-                content.userInfo = ["sessionID": event.sessionID]
-                let request = UNNotificationRequest(identifier: "activity.\(event.sessionID).\(event.revision)", content: content, trigger: nil)
-                UNUserNotificationCenter.current().add(request) { _ in }
+        guard let state = try? runtime.state(), let preferences = try? runtime.notificationPreferences() else { return }
+        if state.revision != cursor, let batch = try? runtime.events(since: min(cursor, state.revision)) {
+            let now = Date()
+            let events = ActivityNotificationBacklog.deliverable(batch.events, now: now)
+            // The hook names a permission's tool after the screen reports the prompt; the screen reports a turn summary after the hook's completion.
+            if let early = ActivityNotificationBacklog.wait(for: events, now: now) {
+                pending?.cancel()
+                let work = DispatchWorkItem { [weak self] in self?.refresh() }
+                pending = work
+                queue.asyncAfter(deadline: .now() + early, execute: work)
+                return
             }
+            let locale = Locale.preferredLanguages.first?.hasPrefix("ko") == true ? "ko" : "en"
+            let messages = events.map { event -> NotificationMessage in
+                let body: String
+                switch event.activity.state {
+                case .running: body = "Task started"
+                case .done: body = AttentionSummary.completion(reason: event.activity.reason,
+                                                               terminalTitle: state.sessions.first { $0.id == event.sessionID }?.terminalTitle)
+                case .blocked:
+                    let reason = runtime.notificationReason(event.activity, paneID: event.sessionID, locale: locale)
+                    body = reason.isEmpty ? "Waiting for your attention" : reason
+                default: body = "Task ended with an error"
+                }
+                return NotificationMessage(identifier: "activity.\(event.sessionID).\(event.revision)", kind: .activity,
+                                           title: event.title, body: body, paneID: event.sessionID, activity: event.activity.state)
+            }
+            deliver(batch: messages, state: state, preferences: preferences)
+            cursor = batch.revision
+            try? TerminalRuntime.atomicWrite(Data("\(cursor)\n".utf8), to: cursorURL)
         }
-        cursor = batch.revision
-        try? TerminalRuntime.atomicWrite(Data("\(cursor)\n".utf8), to: cursorURL)
+        refreshQuota(state: state, preferences: preferences)
+    }
+
+    private func refreshQuota(state: RuntimeState, preferences: NotificationPreferences) {
+        let store = QuotaAlarmLedgerStore(root: runtime.root)
+        if quotaLedger == nil { quotaLedger = try? store.read() }
+        guard var ledger = quotaLedger else { return }
+        let now = Date()
+        let nextReset: Date?
+        do {
+            nextReset = try QuotaAlarmDispatch.advance(ledger: &ledger, accounts: state.accounts,
+                                                       usage: (try? runtime.accountUsage(now: now)) ?? [], preferences: preferences, now: now,
+                                                       persist: store.save,
+                                                       deliver: { [weak self] notice in
+                guard let self, let account = state.accounts.first(where: { $0.id == notice.accountID && $0.enabled }) else { return }
+                self.deliver(NotificationMessage.quota(notice, account: account, threshold: preferences.quotaLowRemainingPercent), state: state, preferences: preferences)
+            })
+        } catch { return }
+        quotaLedger = ledger
+        guard nextReset != quotaResetDeadline else { return }
+        quotaTimer?.cancel(); quotaTimer = nil; quotaResetDeadline = nextReset
+        if let reset = nextReset {
+            let timer = DispatchSource.makeTimerSource(queue: queue)
+            timer.schedule(deadline: .now() + min(31_536_000, max(0.1, reset.timeIntervalSince(now))), leeway: .milliseconds(100))
+            timer.setEventHandler { [weak self] in self?.quotaResetDeadline = nil; self?.refresh() }
+            timer.resume(); quotaTimer = timer
+        }
+    }
+
+    private func deliver(_ message: NotificationMessage, state: RuntimeState, preferences: NotificationPreferences) {
+        deliver(batch: [message], state: state, preferences: preferences)
+    }
+
+    private func deliver(batch messages: [NotificationMessage], state: RuntimeState, preferences: NotificationPreferences) {
+        guard !messages.isEmpty else { return }
+        let bundleID = Bundle(url: applicationURL)?.bundleIdentifier ?? "dev.trano.app"
+        let active = NSRunningApplication.runningApplications(withBundleIdentifier: bundleID).contains(where: \.isActive)
+        let focused = active ? InterfacePresence.focusedPane(root: runtime.root) { pid in
+            NSRunningApplication(processIdentifier: pid).map { $0.isActive && $0.bundleIdentifier == bundleID } ?? false
+        } : nil
+        NotificationDelivery.deliver(batch: messages, preferences: preferences, legacyMasterEnabled: state.settings.notifications,
+                                     context: { _ in NotificationContext(applicationActive: active, focusedPaneID: focused) },
+                                     system: nativeSink.sendSystem,
+                                     inApp: { _, _ in },
+                                     sound: nativeSink.playSound)
     }
 
     func userNotificationCenter(_ center: UNUserNotificationCenter, willPresent notification: UNNotification, withCompletionHandler completionHandler: @escaping (UNNotificationPresentationOptions) -> Void) {
-        completionHandler([.banner, .sound])
+        completionHandler([.banner])
     }
 
     func userNotificationCenter(_ center: UNUserNotificationCenter, didReceive response: UNNotificationResponse, withCompletionHandler completionHandler: @escaping () -> Void) {
-        guard let id = response.notification.request.content.userInfo["sessionID"] as? String, UUID(uuidString: id) != nil else { completionHandler(); return }
+        NotificationResponseRelay.open(response, applicationURL: applicationURL, completion: completionHandler)
+    }
+}
+
+/// Which process this launch is. Notification Center relaunches the helper bundle without `--service`
+/// to deliver a click on a notification it posted, so the bundle identity also selects the service role.
+enum LaunchRole {
+    static let helperBundleIdentifier = "dev.trano.activity"
+    static var isService: Bool {
+        CommandLine.arguments.contains("--service") || Bundle.main.bundleIdentifier == helperBundleIdentifier
+    }
+}
+
+/// Receives a notification click before the service's NotificationController exists, including in a helper
+/// relaunched only to deliver the click while another service instance keeps running.
+final class NotificationResponseRelay: NSObject, UNUserNotificationCenterDelegate {
+    static let shared = NotificationResponseRelay()
+    static var mainApplicationURL: URL {
+        Bundle.main.bundleURL.deletingLastPathComponent().deletingLastPathComponent().deletingLastPathComponent()
+    }
+
+    func install() { UNUserNotificationCenter.current().delegate = self }
+
+    func userNotificationCenter(_ center: UNUserNotificationCenter, willPresent notification: UNNotification,
+                                withCompletionHandler completionHandler: @escaping (UNNotificationPresentationOptions) -> Void) {
+        completionHandler([.banner])
+    }
+
+    func userNotificationCenter(_ center: UNUserNotificationCenter, didReceive response: UNNotificationResponse,
+                                withCompletionHandler completionHandler: @escaping () -> Void) {
+        Self.open(response, applicationURL: Self.mainApplicationURL, completion: completionHandler)
+    }
+
+    static func sessionURL(_ userInfo: [AnyHashable: Any]) -> URL? {
+        guard let id = userInfo["sessionID"] as? String, UUID(uuidString: id) != nil else { return nil }
+        return URL(string: "trano://session/" + id)
+    }
+
+    static func open(_ response: UNNotificationResponse, applicationURL: URL, completion: @escaping () -> Void) {
+        guard let url = sessionURL(response.notification.request.content.userInfo) else { completion(); return }
         DispatchQueue.main.async {
-            let configuration = NSWorkspace.OpenConfiguration()
-            guard let url = URL(string: "trano://session/" + id) else { completionHandler(); return }
-            NSWorkspace.shared.open([url], withApplicationAt: self.applicationURL, configuration: configuration) { _, _ in completionHandler() }
+            NSWorkspace.shared.open([url], withApplicationAt: applicationURL, configuration: NSWorkspace.OpenConfiguration()) { _, _ in completion() }
         }
     }
 }
@@ -165,11 +293,20 @@ final class RemoteActivityWorker {
     static var helperBundle: URL { Bundle.main.bundleURL.appendingPathComponent("Contents/Helpers/Trano Service.app") }
 
     static func start(runtime: TerminalRuntime) {
-        let executable = helperBundle.appendingPathComponent("Contents/MacOS/TranoApp")
-        guard FileManager.default.isExecutableFile(atPath: executable.path) else { return }
+        let bundledHelper = helperBundle
         DispatchQueue.global(qos: .utility).async {
             do {
-                _ = try ServiceHandoff.ensure(runtime: runtime, executable: executable)
+                let preferences = try DeveloperSettingsStore(root: runtime.root).load()
+                let metadata = preferences.installationLocation == .sourceCheckout
+                    ? try DeveloperInstallationInspector.sourceBundle(directory: URL(fileURLWithPath: preferences.sourceDirectory))
+                    : try DeveloperInstallationInspector.inspect(bundle: bundledHelper)
+                let info = metadata.executable.deletingLastPathComponent().deletingLastPathComponent().appendingPathComponent("Info.plist")
+                let expected = try BuildIdentity(metadataURL: info)
+                _ = try ServiceHandoff.ensure(runtime: runtime, executable: metadata.executable, expected: expected)
+                let response = try APIClient(path: runtime.root.appendingPathComponent("api.sock").path).call(APIRequest(method: "server.info"))
+                guard response.error == nil, response.result?["apiVersion"] == .number(Double(metadata.apiVersion)) else {
+                    throw TerminalError.invalid("The selected background service has an incompatible API version.")
+                }
                 try? FileManager.default.removeItem(at: runtime.root.appendingPathComponent("service-diagnostic"))
             } catch {
                 try? TerminalRuntime.atomicWrite(Data((error.localizedDescription + "\n").utf8), to: runtime.root.appendingPathComponent("service-diagnostic"))

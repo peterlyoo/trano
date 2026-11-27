@@ -9,6 +9,59 @@ import TerminalCore
     @Published private(set) var status = "Updates are not configured for this build."
     private var controller: SPUStandardUpdaterController?
     private var subscriptions = Set<AnyCancellable>()
+    private var developerPreferences = DeveloperPreferences()
+    private lazy var automaticInstallation = PendingAutomaticUpdateInstall(ready: { [weak self] in
+        self?.automaticInstallationIsReady == true
+    })
+    private var automaticInstallObservers: [NSObjectProtocol] = []
+    var automaticInstallInputIsSafe: () -> Bool = { true }
+
+    func applyDeveloperPreferences(_ preferences: DeveloperPreferences) {
+        developerPreferences = preferences
+        if !preferences.installUpdatesAutomatically {
+            automaticInstallation.pause()
+            if automaticInstallation.hasPendingInstall { status = "A downloaded update is waiting. Automatic installation is paused until enabled again or Trano quits." }
+        } else {
+            if automaticInstallation.hasPendingInstall { status = "A downloaded update will install when Trano is not in use." }
+            automaticInstallation.resume()
+        }
+        guard let updater = controller?.updater else { return }
+        let readiness = DeveloperUpdatePolicy.resolve(preferences, info: Bundle.main.infoDictionary ?? [:], inheritedAutomaticDownloads: updater.automaticallyDownloadsUpdates)
+        guard readiness.available else { status = readiness.reason; return }
+        updater.automaticallyDownloadsUpdates = readiness.automaticDownloads
+        attemptAutomaticInstall()
+    }
+
+    func allowedChannels(for updater: SPUUpdater) -> Set<String> {
+        developerPreferences.updateChannel == .bleedingEdge ? ["bleeding-edge"] : []
+    }
+
+    func updater(_ updater: SPUUpdater, willInstallUpdateOnQuit item: SUAppcastItem, immediateInstallationBlock immediateInstallHandler: @escaping () -> Void) -> Bool {
+        guard developerPreferences.installUpdatesAutomatically else { return false }
+        if automaticInstallObservers.isEmpty {
+            for name in [NSApplication.didHideNotification, NSWindow.didMiniaturizeNotification, NSWindow.willCloseNotification] {
+                automaticInstallObservers.append(NotificationCenter.default.addObserver(forName: name, object: nil, queue: .main) { [weak self] _ in
+                    DispatchQueue.main.async { self?.attemptAutomaticInstall() }
+                })
+            }
+        }
+        automaticInstallation.enqueue(attemptImmediately: false, immediateInstallHandler)
+        DispatchQueue.main.async { [weak self] in self?.attemptAutomaticInstall() }
+        return true
+    }
+
+    private func attemptAutomaticInstall() {
+        automaticInstallation.readinessDidChange()
+    }
+
+    private var automaticInstallationIsReady: Bool {
+        let windows = NSApp.windows
+        let visible = windows.filter { $0.isVisible && !$0.isMiniaturized }.count
+        let busy = NSApp.modalWindow != nil || !automaticInstallInputIsSafe() || windows.contains {
+            $0.attachedSheet != nil || ($0.firstResponder as? NSTextInputClient)?.hasMarkedText() == true
+        }
+        return DeveloperActionPolicy.mayInstallUpdate(preferences: developerPreferences, appHidden: NSApp.isHidden, visibleWindowCount: visible, inputBusy: busy)
+    }
 
     var automaticallyChecksForUpdates: Bool {
         get { controller?.updater.automaticallyChecksForUpdates ?? false }
@@ -34,6 +87,7 @@ import TerminalCore
             let controller = SPUStandardUpdaterController(startingUpdater: false, updaterDelegate: self, userDriverDelegate: nil)
             try controller.updater.start()
             self.controller = controller
+            applyDeveloperPreferences(developerPreferences)
             controller.updater.publisher(for: \.canCheckForUpdates)
                 .receive(on: RunLoop.main)
                 .assign(to: &$canCheckForUpdates)
@@ -58,6 +112,7 @@ import TerminalCore
     }
 
     func updater(_ updater: SPUUpdater, didAbortWithError error: Error) {
+        automaticInstallation.cancel()
         status = error.localizedDescription
     }
 

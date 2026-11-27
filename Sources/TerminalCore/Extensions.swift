@@ -82,7 +82,13 @@ extension TerminalRuntime {
         guard let account = state.accounts.first(where: { $0.id == accountID }), extensionIDs.count <= 100,
               extensionIDs.allSatisfy({ id in state.extensions.contains { $0.id == id } }) else { throw TerminalError.invalid("Unknown account or extension") }
         var links: [String: String] = [:], servers: [String: JSONValue] = [:]
-        var hooks = Self.activityHooks(account.provider)
+        let integration = try integrationsPreferences()
+        var hooks = integration.integrateWithAvailableAgents ? Self.activityHooks(account.provider) : [:]
+        if integration.integrateWithAvailableAgents {
+            let installer = try ManagedAgentIntegration(root: root)
+            try installer.apply(installer.plan(provider: account.provider, preferences: integration))
+            links["skills/trano-terminal"] = root.appendingPathComponent("integration/agents/" + account.provider.rawValue + "/skills/trano").path
+        }
         var unsupported: [String] = []
         for id in Set(extensionIDs).sorted() {
             let entry = state.extensions.first { $0.id == id }!
@@ -117,7 +123,11 @@ extension TerminalRuntime {
         }
         let files: [String: String]
         if account.provider == .claude {
-            files = ["trano-settings.json": try Self.prettyJSON(.object(["hooks": .object(hooks), "statusLine": .object(["type": .string("command"), "command": .string("[ -n \"$TRANO_LAUNCH_ID\" ] && \"$TRANO_CLI_PATH\" usage-hook || true")])])), "trano-mcp.json": try Self.prettyJSON(.object(["mcpServers": .object(servers)]))]
+            var settings: [String: JSONValue] = ["hooks": .object(hooks)]
+            if integration.integrateWithAvailableAgents {
+                settings["statusLine"] = .object(["type": .string("command"), "command": .string("[ -n \"$TRANO_LAUNCH_ID\" ] && \"$TRANO_CLI_PATH\" usage-hook || true")])
+            }
+            files = ["trano-settings.json": try Self.prettyJSON(.object(settings)), "trano-mcp.json": try Self.prettyJSON(.object(["mcpServers": .object(servers)]))]
         } else {
             files = ["trano.config.toml": "features = { hooks = true }\nhooks = \(try Self.toml(.object(hooks)))\nmcp_servers = \(try Self.toml(.object(servers)))\n"]
         }
@@ -221,18 +231,16 @@ extension TerminalRuntime {
 
     public func integratingAgentHooks(_ plan: AccountCommand, provider: AgentKind) throws -> AccountCommand {
         var command = plan
+        let integration = try integrationsPreferences()
+        guard integration.integrateWithAvailableAgents else { return command }
         if let path = plan.environment[provider == .claude ? "CLAUDE_CONFIG_DIR" : "CODEX_HOME"],
            try state().accounts.contains(where: { $0.provider == provider && root.appendingPathComponent("accounts").appendingPathComponent($0.id).path == path }),
            FileManager.default.fileExists(atPath: URL(fileURLWithPath: path).appendingPathComponent(".trano-account").path) { return command }
         let hooks = Self.activityHooks(provider)
         if provider == .claude {
-            let base = try ManagedDirectory.ensure(root, component: "integration")
-            let plugin = try ManagedDirectory.ensure(base, component: "claude")
-            let manifest = try ManagedDirectory.ensure(plugin, component: ".claude-plugin")
-            let directory = try ManagedDirectory.ensure(plugin, component: "hooks")
-            let files = [manifest.appendingPathComponent("plugin.json"): "{\"name\":\"trano-session\",\"version\":\"0.1.0\"}\n",
-                         directory.appendingPathComponent("hooks.json"): try Self.prettyJSON(.object(["hooks": .object(hooks)]))]
-            for (path, value) in files where (try? String(contentsOf: path, encoding: .utf8)) != value { try Self.atomicWrite(Data(value.utf8), to: path) }
+            let installer = try ManagedAgentIntegration(root: root)
+            try installer.apply(installer.plan(provider: provider, preferences: integration))
+            let plugin = root.appendingPathComponent("integration/agents/claude")
             command.arguments += ["--plugin-dir", plugin.path]
         } else {
             command.arguments.insert(contentsOf: ["--no-daemon", "-c", "hooks=" + (try Self.toml(.object(hooks)))], at: 1)

@@ -63,14 +63,19 @@ extension TerminalRuntime {
                   ProcessIdentity.isRootHook(originPID: originPID, providerPID: pid, provider: .claude) else { return }
             let payload = try JSONDecoder().decode([String: JSONValue].self, from: data)
             guard payload["session_id"]?.text == launch.providerSessionID else { return }
-            _ = try recordClaudeAccountUsage(accountID: accountID, data: data)
+            _ = try recordClaudeAccountUsage(accountID: accountID, data: data, organizationBindingID: launch.organizationBindingID)
         }
     }
 
     public func requestAccountSwitch(paneID: String, targetAccountID: String) throws -> AgentSupervision {
-        try transaction {
+        guard let requestedLaunch = try state().agentLaunches.first(where: { $0.paneID == paneID && $0.lifecycle == .active }) else {
+            throw TerminalError.invalid("Choose a running managed agent")
+        }
+        let authorization = try preflightAccountOrganization(accountID: targetAccountID, cwd: requestedLaunch.cwd)
+        return try transaction {
+            try validateAccountOrganizationAuthorization(authorization, cwd: requestedLaunch.cwd)
             let state = try state()
-            guard let launch = state.agentLaunches.first(where: { $0.paneID == paneID && $0.lifecycle == .active }),
+            guard let launch = state.agentLaunches.first(where: { $0.paneID == paneID && $0.lifecycle == .active && $0.id == requestedLaunch.id && $0.cwd == requestedLaunch.cwd }),
                   let source = launch.accountID,
                   let target = state.accounts.first(where: { $0.id == targetAccountID && $0.provider == launch.provider && $0.enabled }),
                   target.id != source, let pid = launch.processID, kill(pid, 0) == 0 else {

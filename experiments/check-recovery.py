@@ -4,6 +4,7 @@ import os
 import pathlib
 import shlex
 import shutil
+import signal
 import subprocess
 import sys
 import tempfile
@@ -97,8 +98,8 @@ class Recovery(unittest.TestCase):
             cli('send',panes[2]['id'],'cd '+shlex.quote(str(moved)),'--enter')
             until(lambda: pathlib.Path(next(row for row in cli('state')['sessions'] if row['id']==panes[2]['id'])['cwd']).resolve()==moved.resolve())
             layout=cli('state')['layout']
-            socket=cli('check')['socket']
-            subprocess.run(['tmux','-S',socket,'kill-server'],check=True)
+            host=int(cli('check')['hostPID'])
+            os.kill(host,signal.SIGKILL)
             until(lambda: not any(pane['alive'] for pane in cli('list')))
             app=CLI.parent/'TranoApp'
             native=subprocess.Popen([str(app),'--snapshot',str(root/'restored.png')],env=env,stdout=subprocess.DEVNULL,stderr=subprocess.DEVNULL)
@@ -128,6 +129,78 @@ class Recovery(unittest.TestCase):
             if runtime.exists():
                 try:
                     for pane in cli('list'): cli('terminate',pane['id'])
+                except Exception: pass
+            shutil.rmtree(root)
+
+
+    # Implements: FR-RECOVERY-1
+    def test_resume_failure_retries_with_claude_backoff_then_resumes(self):
+        root = pathlib.Path(tempfile.mkdtemp(prefix='trano-retry-', dir='/tmp'))
+        home, binary, runtime = root/'home', root/'bin', root/'runtime'
+        home.mkdir(); binary.mkdir()
+        failing = (
+            'import os, pathlib, sys\n'
+            'budget = pathlib.Path(os.environ["TRANO_TEST_FIXTURE"])/"resume-failures"\n'
+            'if "--resume" in sys.argv[1:] and "--trano-probe" not in sys.argv[1:] and int(budget.read_text()) > 0:\n'
+            ' budget.write_text(str(int(budget.read_text())-1))\n'
+            ' print("Your organization requires remote managed settings to load, but they could not be loaded.")\n'
+            ' sys.exit(1)\n'
+        )
+        script = binary/'claude'
+        script.write_text('#!'+sys.executable+'\n'+failing+FAKE)
+        script.chmod(0o700)
+        (home/'.claude').mkdir()
+        (root/'resume-failures').write_text('2')
+        project = root/'project'
+        project.mkdir()
+        for file in ['.zshenv', '.zprofile', '.zshrc', '.zlogin']:
+            (home/file).write_text('export PATH='+shlex.quote(str(binary))+':"$PATH"\n')
+        env = dict(os.environ, HOME=str(home), ZDOTDIR=str(home), TRANO_DATA_DIR=str(runtime), TRANO_TEST_FIXTURE=str(root), CLAUDE_CONFIG_DIR=str(home/'.claude'))
+        env['PYTHONPATH'] = str(pathlib.Path(orjson.__file__).resolve().parents[1])
+        env.pop('TRANO_SESSION', None); env.pop('TRANO_LAUNCH_ID', None)
+
+        def cli(*args):
+            result = subprocess.run([str(CLI),*args],env=env,capture_output=True,timeout=20)
+            self.assertEqual(result.returncode,0,result.stderr.decode())
+            return orjson.loads(result.stdout)['result']
+
+        def until(check, timeout=12):
+            deadline = time.monotonic()+timeout
+            while time.monotonic()<deadline:
+                value = check()
+                if value: return value
+                time.sleep(.05)
+            self.fail('Timed out; panes='+str([cli('capture',pane['id']) for pane in cli('list')])+' recovery='+str(cli('recovery','list')))
+
+        def rows():
+            file=root/'launches.jsonl'
+            return [orjson.loads(line) for line in file.read_bytes().splitlines()] if file.exists() else []
+
+        try:
+            pane=cli('launch','--cwd',str(project))['pane']
+            cli('send',pane['id'],'claude','--enter')
+            first=until(lambda: rows() if len(rows())==1 else None)[0]
+            os.kill(int(cli('check')['hostPID']),signal.SIGKILL)
+            until(lambda: not any(item['alive'] for item in cli('list')))
+            started=time.monotonic()
+            cli('recovery','run')
+            resumed=until(lambda: rows() if len(rows())==2 else None, timeout=30)[1]
+            elapsed=time.monotonic()-started
+            self.assertEqual(resumed['session'],first['session'])
+            self.assertIn('--resume',resumed['args'])
+            self.assertEqual((root/'resume-failures').read_text(),'0')
+            self.assertGreaterEqual(elapsed,1.5)
+            status=until(lambda: next((item for item in cli('recovery','list') if item['paneID']==pane['id'] and item['status']=='restored'),None))
+            self.assertEqual(status['message'],'Agent conversation resumed')
+            screen=cli('capture',pane['id'])
+            text=screen if isinstance(screen,str) else orjson.dumps(screen).decode()
+            self.assertIn('retrying in 0.',text)
+            self.assertIn('(2/10)',text)
+            print('Verified: resume failed twice, retried with 0.5 s/1 s Claude backoff, resumed the same conversation in %.1fs.'%elapsed)
+        finally:
+            if runtime.exists():
+                try:
+                    for item in cli('list'): cli('terminate',item['id'])
                 except Exception: pass
             shutil.rmtree(root)
 
